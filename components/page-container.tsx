@@ -19,7 +19,7 @@ export function PageContainer({
   const hasHeader = Boolean(pageTitle || description || actions);
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("mx-auto w-full max-w-2xl space-y-6", className)}>
       {hasHeader ? (
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1">

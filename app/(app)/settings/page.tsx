@@ -23,7 +23,7 @@ export default async function SettingsPage() {
   const { user, activeRole, availableRoles } = await getViewerProfile();
 
   return (
-    <PageContainer className="mx-auto max-w-2xl" pageTitle="설정">
+    <PageContainer pageTitle="설정">
       {activeRole ? (
         <Card>
           <CardHeader>
