@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { PageContainer } from "@/components/page-container";
 import { cn } from "@/lib/utils";
 import { listMyChatRooms } from "@/lib/queries/chat";
 import { MessageRoom } from "./message-room";
@@ -33,11 +34,7 @@ export default async function MessagesPage({
     null;
 
   return (
-    <section className="space-y-4">
-      <div className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight">메시지</h1>
-      </div>
-
+    <PageContainer pageTitle="메시지">
       {errorMessage && (
         <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
           {errorMessage}
@@ -98,6 +95,6 @@ export default async function MessagesPage({
           )}
         </div>
       </div>
-    </section>
+    </PageContainer>
   );
 }

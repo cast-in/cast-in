@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageContainer } from "@/components/page-container";
 import { listActorPreviews, listOpenJobsPreview } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 
@@ -26,14 +27,10 @@ async function CastingTalentsPage() {
   const actors = await listActorPreviews(9);
 
   return (
-    <section className="space-y-6">
-      <div className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight">배우 탐색</h1>
-        <p className="text-sm text-muted-foreground">
-          프로필 카드 중심으로 배우를 비교하고 다음으로 볼 후보를 빠르게 추려요.
-        </p>
-      </div>
-
+    <PageContainer
+      pageTitle="배우 탐색"
+      description="프로필 카드 중심으로 배우를 비교하고 다음으로 볼 후보를 빠르게 추려요."
+    >
       {actors.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
@@ -69,7 +66,7 @@ async function CastingTalentsPage() {
           ))}
         </div>
       )}
-    </section>
+    </PageContainer>
   );
 }
 
@@ -77,14 +74,10 @@ async function ActorTalentsPage() {
   const jobs = await listOpenJobsPreview(9);
 
   return (
-    <section className="space-y-6">
-      <div className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight">오디션 탐색</h1>
-        <p className="text-sm text-muted-foreground">
-          브랜드, 장르, 지역 기준으로 공고를 비교하고 바로 상세를 확인해요.
-        </p>
-      </div>
-
+    <PageContainer
+      pageTitle="오디션 탐색"
+      description="브랜드, 장르, 지역 기준으로 공고를 비교하고 바로 상세를 확인해요."
+    >
       {jobs.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
@@ -118,6 +111,6 @@ async function ActorTalentsPage() {
           ))}
         </div>
       )}
-    </section>
+    </PageContainer>
   );
 }

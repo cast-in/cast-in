@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { PageContainer } from "@/components/page-container";
 import {
   listActorPreviews,
   listMyApplicationsWithJobs,
@@ -54,7 +55,7 @@ async function CastingDiscoverPage() {
   const applicantCount = jobs.reduce((sum, job) => sum + job.applicant_count, 0);
 
   return (
-    <section className="space-y-8">
+    <PageContainer>
       <HeroCard
         title="인재 찾기"
         description="진행 중인 프로젝트를 기준으로 추천 배우를 확인하고 다음으로 볼 후보를 빠르게 추려요."
@@ -115,7 +116,7 @@ async function CastingDiscoverPage() {
           </div>
         )}
       </section>
-    </section>
+    </PageContainer>
   );
 }
 
@@ -142,7 +143,7 @@ async function ActorDiscoverPage() {
   ).length;
 
   return (
-    <section className="space-y-8">
+    <PageContainer>
       <HeroCard
         title="둘러보기"
         description="내 프로필에 맞는 추천 오디션과 지원 흐름을 같은 화면에서 확인해요."
@@ -185,7 +186,7 @@ async function ActorDiscoverPage() {
           </div>
         )}
       </section>
-    </section>
+    </PageContainer>
   );
 }
 

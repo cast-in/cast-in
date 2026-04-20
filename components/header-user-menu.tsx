@@ -34,15 +34,10 @@ export function HeaderUserMenu({
         render={
           <Button
             variant="outline"
-            className="hidden h-auto items-center gap-2 rounded-full px-2 py-1.5 md:flex"
+            className="hidden h-auto items-center gap-2 rounded-full px-3 py-1.5 md:flex"
           />
         }
       >
-        <Avatar size="sm">
-          <AvatarFallback>
-            {getAvatarFallback(profileName || userEmail || "U")}
-          </AvatarFallback>
-        </Avatar>
         <span className="max-w-28 truncate text-sm font-medium">
           {profileName}
         </span>
@@ -57,7 +52,7 @@ export function HeaderUserMenu({
           >
             <Popover.Title className="sr-only">프로필 메뉴</Popover.Title>
 
-            <div className="rounded-2xl bg-muted/40 p-4">
+            <div className="p-4">
               <div className="flex items-center gap-3">
                 <Avatar size="lg">
                   <AvatarFallback>
@@ -86,7 +81,7 @@ export function HeaderUserMenu({
                   <button
                     type="submit"
                     className={cn(
-                      buttonVariants({ variant: "secondary" }),
+                      buttonVariants({ variant: "ghost" }),
                       "w-full justify-between",
                     )}
                   >
@@ -98,7 +93,7 @@ export function HeaderUserMenu({
                 <Link
                   href={`/onboarding/profile?role=${otherRole}&intent=add`}
                   className={cn(
-                    buttonVariants({ variant: "secondary" }),
+                    buttonVariants({ variant: "ghost" }),
                     "w-full justify-between",
                   )}
                 >

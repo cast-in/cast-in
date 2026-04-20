@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageContainer } from "@/components/page-container";
 import {
   listMyApplicationsWithJobs,
   listMyJobsWithCounts,
@@ -79,19 +80,15 @@ async function CastingJobsPage() {
   const totalPass = jobs.reduce((sum, job) => sum + job.pass_count, 0);
 
   return (
-    <section className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-bold tracking-tight">공고 관리</h1>
-          <p className="text-sm text-muted-foreground">
-            내가 올린 공고와 지원자 현황을 한눈에 확인해요.
-          </p>
-        </div>
+    <PageContainer
+      pageTitle="공고 관리"
+      description="내가 올린 공고와 지원자 현황을 한눈에 확인해요."
+      actions={
         <Link href="/jobs/new" className={buttonVariants()}>
           새 공고 만들기
         </Link>
-      </div>
-
+      }
+    >
       {errorMessage && <ErrorCard message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -173,7 +170,7 @@ async function CastingJobsPage() {
           </Table>
         )}
       </Card>
-    </section>
+    </PageContainer>
   );
 }
 
@@ -199,14 +196,10 @@ async function ActorJobsPage() {
   ).length;
 
   return (
-    <section className="space-y-6">
-      <div className="space-y-1.5">
-        <h1 className="text-3xl font-bold tracking-tight">지원 관리</h1>
-        <p className="text-sm text-muted-foreground">
-          지원한 공고의 상태와 최근 대화 흐름을 확인하고 다음 액션을 준비해요.
-        </p>
-      </div>
-
+    <PageContainer
+      pageTitle="지원 관리"
+      description="지원한 공고의 상태와 최근 대화 흐름을 확인하고 다음 액션을 준비해요."
+    >
       {errorMessage && <ErrorCard message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -290,7 +283,7 @@ async function ActorJobsPage() {
           </CardHeader>
         </Card>
       ) : null}
-    </section>
+    </PageContainer>
   );
 }
 

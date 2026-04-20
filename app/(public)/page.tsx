@@ -1,30 +1,20 @@
 import Link from "next/link";
-import {
-  ChevronDown,
-  Mail,
-  Phone,
-  Plus,
-} from "lucide-react";
+import { ChevronDown, Mail, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
+import { LogoMarquee } from "@/components/features/logo-marquee";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { cn } from "@/lib/utils";
 
-const PARTNER_GROUPS = [
-  {
-    title: "엔터/매니지먼트",
-    items: ["매니지먼트", "신인개발", "레이블", "에이전시"],
-  },
-  {
-    title: "드라마/영화",
-    items: ["드라마", "영화", "OTT", "독립장편"],
-  },
-  {
-    title: "광고/브랜드",
-    items: ["브랜드", "캠페인", "커머스", "라이브"],
-  },
+const STATS = [
+  { label: "등록 배우", value: "8,000" },
+  { label: "활동 캐스팅 디렉터", value: "1,200" },
+  { label: "진행 중인 공고", value: "3,500" },
+  { label: "누적 지원", value: "120,000" },
+  { label: "성사된 캐스팅", value: "9,800" },
+  { label: "파트너 제작사", value: "450" },
 ] as const;
 
 const PROCESS_STEPS = [
@@ -73,24 +63,12 @@ const FOOTER_INFO_COLUMNS = [
   {
     title: "안내",
     links: [
-      { label: "함께하는 현장", href: "#partners" },
+      { label: "캐스트인과 함께하고 있어요", href: "#partners" },
       { label: "이용 절차", href: "#process" },
       { label: "자주 묻는 질문", href: "#faq" },
     ],
   },
 ] as const;
-
-const PARTNER_BUBBLE_STYLES = [
-  "bg-sky-500 text-white",
-  "bg-slate-950 text-white",
-  "bg-white text-slate-700 ring-1 ring-slate-200",
-  "bg-cyan-300 text-slate-900",
-  "bg-slate-200 text-slate-700",
-  "bg-emerald-400 text-slate-900",
-  "bg-orange-500 text-white",
-  "bg-yellow-300 text-slate-900",
-  "bg-blue-100 text-blue-700",
-];
 
 export default async function LandingPage() {
   const { user, profile, activeRole, availableRoles } = await getViewerProfile();
@@ -133,52 +111,40 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        <LogoMarquee />
+
         <section
           id="partners"
-          className="bg-primary px-5 py-20 text-primary-foreground md:py-28"
+          className="bg-primary px-5 py-14 text-primary-foreground md:py-20"
         >
           <div className="mx-auto max-w-5xl">
             <div className="mx-auto max-w-3xl text-center">
-              <p className="text-sm font-medium tracking-[0.18em] text-primary-foreground/70 uppercase">
-                함께하는 현장
-              </p>
-              <h2 className="mt-4 text-4xl font-bold tracking-tight md:text-6xl">
-                캐스트인과 함께하는 업체
+              <h2 className="text-2xl font-bold tracking-tight md:text-4xl">
+                캐스트인과 함께하고 있어요
               </h2>
             </div>
 
-            <div className="mt-14 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {PARTNER_GROUPS.map((group, groupIndex) => (
-                <article
-                  key={group.title}
-                  className="rounded-[32px] bg-card p-6 text-card-foreground shadow-[0_16px_48px_rgba(10,37,64,0.12)] ring-1 ring-black/5"
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+              {STATS.map((stat, i) => (
+                <div
+                  key={stat.label}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-2 px-4 py-7 border-primary-foreground/15",
+                    i % 3 !== 0 && "md:border-l",
+                    i >= 3 && "md:border-t",
+                    i % 2 !== 0 && "sm:max-md:border-l",
+                    i >= 2 && "sm:max-md:border-t",
+                    i > 0 && "max-sm:border-t",
+                  )}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-2xl font-bold tracking-tight">
-                      {group.title}
-                    </h3>
-                    <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Plus aria-hidden="true" className="size-4" />
-                    </span>
-                  </div>
-
-                  <div className="mt-8 flex flex-wrap gap-4">
-                    {group.items.map((item, itemIndex) => (
-                      <div
-                        key={item}
-                        className={cn(
-                          "flex size-[5.5rem] items-center justify-center rounded-full text-center text-sm font-semibold leading-tight tracking-tight md:size-24 md:text-base",
-                          PARTNER_BUBBLE_STYLES[
-                            (groupIndex * 3 + itemIndex) %
-                              PARTNER_BUBBLE_STYLES.length
-                          ],
-                        )}
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </article>
+                  <p className="text-sm font-medium tracking-tight text-primary-foreground/80 md:text-base">
+                    {stat.label}
+                  </p>
+                  <p className="text-2xl font-bold tracking-tight md:text-4xl">
+                    <span className="align-top text-base md:text-xl">+</span>
+                    {stat.value}
+                  </p>
+                </div>
               ))}
             </div>
           </div>
