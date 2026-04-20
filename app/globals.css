@@ -7,6 +7,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-muted-ink: var(--muted-ink);
+  --color-actor: var(--actor);
+  --color-actor-soft: var(--actor-soft);
+  --color-casting: var(--casting);
+  --color-casting-soft: var(--casting-soft);
+  --color-brand-blue: var(--brand-blue);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -49,14 +56,23 @@
 }
 
 :root {
+  /* 와이어프레임 브랜드 토큰 포팅 */
+  --ink: #191f28;
+  --muted-ink: #8b95a1;
+  --actor: #4f7cff;
+  --actor-soft: #edf3ff;
+  --casting: #0ea5a3;
+  --casting-soft: #e7fbfa;
+  --brand-blue: #3182f6;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.7697 0.2124 148.67);
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -84,14 +100,22 @@
 }
 
 .dark {
+  --ink: oklch(0.985 0 0);
+  --muted-ink: #8b95a1;
+  --actor: #76a2ff;
+  --actor-soft: rgba(79, 124, 255, 0.16);
+  --casting: #2dd4cf;
+  --casting-soft: rgba(14, 165, 163, 0.16);
+  --brand-blue: #60a5fa;
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.7697 0.2124 148.67);
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -120,6 +144,23 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  /* Match hover affordance with actual clickability on native interactive controls. */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    @apply cursor-pointer;
+  }
+  button:disabled,
+  select:disabled,
+  input[type="checkbox"]:disabled,
+  input[type="radio"]:disabled,
+  [role="button"][aria-disabled="true"] {
+    @apply cursor-not-allowed;
   }
   body {
     @apply bg-background text-foreground;

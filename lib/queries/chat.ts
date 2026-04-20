@@ -1,0 +1,63 @@
+import { createClient } from "@/lib/supabase/server";
+
+export type ChatRoomSummary = {
+  id: string;
+  job_id: string | null;
+  job_title: string | null;
+  last_message_at: string | null;
+  other_id: string;
+  other_name: string;
+};
+
+export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: rooms, error } = await supabase
+    .from("chat_rooms")
+    .select("id, job_id, actor_id, casting_id, last_message_at")
+    .or(`actor_id.eq.${user.id},casting_id.eq.${user.id}`)
+    .order("last_message_at", { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  if (!rooms || rooms.length === 0) return [];
+
+  const otherIds = Array.from(
+    new Set(
+      rooms.map((r) =>
+        r.actor_id === user.id ? r.casting_id : r.actor_id,
+      ),
+    ),
+  );
+  const jobIds = Array.from(
+    new Set(
+      rooms
+        .map((r) => r.job_id)
+        .filter((v): v is string => typeof v === "string"),
+    ),
+  );
+
+  const [{ data: profiles }, { data: jobs }] = await Promise.all([
+    supabase.from("profiles").select("id, name").in("id", otherIds),
+    jobIds.length > 0
+      ? supabase.from("jobs").select("id, title").in("id", jobIds)
+      : Promise.resolve({ data: [] as { id: string; title: string }[] }),
+  ]);
+
+  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+  const titleById = new Map((jobs ?? []).map((j) => [j.id, j.title]));
+
+  return rooms.map((r) => {
+    const otherId = r.actor_id === user.id ? r.casting_id : r.actor_id;
+    return {
+      id: r.id,
+      job_id: r.job_id,
+      job_title: r.job_id ? (titleById.get(r.job_id) ?? null) : null,
+      last_message_at: r.last_message_at,
+      other_id: otherId,
+      other_name: nameById.get(otherId) ?? "익명",
+    };
+  });
+}
