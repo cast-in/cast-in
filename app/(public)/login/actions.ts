@@ -3,7 +3,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type AuthResult = { ok: true } | { ok: false; error: string };
+export type AuthResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string };
 
 export async function signInWithPassword(
   formData: FormData,
@@ -53,12 +55,47 @@ export async function signUpWithPassword(
   // session이 바로 들어오면 (이메일 확인 꺼진 경우) 곧장 온보딩으로
   if (data.session) redirect("/onboarding/role");
 
-  // 이메일 확인 필요 케이스 — 안내 메시지
-  // 개발 중 바로 로그인하려면 Supabase 대시보드 Auth → Providers → Email 에서 'Confirm email' 끄기
   return {
-    ok: false,
-    error: "인증 메일을 보냈어요. 메일함에서 링크를 눌러주세요.",
+    ok: true,
+    message: "인증 메일을 보냈어요. 메일함에서 링크를 눌러주세요.",
   };
+}
+
+export async function requestPasswordResetAction(
+  formData: FormData,
+): Promise<AuthResult> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { ok: false, error: "이메일을 입력해주세요." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${getOrigin()}/auth/callback?next=/login/reset`,
+  });
+  if (error) return { ok: false, error: translateAuthError(error.message) };
+
+  return {
+    ok: true,
+    message: "비밀번호 재설정 링크를 보냈어요. 메일함을 확인해주세요.",
+  };
+}
+
+export async function updatePasswordAction(
+  formData: FormData,
+): Promise<AuthResult> {
+  const password = String(formData.get("password") ?? "");
+  const passwordConfirm = String(formData.get("password_confirm") ?? "");
+  if (password.length < 6) {
+    return { ok: false, error: "비밀번호는 6자 이상으로 만들어주세요." };
+  }
+  if (password !== passwordConfirm) {
+    return { ok: false, error: "비밀번호가 서로 달라요." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { ok: false, error: translateAuthError(error.message) };
+
+  redirect("/discover");
 }
 
 export async function signOutAction() {

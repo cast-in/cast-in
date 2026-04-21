@@ -5,6 +5,7 @@ export type ChatRoomSummary = {
   job_id: string | null;
   job_title: string | null;
   last_message_at: string | null;
+  unread_count: number;
   other_id: string;
   other_name: string;
 };
@@ -46,6 +47,19 @@ export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
       : Promise.resolve({ data: [] as { id: string; title: string }[] }),
   ]);
 
+  const roomIds = rooms.map((r) => r.id);
+  const { data: unreadMessages } = await supabase
+    .from("messages")
+    .select("room_id")
+    .in("room_id", roomIds)
+    .neq("sender_id", user.id)
+    .is("read_at", null);
+
+  const unreadByRoom = new Map<string, number>();
+  for (const message of unreadMessages ?? []) {
+    unreadByRoom.set(message.room_id, (unreadByRoom.get(message.room_id) ?? 0) + 1);
+  }
+
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.name]));
   const titleById = new Map((jobs ?? []).map((j) => [j.id, j.title]));
 
@@ -56,8 +70,25 @@ export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
       job_id: r.job_id,
       job_title: r.job_id ? (titleById.get(r.job_id) ?? null) : null,
       last_message_at: r.last_message_at,
+      unread_count: unreadByRoom.get(r.id) ?? 0,
       other_id: otherId,
       other_name: nameById.get(otherId) ?? "익명",
     };
   });
+}
+
+export async function countUnreadMessages(): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { count, error } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .neq("sender_id", user.id)
+    .is("read_at", null);
+  if (error) throw error;
+  return count ?? 0;
 }

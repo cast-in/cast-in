@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PageContainer } from "@/components/page-container";
 import { cn } from "@/lib/utils";
 import { listMyChatRooms } from "@/lib/queries/chat";
@@ -65,11 +66,16 @@ export default async function MessagesPage({
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between gap-2">
                       <strong className="text-sm">{r.other_name}</strong>
-                      <span className="text-xs text-muted-foreground">
-                        {r.last_message_at
-                          ? new Date(r.last_message_at).toLocaleDateString()
-                          : ""}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {r.unread_count > 0 ? (
+                          <Badge>{r.unread_count > 99 ? "99+" : r.unread_count}</Badge>
+                        ) : null}
+                        <span className="text-xs text-muted-foreground">
+                          {r.last_message_at
+                            ? new Date(r.last_message_at).toLocaleDateString()
+                            : ""}
+                        </span>
+                      </div>
                     </div>
                     {r.job_title && (
                       <div className="mt-1 text-xs text-muted-foreground">

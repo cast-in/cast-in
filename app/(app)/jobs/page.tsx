@@ -21,17 +21,9 @@ import {
   listMyApplicationsWithJobs,
   listMyJobsWithCounts,
 } from "@/lib/queries/jobs";
+import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { getViewerProfile } from "@/lib/queries/viewer";
-import type { ApplicationStatus, JobStatus } from "@/types/enums";
-
-const JOB_STATUS_LABEL: Record<
-  JobStatus,
-  { text: string; variant: "default" | "secondary" | "outline" }
-> = {
-  open: { text: "모집중", variant: "default" },
-  closed: { text: "마감", variant: "secondary" },
-  draft: { text: "임시저장", variant: "outline" },
-};
+import type { ApplicationStatus } from "@/types/enums";
 
 const APPLICATION_STATUS_LABEL: Record<
   ApplicationStatus,
@@ -53,18 +45,31 @@ function formatDeadline(iso: string | null) {
   return `${deadline.getMonth() + 1}월 ${deadline.getDate()}일 마감`;
 }
 
-export default async function JobsPage() {
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const { activeRole } = await getViewerProfile();
   if (!activeRole) return null;
+  const { status } = await searchParams;
+  const jobFilter =
+    status === "closed" || status === "draft" || status === "open"
+      ? status
+      : "all";
 
   return activeRole === "casting" ? (
-    <CastingJobsPage />
+    <CastingJobsPage filter={jobFilter} />
   ) : (
     <ActorJobsPage />
   );
 }
 
-async function CastingJobsPage() {
+async function CastingJobsPage({
+  filter,
+}: {
+  filter: "all" | "open" | "closed" | "draft";
+}) {
   let jobs: Awaited<ReturnType<typeof listMyJobsWithCounts>> = [];
   let errorMessage: string | null = null;
 
@@ -78,6 +83,14 @@ async function CastingJobsPage() {
   const totalApplicants = jobs.reduce((sum, job) => sum + job.applicant_count, 0);
   const totalChecked = jobs.reduce((sum, job) => sum + job.reviewing_count, 0);
   const totalPass = jobs.reduce((sum, job) => sum + job.pass_count, 0);
+  const filteredJobs = jobs.filter((job) => {
+    if (filter === "all") return true;
+    if (filter === "open") return isJobAccepting(job);
+    if (filter === "closed") {
+      return job.status !== "draft" && (job.status === "closed" || !isJobAccepting(job));
+    }
+    return job.status === "draft";
+  });
 
   return (
     <PageContainer
@@ -97,12 +110,32 @@ async function CastingJobsPage() {
         <SummaryCard label="합격" value={totalPass} />
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {[
+          ["all", "전체"],
+          ["open", "모집중"],
+          ["closed", "마감/종료"],
+          ["draft", "임시저장"],
+        ].map(([value, label]) => (
+          <Link
+            key={value}
+            href={value === "all" ? "/jobs" : `/jobs?status=${value}`}
+            className={buttonVariants({
+              variant: filter === value ? "default" : "outline",
+              size: "sm",
+            })}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
       <Card>
-        {jobs.length === 0 ? (
+        {filteredJobs.length === 0 ? (
           <CardContent className="p-10 text-center text-muted-foreground">
             {errorMessage
               ? "잠시 후 다시 시도해주세요."
-              : "아직 등록한 공고가 없어요. 첫 공고를 만들어보세요."}
+              : "조건에 맞는 공고가 없어요."}
           </CardContent>
         ) : (
           <Table>
@@ -118,7 +151,7 @@ async function CastingJobsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {jobs.map((job) => (
+              {filteredJobs.map((job) => (
                 <TableRow key={job.id}>
                   <TableCell className="font-medium">
                     <Link
@@ -138,8 +171,10 @@ async function CastingJobsPage() {
                     {formatDeadline(job.deadline)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={JOB_STATUS_LABEL[job.status].variant}>
-                      {JOB_STATUS_LABEL[job.status].text}
+                    <Badge
+                      variant={isJobAccepting(job) ? "default" : "secondary"}
+                    >
+                      {getJobAvailabilityLabel(job)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">

@@ -8,9 +8,11 @@ import { buttonVariants } from "@/components/ui/button";
 
 type HeaderViewer = {
   user: { email?: string | null } | null;
-  profile: { name: string } | null;
+  profile: { name: string; avatar_url?: string | null } | null;
   activeRole: UserRole | null;
   availableRoles: UserRole[];
+  unreadMessages?: number;
+  unreadNotifications?: number;
 };
 
 export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
@@ -29,20 +31,32 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         {showAuthenticatedHeader && viewer.activeRole ? (
           <>
             <div className="hidden md:block">
-              <AppNav role={viewer.activeRole} />
+              <AppNav
+                role={viewer.activeRole}
+                counts={{
+                  messages: viewer.unreadMessages,
+                  notifications: viewer.unreadNotifications,
+                }}
+              />
             </div>
 
             <HeaderUserMenu
               activeRole={viewer.activeRole}
               availableRoles={viewer.availableRoles}
               profileName={viewer.profile?.name ?? "사용자"}
+              avatarUrl={viewer.profile?.avatar_url ?? null}
               userEmail={viewer.user?.email}
             />
 
             <MobileSiteMenu
               activeRole={viewer.activeRole}
               profileName={viewer.profile?.name ?? "사용자"}
+              avatarUrl={viewer.profile?.avatar_url ?? null}
               userEmail={viewer.user?.email}
+              counts={{
+                messages: viewer.unreadMessages,
+                notifications: viewer.unreadNotifications,
+              }}
             />
           </>
         ) : (

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { APP_TABS, getRoleModeLabel } from "@/lib/app-ia";
 import type { UserRole } from "@/types/enums";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,13 +21,20 @@ import { BrandLogo } from "@/components/brand-logo";
 type MobileSiteMenuProps = {
   activeRole: UserRole;
   profileName: string;
+  avatarUrl?: string | null;
   userEmail?: string | null;
+  counts?: {
+    messages?: number;
+    notifications?: number;
+  };
 };
 
 export function MobileSiteMenu({
   activeRole,
   profileName,
+  avatarUrl,
   userEmail,
+  counts = {},
 }: MobileSiteMenuProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -67,6 +74,9 @@ export function MobileSiteMenu({
               className="flex items-center gap-3 rounded-xl transition-colors hover:bg-accent"
             >
               <Avatar size="lg">
+                {avatarUrl ? (
+                  <AvatarImage src={avatarUrl} alt={`${profileName} 프로필 사진`} />
+                ) : null}
                 <AvatarFallback>
                   {getAvatarFallback(profileName || userEmail || "U")}
                 </AvatarFallback>
@@ -96,11 +106,20 @@ export function MobileSiteMenu({
                         : "text-foreground",
                     )}
                   >
-                    <span>{tab.label}</span>
-                    <ChevronRight
-                      aria-hidden="true"
-                      className="size-4 text-muted-foreground"
-                    />
+                      <span>{tab.label}</span>
+                    <span className="flex items-center gap-2">
+                      {getTabCount(tab.href, counts) > 0 ? (
+                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs leading-5 text-primary-foreground">
+                          {getTabCount(tab.href, counts) > 99
+                            ? "99+"
+                            : getTabCount(tab.href, counts)}
+                        </span>
+                      ) : null}
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="size-4 text-muted-foreground"
+                      />
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -124,6 +143,15 @@ export function MobileSiteMenu({
       </DialogContent>
     </Dialog>
   );
+}
+
+function getTabCount(
+  href: string,
+  counts: { messages?: number; notifications?: number },
+) {
+  if (href === "/messages") return counts.messages ?? 0;
+  if (href === "/notifications") return counts.notifications ?? 0;
+  return 0;
 }
 
 function getAvatarFallback(value: string) {

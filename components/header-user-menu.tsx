@@ -7,7 +7,7 @@ import { switchActiveRoleAction } from "@/app/(app)/settings/actions";
 import { getRoleModeLabel } from "@/lib/app-ia";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/enums";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 
@@ -15,6 +15,7 @@ type HeaderUserMenuProps = {
   activeRole: UserRole;
   availableRoles: UserRole[];
   profileName: string;
+  avatarUrl?: string | null;
   userEmail?: string | null;
 };
 
@@ -22,6 +23,7 @@ export function HeaderUserMenu({
   activeRole,
   availableRoles,
   profileName,
+  avatarUrl,
   userEmail,
 }: HeaderUserMenuProps) {
   const otherRole: UserRole = activeRole === "actor" ? "casting" : "actor";
@@ -55,6 +57,9 @@ export function HeaderUserMenu({
             <div className="p-4">
               <div className="flex items-center gap-3">
                 <Avatar size="lg">
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} alt={`${profileName} 프로필 사진`} />
+                  ) : null}
                   <AvatarFallback>
                     {getAvatarFallback(profileName || userEmail || "U")}
                   </AvatarFallback>

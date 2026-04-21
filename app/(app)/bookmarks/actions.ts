@@ -1,0 +1,54 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import type { BookmarkTargetType } from "@/lib/queries/bookmarks";
+
+const TARGET_TYPES = new Set<BookmarkTargetType>(["actor", "job"]);
+const DEFAULT_LIST_NAME = "기본";
+
+export async function toggleBookmarkAction(
+  formData: FormData,
+): Promise<void> {
+  const targetType = String(formData.get("target_type") ?? "") as BookmarkTargetType;
+  const targetId = String(formData.get("target_id") ?? "");
+  const rawRedirectTo = String(formData.get("redirect_to") ?? "");
+  const redirectTo = rawRedirectTo.startsWith("/") ? rawRedirectTo : "/bookmarks";
+
+  if (!TARGET_TYPES.has(targetType) || !targetId) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: existing, error: existingErr } = await supabase
+    .from("bookmarks")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("target_type", targetType)
+    .eq("target_id", targetId)
+    .eq("list_name", DEFAULT_LIST_NAME);
+  if (existingErr) return;
+
+  const isBookmarked = (existing ?? []).length > 0;
+  if (isBookmarked) {
+    const ids = (existing ?? []).map((bookmark) => bookmark.id);
+    const { error } = await supabase.from("bookmarks").delete().in("id", ids);
+    if (error) return;
+  } else {
+    const { error } = await supabase.from("bookmarks").insert({
+      user_id: user.id,
+      target_type: targetType,
+      target_id: targetId,
+      list_name: DEFAULT_LIST_NAME,
+    });
+    if (error) return;
+  }
+
+  revalidatePath(redirectTo);
+  revalidatePath("/bookmarks");
+}

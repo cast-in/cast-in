@@ -40,10 +40,12 @@ export async function listOpenJobsPreview(
   limit = 6,
 ): Promise<OpenJobPreview[]> {
   const supabase = await createClient();
+  const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("jobs")
     .select("id, title, genre, region, deadline, status")
     .eq("status", "open")
+    .or(`deadline.is.null,deadline.gte.${now}`)
     .order("deadline", { ascending: true, nullsFirst: false })
     .limit(limit);
   if (error) throw error;
@@ -56,6 +58,7 @@ export type ActorPreview = {
   region: string | null;
   age: number | null;
   genres: string[];
+  avatar_url: string | null;
 };
 
 export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
@@ -64,6 +67,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
   const { data: actorProfiles, error } = await supabase
     .from("actor_profiles")
     .select("user_id, region, age, genres")
+    .eq("visibility", "public")
     .limit(limit);
   if (error) throw error;
   if (!actorProfiles || actorProfiles.length === 0) return [];
@@ -71,7 +75,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
   const actorIds = actorProfiles.map((actorProfile) => actorProfile.user_id);
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, name")
+    .select("id, name, avatar_url")
     .in("id", actorIds);
 
   const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
@@ -84,13 +88,136 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
       region: actorProfile.region ?? null,
       age: actorProfile.age ?? null,
       genres: actorProfile.genres ?? [],
+      avatar_url: profile?.avatar_url ?? null,
     };
   });
+}
+
+export type SearchActorsParams = {
+  q?: string;
+  region?: string;
+  genre?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type PagedResult<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export async function searchActors(
+  params: SearchActorsParams = {},
+): Promise<PagedResult<ActorPreview>> {
+  const { q, region, genre, page = 1, pageSize = 12 } = params;
+  const supabase = await createClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("actor_profiles")
+    .select("user_id, region, age, genres, profiles!inner(name, avatar_url)", {
+      count: "exact",
+    })
+    .eq("visibility", "public")
+    .order("user_id", { ascending: true })
+    .range(from, to);
+
+  if (q?.trim()) {
+    query = query.ilike("profiles.name", `%${q.trim()}%`);
+  }
+  if (region?.trim()) {
+    query = query.ilike("region", `%${region.trim()}%`);
+  }
+  if (genre?.trim()) {
+    query = query.contains("genres", [genre.trim()]);
+  }
+
+  const { data, count, error } = await query;
+  if (error) throw error;
+
+  const items: ActorPreview[] = (data ?? []).map((row) => {
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    return {
+      id: row.user_id,
+      name: profile?.name ?? "이름 미등록",
+      region: row.region ?? null,
+      age: row.age ?? null,
+      genres: row.genres ?? [],
+      avatar_url: profile?.avatar_url ?? null,
+    };
+  });
+
+  return { items, total: count ?? 0, page, pageSize };
+}
+
+export type SearchJobsParams = {
+  q?: string;
+  region?: string;
+  genre?: string;
+  sort?: "deadline" | "latest";
+  jobState?: "active" | "closed" | "all";
+  page?: number;
+  pageSize?: number;
+};
+
+export async function searchOpenJobs(
+  params: SearchJobsParams = {},
+): Promise<PagedResult<OpenJobPreview>> {
+  const {
+    q,
+    region,
+    genre,
+    sort = "deadline",
+    jobState = "active",
+    page = 1,
+    pageSize = 12,
+  } = params;
+  const supabase = await createClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const now = new Date().toISOString();
+
+  let query = supabase
+    .from("jobs")
+    .select("id, title, genre, region, deadline, status", { count: "exact" })
+    .range(from, to);
+
+  if (jobState === "active") {
+    query = query.eq("status", "open").or(`deadline.is.null,deadline.gte.${now}`);
+  } else if (jobState === "closed") {
+    query = query.or(`status.neq.open,deadline.lt.${now}`);
+  }
+
+  if (q?.trim()) {
+    const pattern = `%${q.trim()}%`;
+    query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`);
+  }
+  if (region?.trim()) {
+    query = query.ilike("region", `%${region.trim()}%`);
+  }
+  if (genre?.trim()) {
+    query = query.ilike("genre", `%${genre.trim()}%`);
+  }
+
+  if (sort === "latest") {
+    query = query.order("created_at", { ascending: false });
+  } else {
+    query = query.order("deadline", { ascending: true, nullsFirst: false });
+  }
+
+  const { data, count, error } = await query;
+  if (error) throw error;
+
+  return { items: data ?? [], total: count ?? 0, page, pageSize };
 }
 
 export type Applicant = {
   id: string;
   memo: string | null;
+  casting_memo: string | null;
   status: ApplicationStatus;
   created_at: string;
   actor_id: string;
@@ -101,7 +228,7 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
   const supabase = await createClient();
   const { data: apps, error } = await supabase
     .from("applications")
-    .select("id, memo, status, created_at, actor_id")
+    .select("id, memo, casting_memo, status, created_at, actor_id")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -120,6 +247,7 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
   return apps.map((a) => ({
     id: a.id,
     memo: a.memo,
+    casting_memo: a.casting_memo,
     status: a.status,
     created_at: a.created_at,
     actor_id: a.actor_id,

@@ -3,14 +3,9 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { BookmarkButton } from "@/components/features/bookmark-button";
+import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
+import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
 import {
   getJob,
   getMyApplicationForJob,
@@ -18,6 +13,8 @@ import {
 } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import type { ApplicationStatus } from "@/types/enums";
+import { ApplyForm } from "./apply-form";
+import { ApplicantsTable } from "./applicants-table";
 
 const STATUS: Record<
   ApplicationStatus,
@@ -56,6 +53,9 @@ export default async function JobDetailPage({
   }
 
   if (!job && !errorMessage) notFound();
+  const bookmarkedJobIds = job
+    ? await listBookmarkedTargetIds("job", [job.id])
+    : new Set<string>();
 
   if (activeRole === "actor") {
     let application: Awaited<ReturnType<typeof getMyApplicationForJob>> = null;
@@ -80,7 +80,11 @@ export default async function JobDetailPage({
 
         {job ? (
           <>
-            <JobSummary job={job} subtitle="오디션 상세" />
+            <JobSummary
+              job={job}
+              subtitle="오디션 상세"
+              bookmarked={bookmarkedJobIds.has(job.id)}
+            />
 
             <Card>
               <CardHeader>
@@ -99,9 +103,11 @@ export default async function JobDetailPage({
                       메시지 보기
                     </Link>
                   </>
+                ) : isJobAccepting(job) ? (
+                  <ApplyForm jobId={job.id} />
                 ) : (
                   <div className="text-sm text-muted-foreground">
-                    아직 이 공고에 지원하지 않았어요.
+                    마감된 공고라 지원할 수 없어요.
                   </div>
                 )}
               </CardContent>
@@ -133,7 +139,11 @@ export default async function JobDetailPage({
 
       {job ? (
         <>
-          <JobSummary job={job} subtitle={`지원자 ${applicants.length}명`} />
+          <JobSummary
+            job={job}
+            subtitle={`지원자 ${applicants.length}명`}
+            bookmarked={bookmarkedJobIds.has(job.id)}
+          />
 
           <Card>
             {applicants.length === 0 ? (
@@ -141,41 +151,7 @@ export default async function JobDetailPage({
                 아직 지원자가 없어요.
               </CardContent>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>이름</TableHead>
-                    <TableHead>지원 사유</TableHead>
-                    <TableHead>상태</TableHead>
-                    <TableHead>액션</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {applicants.map((applicant) => (
-                    <TableRow key={applicant.id}>
-                      <TableCell className="font-medium">
-                        {applicant.actor_name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {applicant.memo ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={STATUS[applicant.status].variant}>
-                          {STATUS[applicant.status].text}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/messages?applicant=${applicant.actor_id}`}
-                          className={buttonVariants({ size: "sm" })}
-                        >
-                          메시지
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ApplicantsTable applicants={applicants} />
             )}
           </Card>
         </>
@@ -187,14 +163,31 @@ export default async function JobDetailPage({
 function JobSummary({
   job,
   subtitle,
+  bookmarked,
 }: {
   job: NonNullable<Awaited<ReturnType<typeof getJob>>>;
   subtitle: string;
+  bookmarked: boolean;
 }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {job.genre ?? "-"} · {job.region ?? "-"}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {job.genre ?? "-"} · {job.region ?? "-"}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={isJobAccepting(job) ? "default" : "secondary"}>
+              {getJobAvailabilityLabel(job)}
+            </Badge>
+          </div>
+        </div>
+        <BookmarkButton
+          targetType="job"
+          targetId={job.id}
+          bookmarked={bookmarked}
+          redirectTo={`/jobs/${job.id}`}
+        />
       </div>
       <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
       <p className="text-sm text-muted-foreground">

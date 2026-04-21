@@ -16,7 +16,7 @@ export const getViewerProfile = cache(async () => {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, name, role, email")
+        .select("id, name, role, email, avatar_url")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
