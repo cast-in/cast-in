@@ -1,29 +1,41 @@
+import fs from "node:fs";
+import path from "node:path";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type LogoItem = {
   name: string;
   src?: string;
+  darkSrc?: string;
   width?: number;
   height?: number;
 };
 
+// public/logos/dark/<같은 파일명>이 있으면 다크모드 전용 에셋으로 사용.
+function resolveDarkSrc(src: string): string | undefined {
+  const darkUrl = src.replace(/^\/logos\//, "/logos/dark/");
+  const fsPath = path.join(process.cwd(), "public", darkUrl);
+  return fs.existsSync(fsPath) ? darkUrl : undefined;
+}
+
 // src 없으면 이름 텍스트가 플레이스홀더로 표시됨.
 const LOGOS: LogoItem[] = [
-  { name: "어비스컴퍼니", src: "/logos/abyss-company.jpg" },
-  { name: "피네이션", src: "/logos/p-nation.jpg" },
+  { name: "피네이션", src: "/logos/p-nation.png" },
   { name: "브랜뉴뮤직", src: "/logos/brand-new-music.png" },
   { name: "DSP미디어", src: "/logos/dsp-media.svg" },
-  { name: "스타쉽엔터테인먼트", src: "/logos/starship-entertainment.jpg" },
+  { name: "스타쉽엔터테인먼트", src: "/logos/starship-entertainment.png" },
   { name: "팬엔터테인먼트", src: "/logos/pan-entertainment.webp" },
-  { name: "래몽래인", src: "/logos/raemongraein.jpg" },
   { name: "에이스토리", src: "/logos/astory.webp" },
   { name: "키이스트", src: "/logos/keyeast.svg" },
   { name: "콘텐츠웨이브", src: "/logos/contents-wave.png" },
 ];
 
 export function LogoMarquee() {
-  const loop = [...LOGOS, ...LOGOS];
+  const resolved = LOGOS.map((logo) => ({
+    ...logo,
+    darkSrc: logo.src ? resolveDarkSrc(logo.src) : undefined,
+  }));
+  const loop = [...resolved, ...resolved];
 
   return (
     <section
@@ -48,15 +60,29 @@ export function LogoMarquee() {
 
 function LogoCell({ logo }: { logo: LogoItem }) {
   if (logo.src) {
+    const imgClass =
+      "h-16 w-auto object-contain opacity-80 transition hover:opacity-100";
+    const width = logo.width ?? 200;
+    const height = logo.height ?? 80;
     return (
       <div className="flex h-16 shrink-0 items-center">
         <Image
           src={logo.src}
           alt={logo.name}
-          width={logo.width ?? 200}
-          height={logo.height ?? 80}
-          className="h-16 w-auto object-contain opacity-80 transition hover:opacity-100"
+          width={width}
+          height={height}
+          className={cn(imgClass, logo.darkSrc && "dark:hidden")}
         />
+        {logo.darkSrc && (
+          <Image
+            src={logo.darkSrc}
+            alt={logo.name}
+            width={width}
+            height={height}
+            className={cn(imgClass, "hidden dark:block")}
+            aria-hidden
+          />
+        )}
       </div>
     );
   }
