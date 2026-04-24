@@ -50,11 +50,11 @@ export async function saveOnboardingProfile(
 
   // 2. 역할별 상세 프로필
   if (role === "actor") {
-    const ageStr = String(formData.get("age") ?? "");
+    const birthDateStr = String(formData.get("birth_date") ?? "").trim();
     const genresStr = String(formData.get("genres") ?? "");
     const payload: ActorProfileUpsert = {
       user_id: user.id,
-      age: ageStr ? Number(ageStr) : null,
+      birth_date: birthDateStr || null,
       region: String(formData.get("region") ?? "") || null,
       genres: genresStr ? parseCsv(genresStr) : [],
     };

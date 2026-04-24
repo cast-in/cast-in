@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
@@ -51,6 +52,7 @@ export function AvatarUploader({
         });
       if (uploadErr) {
         setError(uploadErr.message);
+        toast.error(uploadErr.message);
         return;
       }
 
@@ -64,10 +66,12 @@ export function AvatarUploader({
       if (!result.ok) {
         await supabase.storage.from("avatars").remove([path]);
         setError(result.error);
+        toast.error(result.error);
         return;
       }
 
       setAvatarUrl(publicUrl.publicUrl);
+      toast.success("프로필 사진을 업데이트했어요.");
       router.refresh();
     } finally {
       setUploading(false);
@@ -113,7 +117,7 @@ export function AvatarUploader({
             {uploading ? (
               <>
                 <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                업로드 중...
+                업로드하는 중이에요
               </>
             ) : (
               <>

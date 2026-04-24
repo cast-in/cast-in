@@ -41,8 +41,8 @@ export type Database = {
     Tables: {
       actor_profiles: {
         Row: {
-          age: number | null
           bio: string | null
+          birth_date: string | null
           gender: string | null
           genres: string[]
           height_cm: number | null
@@ -53,8 +53,8 @@ export type Database = {
           visibility: string
         }
         Insert: {
-          age?: number | null
           bio?: string | null
+          birth_date?: string | null
           gender?: string | null
           genres?: string[]
           height_cm?: number | null
@@ -65,8 +65,8 @@ export type Database = {
           visibility?: string
         }
         Update: {
-          age?: number | null
           bio?: string | null
+          birth_date?: string | null
           gender?: string | null
           genres?: string[]
           height_cm?: number | null

@@ -1,3 +1,4 @@
+import { calculateAge, formatDeadline } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -64,7 +65,7 @@ export async function listMyBookmarks(): Promise<BookmarkItem[]> {
       actorIds.length > 0
         ? supabase
             .from("actor_profiles")
-            .select("user_id, region, age, genres, visibility")
+            .select("user_id, region, birth_date, genres, visibility")
             .in("user_id", actorIds)
         : Promise.resolve({ data: [] }),
       actorIds.length > 0
@@ -94,6 +95,7 @@ export async function listMyBookmarks(): Promise<BookmarkItem[]> {
         const profile = profileById.get(bookmark.target_id);
         if (!actor || !profile) return null;
 
+        const age = calculateAge(actor.birth_date ?? null);
         return {
           bookmark_id: bookmark.id,
           target_type: "actor",
@@ -102,7 +104,7 @@ export async function listMyBookmarks(): Promise<BookmarkItem[]> {
           title: profile.name ?? "이름 미등록",
           subtitle: [
             actor.region ?? "지역 미등록",
-            actor.age ? `${actor.age}세` : null,
+            age !== null ? `${age}세` : null,
             actor.genres?.[0] ?? null,
           ]
             .filter(Boolean)
@@ -151,10 +153,4 @@ function uniqueTargetIds(
         .map((bookmark) => bookmark.target_id),
     ),
   );
-}
-
-function formatDeadline(iso: string | null) {
-  if (!iso) return "상시모집";
-  const deadline = new Date(iso);
-  return `${deadline.getMonth() + 1}월 ${deadline.getDate()}일 마감`;
 }

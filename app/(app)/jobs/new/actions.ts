@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getViewerProfile } from "@/lib/queries/viewer";
+import { CreateJobSchema, formatZodError } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
 export type CreateJobResult =
@@ -23,26 +24,28 @@ export async function createJobAction(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "먼저 로그인해주세요." };
 
-  const title = String(formData.get("title") ?? "").trim();
-  if (!title) return { ok: false, error: "공고 제목을 입력해주세요." };
+  const parsed = CreateJobSchema.safeParse({
+    title: formData.get("title") ?? "",
+    description: formData.get("description") ?? "",
+    genre: formData.get("genre") ?? "",
+    region: formData.get("region") ?? "",
+    deadline: formData.get("deadline") ?? "",
+    requirements: formData.get("requirements") ?? "",
+    status: formData.get("status") ?? "open",
+  });
+  if (!parsed.success) {
+    return { ok: false, error: formatZodError(parsed.error) };
+  }
 
-  const requirementsRaw = String(formData.get("requirements") ?? "");
-  const requirements = requirementsRaw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const deadline = String(formData.get("deadline") ?? "");
-  const status = (formData.get("status") === "draft" ? "draft" : "open") as
-    | "open"
-    | "draft";
+  const { title, description, genre, region, deadline, requirements, status } =
+    parsed.data;
 
   const { error } = await supabase.from("jobs").insert({
     casting_id: user.id,
     title,
-    description: String(formData.get("description") ?? "") || null,
-    genre: String(formData.get("genre") ?? "") || null,
-    region: String(formData.get("region") ?? "") || null,
+    description,
+    genre,
+    region,
     deadline: deadline ? new Date(deadline).toISOString() : null,
     requirements,
     status,

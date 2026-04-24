@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -18,7 +19,7 @@ export function GoogleSignInButton() {
     });
     if (error) {
       setLoading(false);
-      alert(`로그인 실패: ${error.message}`);
+      toast.error(`로그인 실패: ${error.message}`);
     }
     // 성공 시 Google 로그인 페이지로 리다이렉트됨
   }
@@ -30,7 +31,7 @@ export function GoogleSignInButton() {
       disabled={loading}
       className={buttonVariants({ size: "lg", variant: "outline" })}
     >
-      {loading ? "이동 중..." : "Google 계정으로 계속하기"}
+      {loading ? "이동하는 중이에요" : "Google 계정으로 계속하기"}
     </button>
   );
 }

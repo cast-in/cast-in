@@ -14,7 +14,7 @@ export type NotificationItem = {
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
   pending: "대기",
-  reviewing: "검토중",
+  reviewing: "검토 중",
   pass: "합격",
   hold: "보류",
   reject: "반려",

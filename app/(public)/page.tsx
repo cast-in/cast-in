@@ -124,24 +124,21 @@ export default async function LandingPage() {
               </h2>
             </div>
 
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+            <div className="mt-10 grid grid-cols-3">
               {STATS.map((stat, i) => (
                 <div
                   key={stat.label}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-2 px-4 py-7 border-primary-foreground/15",
-                    i % 3 !== 0 && "md:border-l",
-                    i >= 3 && "md:border-t",
-                    i % 2 !== 0 && "sm:max-md:border-l",
-                    i >= 2 && "sm:max-md:border-t",
-                    i > 0 && "max-sm:border-t",
+                    "flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 border-primary-foreground/15 px-1.5 py-5 text-center sm:px-4 sm:py-7",
+                    i % 3 !== 0 && "border-l",
+                    i >= 3 && "border-t",
                   )}
                 >
-                  <p className="text-sm font-medium tracking-tight text-primary-foreground/80 md:text-base">
+                  <p className="max-w-full break-keep text-[0.68rem] leading-snug font-medium tracking-tight text-primary-foreground/80 sm:text-sm md:text-base">
                     {stat.label}
                   </p>
-                  <p className="text-2xl font-bold tracking-tight md:text-4xl">
-                    <span className="align-top text-base md:text-xl">+</span>
+                  <p className="whitespace-nowrap text-[1.05rem] leading-none font-bold tracking-tight tabular-nums sm:text-2xl md:text-4xl">
+                    <span className="align-top text-xs sm:text-base md:text-xl">+</span>
                     {stat.value}
                   </p>
                 </div>

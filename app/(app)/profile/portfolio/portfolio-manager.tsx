@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ export function PortfolioManager({
         });
       if (uploadErr) {
         setError(uploadErr.message);
+        toast.error(uploadErr.message);
         return;
       }
 
@@ -93,10 +95,12 @@ export function PortfolioManager({
       if (!result.ok) {
         await supabase.storage.from("portfolio").remove([path]);
         setError(result.error);
+        toast.error(result.error);
         return;
       }
 
       setCaption("");
+      toast.success("포트폴리오에 추가했어요.");
       router.refresh();
     } finally {
       setUploading(false);
@@ -162,7 +166,7 @@ function UploadPanel({
           {uploading ? (
             <>
               <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              업로드 중...
+              업로드하는 중이에요
             </>
           ) : (
             <>
@@ -230,9 +234,11 @@ function PortfolioCard({
       const result = await deletePortfolioItemAction(item.id);
       if (!result.ok) {
         setError(result.error);
+        toast.error(result.error);
         return;
       }
       onDeleted();
+      toast.success("삭제했어요.");
     });
   }
 

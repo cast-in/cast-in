@@ -3,8 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { isJobAccepting } from "@/lib/job-status";
+import {
+  ApplyToJobSchema,
+  UpdateApplicationSchema,
+  formatZodError,
+} from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
-import type { ApplicationStatus } from "@/types/enums";
 
 export type ApplyToJobResult =
   | { ok: true; applicationId: string }
@@ -14,19 +18,22 @@ export type UpdateApplicationResult =
   | { ok: true }
   | { ok: false; error: string };
 
-const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
-  "pending",
-  "reviewing",
-  "pass",
-  "hold",
-  "reject",
-];
-
 export async function updateApplicationAction(
   formData: FormData,
 ): Promise<UpdateApplicationResult> {
-  const applicationId = String(formData.get("application_id") ?? "");
-  if (!applicationId) return { ok: false, error: "지원 정보를 찾을 수 없어요." };
+  const raw = {
+    application_id: formData.get("application_id") ?? "",
+    status: formData.has("status")
+      ? formData.get("status") ?? undefined
+      : undefined,
+    casting_memo: formData.has("casting_memo")
+      ? String(formData.get("casting_memo") ?? "")
+      : undefined,
+  };
+  const parsed = UpdateApplicationSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: formatZodError(parsed.error) };
+  }
 
   const { activeRole } = await getViewerProfile();
   if (activeRole !== "casting") {
@@ -42,7 +49,7 @@ export async function updateApplicationAction(
   const { data: app, error: fetchErr } = await supabase
     .from("applications")
     .select("id, job_id, jobs!inner(casting_id)")
-    .eq("id", applicationId)
+    .eq("id", parsed.data.application_id)
     .maybeSingle();
   if (fetchErr) return { ok: false, error: fetchErr.message };
   if (!app) return { ok: false, error: "지원을 찾을 수 없어요." };
@@ -52,28 +59,18 @@ export async function updateApplicationAction(
     return { ok: false, error: "이 지원을 관리할 권한이 없어요." };
   }
 
-  const update: { status?: ApplicationStatus; casting_memo?: string | null } = {};
-
-  if (formData.has("status")) {
-    const raw = String(formData.get("status") ?? "") as ApplicationStatus;
-    if (!APPLICATION_STATUSES.includes(raw)) {
-      return { ok: false, error: "잘못된 상태 값이에요." };
-    }
-    update.status = raw;
-  }
-
-  if (formData.has("casting_memo")) {
-    update.casting_memo = String(formData.get("casting_memo") ?? "").trim() || null;
-  }
-
-  if (Object.keys(update).length === 0) {
-    return { ok: false, error: "변경할 내용이 없어요." };
-  }
+  const update: {
+    status?: (typeof parsed.data)["status"];
+    casting_memo?: string | null;
+  } = {};
+  if (parsed.data.status !== undefined) update.status = parsed.data.status;
+  if (parsed.data.casting_memo !== undefined)
+    update.casting_memo = parsed.data.casting_memo;
 
   const { error } = await supabase
     .from("applications")
     .update(update)
-    .eq("id", applicationId);
+    .eq("id", parsed.data.application_id);
   if (error) return { ok: false, error: error.message };
 
   revalidatePath(`/jobs/${app.job_id}`);
@@ -83,8 +80,13 @@ export async function updateApplicationAction(
 export async function applyToJobAction(
   formData: FormData,
 ): Promise<ApplyToJobResult> {
-  const jobId = String(formData.get("job_id") ?? "");
-  if (!jobId) return { ok: false, error: "공고 정보를 찾을 수 없어요." };
+  const parsed = ApplyToJobSchema.safeParse({
+    job_id: formData.get("job_id") ?? "",
+    memo: formData.get("memo") ?? "",
+  });
+  if (!parsed.success) {
+    return { ok: false, error: formatZodError(parsed.error) };
+  }
 
   const { activeRole } = await getViewerProfile();
   if (activeRole !== "actor") {
@@ -100,7 +102,7 @@ export async function applyToJobAction(
   const { data: job, error: jobErr } = await supabase
     .from("jobs")
     .select("id, casting_id, status, deadline")
-    .eq("id", jobId)
+    .eq("id", parsed.data.job_id)
     .maybeSingle();
   if (jobErr) return { ok: false, error: jobErr.message };
   if (!job) return { ok: false, error: "공고를 찾을 수 없어요." };
@@ -108,11 +110,11 @@ export async function applyToJobAction(
     return { ok: false, error: "마감된 공고에는 지원할 수 없어요." };
   }
 
-  const memo = String(formData.get("memo") ?? "").trim() || null;
+  const memo = parsed.data.memo;
 
   const { data: application, error: appErr } = await supabase
     .from("applications")
-    .insert({ job_id: jobId, actor_id: user.id, memo })
+    .insert({ job_id: parsed.data.job_id, actor_id: user.id, memo })
     .select("id")
     .maybeSingle();
   if (appErr) {
@@ -127,7 +129,7 @@ export async function applyToJobAction(
     .from("chat_rooms")
     .upsert(
       {
-        job_id: jobId,
+        job_id: parsed.data.job_id,
         actor_id: user.id,
         casting_id: job.casting_id,
       },
@@ -146,7 +148,7 @@ export async function applyToJobAction(
     if (msgErr) return { ok: false, error: msgErr.message };
   }
 
-  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/jobs/${parsed.data.job_id}`);
   revalidatePath("/jobs");
   return { ok: true, applicationId: application.id };
 }

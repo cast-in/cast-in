@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { saveOnboardingProfile } from "./actions";
 
 export type ProfileFormDefaults = {
   name?: string;
   // actor
-  age?: number | null;
+  birth_date?: string | null;
   region?: string | null;
   genres?: string[] | null;
   bio?: string | null;
@@ -51,17 +54,16 @@ export function ProfileForm({
     if (redirectTo) data.set("redirect_to", redirectTo);
     startTransition(async () => {
       const result = await saveOnboardingProfile(data);
-      if (!result.ok) setError(result.error);
+      if (result && !result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+      }
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
-      {error && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <ErrorNotice message={error} size="sm" />}
 
       <div className="grid gap-2">
         <Label htmlFor="name">
@@ -80,15 +82,12 @@ export function ProfileForm({
         <>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="age">연령</Label>
+              <Label htmlFor="birth_date">생년월일</Label>
               <Input
-                id="age"
-                name="age"
-                type="number"
-                min={5}
-                max={100}
-                defaultValue={d.age ?? ""}
-                placeholder="27"
+                id="birth_date"
+                name="birth_date"
+                type="date"
+                defaultValue={d.birth_date ?? ""}
               />
             </div>
             <div className="grid gap-2">
@@ -133,16 +132,15 @@ export function ProfileForm({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="visibility">프로필 공개 범위</Label>
-                <select
+                <Select
                   id="visibility"
                   name="visibility"
                   defaultValue={d.visibility ?? "public"}
-                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="public">전체 공개</option>
                   <option value="connections">연결된 캐스팅만</option>
                   <option value="private">비공개</option>
-                </select>
+                </Select>
               </div>
             </>
           )}
@@ -184,7 +182,7 @@ export function ProfileForm({
       )}
 
       <Button type="submit" disabled={pending} className="mt-2 w-full">
-        {pending ? "저장하는 중..." : (submitLabel ?? "캐스트인 시작하기")}
+        {pending ? "저장하는 중이에요" : (submitLabel ?? "캐스트인 시작하기")}
       </Button>
     </form>
   );

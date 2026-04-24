@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updatePasswordAction } from "../actions";
@@ -23,14 +24,7 @@ export function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
-      {error ? (
-        <div
-          className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-          role="alert"
-        >
-          {error}
-        </div>
-      ) : null}
+      {error ? <ErrorNotice message={error} size="sm" /> : null}
 
       <div className="grid gap-2">
         <Label htmlFor="password">새 비밀번호</Label>
@@ -58,13 +52,13 @@ export function ResetPasswordForm() {
       </div>
 
       <Button type="submit" disabled={pending} className="mt-2 w-full">
-        {pending ? "변경하는 중..." : "비밀번호 변경"}
+        {pending ? "변경하는 중이에요" : "비밀번호 바꾸기"}
       </Button>
       <Link
         href="/login"
         className="text-center text-sm text-muted-foreground hover:text-foreground"
       >
-        로그인으로 돌아가기
+        로그인하기
       </Link>
     </form>
   );

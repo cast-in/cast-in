@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,17 +24,16 @@ export function NewJobForm() {
 
     startTransition(async () => {
       const result = await createJobAction(data);
-      if (!result.ok) setError(result.error);
+      if (result && !result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+      }
     });
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
-      {error && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {error && <ErrorNotice message={error} size="sm" />}
 
       <div className="grid gap-2">
         <Label htmlFor="title">공고 제목</Label>
@@ -91,7 +92,7 @@ export function NewJobForm() {
           disabled={pending}
           className="flex-1"
         >
-          {pending ? "올리는 중..." : "공고 올리기"}
+          {pending ? "올리는 중이에요" : "공고 올리기"}
         </Button>
         <Button
           type="submit"

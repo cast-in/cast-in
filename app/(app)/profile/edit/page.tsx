@@ -3,12 +3,12 @@ import { ChevronLeft } from "lucide-react";
 import { ProfileForm } from "@/app/onboarding/profile/profile-form";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { PageContainer } from "@/components/page-container";
 import { getRoleEntityLabel, getRoleModeLabel } from "@/lib/app-ia";
 import { getViewerProfile } from "@/lib/queries/viewer";
@@ -31,7 +31,7 @@ export default async function ProfileEditPage() {
     return (
       <PageContainer>
         <EditHeader activeRole={activeRole} />
-        <Card className="rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+        <SurfaceCard>
           <CardHeader className="px-6 pt-6">
             <CardDescription>{getRoleModeLabel(activeRole)}</CardDescription>
             <CardTitle className="text-xl">프로필 정보</CardTitle>
@@ -55,14 +55,14 @@ export default async function ProfileEditPage() {
               }}
             />
           </CardContent>
-        </Card>
+        </SurfaceCard>
       </PageContainer>
     );
   }
 
   const { data: actorProfile } = await supabase
     .from("actor_profiles")
-    .select("region, age, genres, bio, skills, visibility")
+    .select("region, birth_date, genres, bio, skills, visibility")
     .eq("user_id", profile.id)
     .maybeSingle();
   const visibility =
@@ -73,7 +73,7 @@ export default async function ProfileEditPage() {
   return (
     <PageContainer>
       <EditHeader activeRole={activeRole} />
-      <Card className="rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+      <SurfaceCard>
         <CardHeader className="px-6 pt-6">
           <CardDescription>{getRoleModeLabel(activeRole)}</CardDescription>
           <CardTitle className="text-xl">프로필 정보</CardTitle>
@@ -91,7 +91,7 @@ export default async function ProfileEditPage() {
             submitLabel="저장하기"
             defaults={{
               name: profile.name,
-              age: actorProfile?.age ?? null,
+              birth_date: actorProfile?.birth_date ?? null,
               region: actorProfile?.region ?? "",
               genres: actorProfile?.genres ?? [],
               skills: actorProfile?.skills ?? [],
@@ -100,7 +100,7 @@ export default async function ProfileEditPage() {
             }}
           />
         </CardContent>
-      </Card>
+      </SurfaceCard>
     </PageContainer>
   );
 }

@@ -1,5 +1,9 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorNotice } from "@/components/ui/error-notice";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { PageContainer } from "@/components/page-container";
 import { cn } from "@/lib/utils";
 import { listMyChatRooms } from "@/lib/queries/chat";
@@ -35,21 +39,24 @@ export default async function MessagesPage({
     null;
 
   return (
-    <PageContainer pageTitle="메시지">
-      {errorMessage && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-          {errorMessage}
-        </div>
-      )}
+    <PageContainer pageTitle="대화">
+      {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-4 md:grid-cols-[280px_1fr]">
         <aside className="space-y-2">
           {rooms.length === 0 && !errorMessage && (
-            <Card>
-              <CardContent className="p-5 text-sm text-muted-foreground">
-                아직 주고받은 대화가 없어요.
-              </CardContent>
-            </Card>
+            <EmptyState
+              title="아직 대화가 없어요"
+              description="지원하거나 제안을 받으면 여기에서 대화할 수 있어요."
+              action={
+                <Link
+                  href="/jobs"
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  내 지원 보기
+                </Link>
+              }
+            />
           )}
           {rooms.map((r) => {
             const isActive = r.id === activeRoomId;
@@ -93,11 +100,11 @@ export default async function MessagesPage({
           {activeRoomId && user ? (
             <MessageRoom roomId={activeRoomId} currentUserId={user.id} />
           ) : (
-            <Card>
-              <CardContent className="grid h-[60vh] place-items-center text-muted-foreground">
-                왼쪽에서 대화를 골라주세요.
-              </CardContent>
-            </Card>
+            <EmptyState
+              className="h-full min-h-[60vh]"
+              title="대화를 선택하면 내용을 볼 수 있어요"
+              description="왼쪽 목록에서 확인할 대화를 골라보세요."
+            />
           )}
         </div>
       </div>

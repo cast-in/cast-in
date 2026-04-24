@@ -1,3 +1,4 @@
+import { calculateAge } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import type { ApplicationStatus } from "@/types/enums";
@@ -66,7 +67,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
 
   const { data: actorProfiles, error } = await supabase
     .from("actor_profiles")
-    .select("user_id, region, age, genres")
+    .select("user_id, region, birth_date, genres")
     .eq("visibility", "public")
     .limit(limit);
   if (error) throw error;
@@ -86,7 +87,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
       id: actorProfile.user_id,
       name: profile?.name ?? "이름 미등록",
       region: actorProfile.region ?? null,
-      age: actorProfile.age ?? null,
+      age: calculateAge(actorProfile.birth_date ?? null),
       genres: actorProfile.genres ?? [],
       avatar_url: profile?.avatar_url ?? null,
     };
@@ -118,7 +119,7 @@ export async function searchActors(
 
   let query = supabase
     .from("actor_profiles")
-    .select("user_id, region, age, genres, profiles!inner(name, avatar_url)", {
+    .select("user_id, region, birth_date, genres, profiles!inner(name, avatar_url)", {
       count: "exact",
     })
     .eq("visibility", "public")
@@ -144,7 +145,7 @@ export async function searchActors(
       id: row.user_id,
       name: profile?.name ?? "이름 미등록",
       region: row.region ?? null,
-      age: row.age ?? null,
+      age: calculateAge(row.birth_date ?? null),
       genres: row.genres ?? [],
       avatar_url: profile?.avatar_url ?? null,
     };

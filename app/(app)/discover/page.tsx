@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorNotice } from "@/components/ui/error-notice";
+import { StatCard } from "@/components/ui/stat-card";
 import { PageContainer } from "@/components/page-container";
 import {
   listActorPreviews,
@@ -16,12 +19,7 @@ import {
   listOpenJobsPreview,
 } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
-
-function formatDeadline(iso: string | null) {
-  if (!iso) return "상시모집";
-  const deadline = new Date(iso);
-  return `${deadline.getMonth() + 1}월 ${deadline.getDate()}일 마감`;
-}
+import { formatDeadline } from "@/lib/format";
 
 export default async function DiscoverPage() {
   const { activeRole } = await getViewerProfile();
@@ -61,12 +59,12 @@ async function CastingDiscoverPage() {
         description="진행 중인 프로젝트를 기준으로 추천 배우를 확인하고 다음으로 볼 후보를 빠르게 추려요."
       />
 
-      {errorMessage && <ErrorCard message={errorMessage} />}
+      {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <SummaryCard label="진행 중 프로젝트" value={openProjects} />
-        <SummaryCard label="검토 중인 인재" value={reviewingCount} />
-        <SummaryCard label="전체 지원자" value={applicantCount} />
+        <StatCard label="진행 중 프로젝트" value={openProjects} />
+        <StatCard label="검토 중인 인재" value={reviewingCount} />
+        <StatCard label="전체 지원자" value={applicantCount} />
       </div>
 
       <section className="space-y-3">
@@ -77,7 +75,10 @@ async function CastingDiscoverPage() {
         />
 
         {actors.length === 0 ? (
-          <EmptyCard message="아직 보여줄 배우가 없어요. 배우 탐색에서 직접 찾아보세요." />
+          <EmptyState
+            title="아직 보여줄 배우가 없어요"
+            description="배우 탐색에서 직접 찾아보세요."
+          />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {actors.map((actor) => (
@@ -145,27 +146,38 @@ async function ActorDiscoverPage() {
   return (
     <PageContainer>
       <HeroCard
-        title="둘러보기"
-        description="내 프로필에 맞는 추천 오디션과 지원 흐름을 같은 화면에서 확인해요."
+        title="오늘 볼 공고를 모았어요"
+        description="마감이 가까운 공고와 내 지원 흐름을 바로 확인해요."
       />
 
-      {errorMessage && <ErrorCard message={errorMessage} />}
+      {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <SummaryCard label="추천 오디션" value={openJobs.length} />
-        <SummaryCard label="검토 중인 지원" value={reviewingCount} />
-        <SummaryCard label="메시지 연결" value={messageCount} />
+        <StatCard label="볼 만한 공고" value={openJobs.length} />
+        <StatCard label="검토 중" value={reviewingCount} />
+        <StatCard label="대화 중" value={messageCount} />
       </div>
 
       <section className="space-y-3">
         <SectionHeader
-          title="추천 오디션"
+          title="추천 공고"
           ctaHref="/talents"
-          ctaLabel="오디션 탐색 보기"
+          ctaLabel="공고 더 보기"
         />
 
         {openJobs.length === 0 ? (
-          <EmptyCard message="지금 바로 지원할 공고가 없어요. 잠시 후 다시 확인해주세요." />
+          <EmptyState
+            title="지금 지원할 수 있는 공고가 없어요"
+            description="새 공고가 올라오면 여기에서 바로 볼 수 있어요."
+            action={
+              <Link
+                href="/talents"
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                공고 찾기
+              </Link>
+            }
+          />
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {openJobs.map((job) => (
@@ -227,37 +239,6 @@ function SectionHeader({
       >
         {ctaLabel} →
       </Link>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-3xl font-bold tracking-tight">
-          {value}
-        </CardTitle>
-      </CardHeader>
-    </Card>
-  );
-}
-
-function EmptyCard({ message }: { message: string }) {
-  return (
-    <Card>
-      <CardContent className="p-8 text-center text-muted-foreground">
-        {message}
-      </CardContent>
-    </Card>
-  );
-}
-
-function ErrorCard({ message }: { message: string }) {
-  return (
-    <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-      {message}
     </div>
   );
 }

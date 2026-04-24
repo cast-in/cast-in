@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/page-container";
 import { BookmarkButton } from "@/components/features/bookmark-button";
 import { listMyBookmarks } from "@/lib/queries/bookmarks";
@@ -11,16 +13,23 @@ export default async function BookmarksPage() {
 
   return (
     <PageContainer
-      pageTitle="보관함"
-      description="관심 있는 배우와 공고를 모아두고 다음 액션을 빠르게 이어가요."
+      pageTitle="저장한 항목"
+      description="다시 보고 싶은 공고와 배우를 모아봤어요."
     >
       {bookmarks.length === 0 ? (
-        <Card>
-          <CardContent className="grid gap-3 p-10 text-center text-muted-foreground">
-            <Bookmark aria-hidden="true" className="mx-auto size-8" />
-            <p>아직 보관한 항목이 없어요.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Bookmark}
+          title="아직 저장한 항목이 없어요"
+          description="공고나 배우를 저장하면 여기에서 바로 다시 볼 수 있어요."
+          action={
+            <Link
+              href="/talents"
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              공고 찾기
+            </Link>
+          }
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {bookmarks.map((item) => (
@@ -51,9 +60,9 @@ export default async function BookmarksPage() {
                 <div className="mt-auto flex flex-wrap gap-2">
                   <Link
                     href={item.href}
-                    className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"
+                    className={buttonVariants({ size: "sm" })}
                   >
-                    보기
+                    자세히 보기
                   </Link>
                   <BookmarkButton
                     targetType={item.target_type}

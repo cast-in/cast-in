@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/page-container";
 import { listMyNotifications } from "@/lib/queries/notifications";
 import {
@@ -29,12 +30,11 @@ export default async function NotificationsPage() {
       }
     >
       {notifications.length === 0 ? (
-        <Card>
-          <CardContent className="grid gap-3 p-10 text-center text-muted-foreground">
-            <Bell aria-hidden="true" className="mx-auto size-8" />
-            <p>아직 알림이 없어요.</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Bell}
+          title="아직 알림이 없어요"
+          description="지원, 메시지, 상태 변경 알림이 생기면 여기에 보여드릴게요."
+        />
       ) : (
         <div className="space-y-3">
           {notifications.map((notification) => (
@@ -64,7 +64,7 @@ export default async function NotificationsPage() {
               <CardContent className="flex flex-wrap gap-2">
                 <Link
                   href={notification.href}
-                  className="inline-flex h-9 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"
+                  className={buttonVariants({ size: "sm" })}
                 >
                   확인하기
                 </Link>

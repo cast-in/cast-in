@@ -8,6 +8,7 @@ import {
   isThemePreference,
   THEME_PREFERENCE_KEY,
 } from "@/lib/theme";
+import { Toaster } from "@/components/toaster";
 
 const notoSansKr = Noto_Sans_KR({
   variable: "--font-sans",
@@ -55,6 +56,7 @@ export default async function RootLayout({
           {getThemePreferenceScript()}
         </Script>
         {children}
+        <Toaster />
       </body>
     </html>
   );

@@ -2,22 +2,21 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Select } from "@/components/ui/select";
 import { BookmarkButton } from "@/components/features/bookmark-button";
 import { PageContainer } from "@/components/page-container";
 import { Pagination } from "@/components/features/pagination";
 import { SearchFilterBar } from "@/components/features/search-filter-bar";
+import { formatDeadline, formatDeadlineSignal } from "@/lib/format";
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
+import type { OpenJobPreview } from "@/lib/queries/jobs";
 import { searchActors, searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
+import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
-
-function formatDeadline(iso: string | null) {
-  if (!iso) return "상시모집";
-  const deadline = new Date(iso);
-  return `${deadline.getMonth() + 1}월 ${deadline.getDate()}일 마감`;
-}
 
 function parsePage(raw: string | string[] | undefined) {
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -117,13 +116,14 @@ async function CastingTalentsPage({
       />
 
       {items.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            {q || region || genre
-              ? "조건에 맞는 배우가 없어요."
-              : "아직 탐색할 배우가 없어요."}
-          </CardContent>
-        </Card>
+        <EmptyState
+          title={
+            q || region || genre
+              ? "조건에 맞는 배우가 없어요"
+              : "아직 탐색할 배우가 없어요"
+          }
+          description={q || region || genre ? "검색어나 필터를 바꿔보세요." : undefined}
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {items.map((actor) => (
@@ -210,19 +210,26 @@ async function ActorTalentsPage({
     "job",
     items.map((job) => job.id),
   );
-  const redirectTo = buildTalentsPath({ q, region, genre, sort, status: jobState, page });
+  const redirectTo = buildTalentsPath({
+    q,
+    region,
+    genre,
+    sort,
+    status: jobState,
+    page,
+  });
 
   return (
     <PageContainer
-      pageTitle="오디션 탐색"
-      description="브랜드, 장르, 지역 기준으로 공고를 비교하고 바로 상세를 확인해요."
+      pageTitle="공고 찾기"
+      description="지역, 장르, 마감일을 보고 나에게 맞는 공고를 찾아요."
     >
       <SearchFilterBar
         action="/talents"
         searchField={{
           name: "q",
           label: "공고 검색",
-          placeholder: "제목·내용 검색",
+          placeholder: "작품명이나 역할을 검색해요",
           defaultValue: q,
         }}
         filters={[
@@ -241,78 +248,65 @@ async function ActorTalentsPage({
         ]}
         extras={
           <div className="grid gap-3 sm:grid-cols-2">
-            <select
-              name="status"
-              defaultValue={jobState}
-              aria-label="공고 상태"
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <option value="active">모집중만</option>
-              <option value="closed">마감/종료</option>
-              <option value="all">전체</option>
-            </select>
-            <select
-              name="sort"
-              defaultValue={sort}
-              aria-label="정렬"
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <option value="deadline">마감 임박순</option>
-              <option value="latest">최신 등록순</option>
-            </select>
+            <div>
+              <label htmlFor="talents-status" className="sr-only">
+                공고 상태
+              </label>
+              <Select
+                id="talents-status"
+                name="status"
+                defaultValue={jobState}
+              >
+                <option value="active">지원 가능한 공고</option>
+                <option value="closed">마감된 공고</option>
+                <option value="all">전체 공고</option>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="talents-sort" className="sr-only">
+                정렬
+              </label>
+              <Select id="talents-sort" name="sort" defaultValue={sort}>
+                <option value="deadline">마감 임박순</option>
+                <option value="latest">최신 등록순</option>
+              </Select>
+            </div>
           </div>
         }
       />
 
       {items.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            {q || region || genre
-              ? "조건에 맞는 공고가 없어요."
-              : "지금 탐색할 오디션이 없어요."}
-          </CardContent>
-        </Card>
+        <EmptyState
+          title={
+            q || region || genre
+              ? "조건에 맞는 공고가 없어요"
+              : "지금 볼 수 있는 공고가 없어요"
+          }
+          description={
+            q || region || genre
+              ? "검색어를 줄이거나 필터를 바꿔보세요."
+              : "새 공고가 올라오면 여기에서 볼 수 있어요."
+          }
+          action={
+            q || region || genre || jobState !== "active" || sort !== "deadline" ? (
+              <Link
+                href="/talents"
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                필터 초기화
+              </Link>
+            ) : null
+          }
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {items.map((job) => (
-            <Card key={job.id} className="h-full">
-              <CardHeader className="space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge
-                      variant={isJobAccepting(job) ? "default" : "secondary"}
-                      className="w-fit"
-                    >
-                      {getJobAvailabilityLabel(job)}
-                    </Badge>
-                    {job.genre ? (
-                      <Badge variant="secondary" className="w-fit">
-                        {job.genre}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <BookmarkButton
-                    targetType="job"
-                    targetId={job.id}
-                    bookmarked={bookmarkedIds.has(job.id)}
-                    redirectTo={redirectTo}
-                    className="shrink-0"
-                  />
-                </div>
-                <CardTitle>{job.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-sm text-muted-foreground">
-                  {job.region ?? "-"} · {formatDeadline(job.deadline)}
-                </div>
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
-                >
-                  공고 보기
-                </Link>
-              </CardContent>
-            </Card>
+            <ActorJobCard
+              key={job.id}
+              job={job}
+              bookmarked={bookmarkedIds.has(job.id)}
+              redirectTo={redirectTo}
+            />
           ))}
         </div>
       )}
@@ -325,6 +319,71 @@ async function ActorTalentsPage({
         total={total}
       />
     </PageContainer>
+  );
+}
+
+function ActorJobCard({
+  job,
+  bookmarked,
+  redirectTo,
+}: {
+  job: OpenJobPreview;
+  bookmarked: boolean;
+  redirectTo: string;
+}) {
+  const accepting = isJobAccepting(job);
+  const deadlineSignal = formatDeadlineSignal(job.deadline);
+
+  return (
+    <Card className="h-full transition-shadow hover:shadow-md">
+      <CardHeader className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <Badge variant={accepting ? "default" : "secondary"} className="w-fit">
+            {deadlineSignal}
+          </Badge>
+          <BookmarkButton
+            targetType="job"
+            targetId={job.id}
+            bookmarked={bookmarked}
+            redirectTo={redirectTo}
+            compact
+            className="-mt-2 -mr-2 shrink-0"
+          />
+        </div>
+        <div className="space-y-2">
+          <CardTitle className="line-clamp-2 text-lg">{job.title}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {job.region ?? "지역 협의"} · {job.genre ?? "장르 미정"}
+          </p>
+        </div>
+      </CardHeader>
+      <CardContent className="mt-auto space-y-4">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <DecisionPill label="상태" value={getJobAvailabilityLabel(job)} />
+          <DecisionPill label="마감" value={formatDeadline(job.deadline)} />
+        </div>
+        <Link
+          href={`/jobs/${job.id}`}
+          className={cn(
+            buttonVariants({ variant: accepting ? "default" : "secondary", size: "sm" }),
+            "w-full",
+          )}
+        >
+          자세히 보기
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DecisionPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-muted/50 px-3 py-2">
+      <div className="text-[0.72rem] font-medium text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-0.5 truncate font-medium">{value}</div>
+    </div>
   );
 }
 

@@ -177,7 +177,7 @@
 ```
 User (Supabase auth.users 연결)
  id, email, role[actor|casting], name, createdAt
- ├─ ActorProfile (userId, age, region, genres[], height, skills, bio, visibility)
+ ├─ ActorProfile (userId, birthDate, region, genres[], height, skills, bio, visibility)
  │   └─ PortfolioItem (actorId, type[image|video], url, caption)
  └─ CastingProfile (userId, companyName, bizNumber, contact, intro)
 

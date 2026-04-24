@@ -4,14 +4,15 @@ import { Mail, MapPin, Pencil, Phone, Sparkles, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { PageContainer } from "@/components/page-container";
 import { getRoleEntityLabel, getRoleModeLabel } from "@/lib/app-ia";
+import { calculateAge } from "@/lib/format";
 import { listMyPortfolio, type PortfolioItem } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { createClient } from "@/lib/supabase/server";
@@ -67,7 +68,7 @@ export default async function ProfilePage() {
           body={intro}
         />
 
-        <Card className="rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+        <SurfaceCard>
           <CardHeader className="px-6 pt-6">
             <CardDescription>기본 정보</CardDescription>
             <CardTitle className="text-xl">프로필 정보</CardTitle>
@@ -78,7 +79,7 @@ export default async function ProfilePage() {
             <DetailItem label="연락처" value={castingProfile?.contact ?? "미등록"} />
             <DetailItem label="이메일" value={email} />
           </CardContent>
-        </Card>
+        </SurfaceCard>
       </PageContainer>
     );
   }
@@ -86,7 +87,7 @@ export default async function ProfilePage() {
   const [{ data: actorProfile }, portfolioItems] = await Promise.all([
     supabase
       .from("actor_profiles")
-      .select("region, age, genres, bio, skills, visibility")
+      .select("region, birth_date, genres, bio, skills, visibility")
       .eq("user_id", profile.id)
       .maybeSingle(),
     listMyPortfolio(),
@@ -100,6 +101,7 @@ export default async function ProfilePage() {
   const location =
     actorProfile?.region ??
     "활동 지역을 아직 등록하지 않았어요.";
+  const age = calculateAge(actorProfile?.birth_date ?? null);
 
   return (
     <PageContainer>
@@ -107,7 +109,7 @@ export default async function ProfilePage() {
         modeLabel={getRoleModeLabel(activeRole)}
         entityLabel={getRoleEntityLabel(activeRole)}
         title={profile.name}
-        subtitle={[location, actorProfile?.age ? `${actorProfile.age}세` : null]
+        subtitle={[location, age !== null ? `${age}세` : null]
           .filter(Boolean)
           .join(" · ")}
         summary={bio}
@@ -164,7 +166,7 @@ export default async function ProfilePage() {
 
 function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
   return (
-    <Card className="rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+    <SurfaceCard>
       <CardHeader className="flex flex-row items-start justify-between gap-3 px-6 pt-6">
         <div className="space-y-1">
           <CardDescription>포트폴리오</CardDescription>
@@ -216,7 +218,7 @@ function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
           </div>
         )}
       </CardContent>
-    </Card>
+    </SurfaceCard>
   );
 }
 
@@ -250,7 +252,7 @@ function ProfileHeroCard({
       : "bg-casting-soft text-casting";
 
   return (
-    <Card className="overflow-hidden rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+    <SurfaceCard>
       <div aria-hidden="true" className={`h-28 md:h-32 ${bannerClassName}`} />
       <div className="px-6 pb-6">
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
@@ -306,7 +308,7 @@ function ProfileHeroCard({
           })}
         </div>
       </div>
-    </Card>
+    </SurfaceCard>
   );
 }
 
@@ -320,7 +322,7 @@ function InfoSectionCard({
   body: string;
 }) {
   return (
-    <Card className="rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+    <SurfaceCard>
       <CardHeader className="px-6 pt-6">
         <CardDescription>{eyebrow}</CardDescription>
         <CardTitle className="text-xl">{title}</CardTitle>
@@ -330,7 +332,7 @@ function InfoSectionCard({
           {body}
         </p>
       </CardContent>
-    </Card>
+    </SurfaceCard>
   );
 }
 
@@ -344,7 +346,7 @@ function ChipSectionCard({
   sections: { label: string; items: string[]; emptyLabel: string }[];
 }) {
   return (
-    <Card className="rounded-[28px] border-none bg-card py-0 shadow-sm ring-1 ring-border/70">
+    <SurfaceCard>
       <CardHeader className="px-6 pt-6">
         <CardDescription>{eyebrow}</CardDescription>
         <CardTitle className="text-xl">{title}</CardTitle>
@@ -369,7 +371,7 @@ function ChipSectionCard({
           </div>
         ))}
       </CardContent>
-    </Card>
+    </SurfaceCard>
   );
 }
 

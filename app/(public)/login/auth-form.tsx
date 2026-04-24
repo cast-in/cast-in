@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -57,20 +58,13 @@ export function AuthForm() {
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {m === "signin" ? "로그인" : "회원가입"}
+            {m === "signin" ? "로그인" : "새로 시작하기"}
           </button>
         ))}
       </div>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
-        {error && (
-          <div
-            className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
+        {error && <ErrorNotice message={error} size="sm" />}
         {notice && (
           <div
             className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-primary"
@@ -121,7 +115,7 @@ export function AuthForm() {
                   setNotice(null);
                 }}
               >
-                비밀번호를 잊으셨나요?
+                비밀번호를 잊었나요?
               </button>
             ) : null}
           </div>
@@ -129,12 +123,12 @@ export function AuthForm() {
 
         <Button type="submit" disabled={pending} className="mt-2 w-full">
           {pending
-            ? "잠시만 기다려주세요..."
+            ? "처리하는 중이에요"
             : mode === "signin"
-              ? "로그인"
+              ? "로그인하기"
               : mode === "signup"
                 ? "가입하고 시작하기"
-                : "재설정 메일 보내기"}
+                : "비밀번호 재설정 메일 받기"}
         </Button>
         {mode === "reset" ? (
           <Button
@@ -147,7 +141,7 @@ export function AuthForm() {
               setNotice(null);
             }}
           >
-            로그인으로 돌아가기
+            로그인하기
           </Button>
         ) : null}
       </form>
@@ -166,7 +160,7 @@ export function AuthForm() {
         className="w-full"
         title="곧 준비돼요"
       >
-        Google로 계속하기 · 곧 준비돼요
+        Google 로그인은 준비 중이에요
       </Button>
     </div>
   );

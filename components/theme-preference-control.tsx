@@ -6,6 +6,7 @@ import {
   THEME_PREFERENCE_KEY,
   type ThemePreference,
 } from "@/lib/theme";
+import { Select } from "@/components/ui/select";
 
 const THEME_OPTIONS: Array<{
   value: ThemePreference;
@@ -64,21 +65,21 @@ export function ThemePreferenceControl({
         <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted-foreground">
           <SelectedIcon aria-hidden="true" className="size-4" />
         </span>
-        <select
+        <Select
           id="theme-preference"
           name="theme-preference"
           value={selectedTheme}
           onChange={(event) =>
             setSelectedTheme(event.target.value as ThemePreference)
           }
-          className="h-10 w-full appearance-none rounded-lg border border-input bg-transparent py-2 pr-10 pl-9 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="appearance-none pr-10 pl-9"
         >
           {THEME_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted-foreground">
           <ChevronDown aria-hidden="true" className="size-4" />
         </span>

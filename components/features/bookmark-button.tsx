@@ -1,4 +1,8 @@
+"use client";
+
+import { useState, useTransition } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
+import { toast } from "sonner";
 import { toggleBookmarkAction } from "@/app/(app)/bookmarks/actions";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,36 +13,55 @@ export function BookmarkButton({
   targetId,
   bookmarked,
   redirectTo,
+  compact = false,
   className,
 }: {
   targetType: BookmarkTargetType;
   targetId: string;
   bookmarked: boolean;
   redirectTo: string;
+  compact?: boolean;
   className?: string;
 }) {
-  const Icon = bookmarked ? BookmarkCheck : Bookmark;
+  const [optimistic, setOptimistic] = useState(bookmarked);
+  const [pending, startTransition] = useTransition();
+  const Icon = optimistic ? BookmarkCheck : Bookmark;
+
+  function handleClick() {
+    const next = !optimistic;
+    setOptimistic(next);
+    const formData = new FormData();
+    formData.set("target_type", targetType);
+    formData.set("target_id", targetId);
+    formData.set("redirect_to", redirectTo);
+    startTransition(async () => {
+      const result = await toggleBookmarkAction(formData);
+      if (!result.ok) {
+        setOptimistic(!next);
+        toast.error(result.error);
+      }
+    });
+  }
 
   return (
-    <form action={toggleBookmarkAction}>
-      <input type="hidden" name="target_type" value={targetType} />
-      <input type="hidden" name="target_id" value={targetId} />
-      <input type="hidden" name="redirect_to" value={redirectTo} />
-      <button
-        type="submit"
-        aria-pressed={bookmarked}
-        aria-label={bookmarked ? "보관함에서 제거" : "보관함에 추가"}
-        className={cn(
-          buttonVariants({
-            variant: bookmarked ? "secondary" : "outline",
-            size: "sm",
-          }),
-          className,
-        )}
-      >
-        <Icon aria-hidden="true" className="size-4" />
-        {bookmarked ? "보관됨" : "보관"}
-      </button>
-    </form>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={pending}
+      aria-pressed={optimistic}
+      aria-label={optimistic ? "저장 취소" : "저장하기"}
+      className={cn(
+        buttonVariants({
+          variant: compact ? "ghost" : optimistic ? "secondary" : "outline",
+          size: compact ? "icon-lg" : "sm",
+        }),
+        compact && "rounded-full text-muted-foreground hover:text-foreground",
+        compact && optimistic && "bg-primary/10 text-primary hover:bg-primary/15",
+        className,
+      )}
+    >
+      <Icon aria-hidden="true" className="size-4" />
+      {compact ? null : optimistic ? "저장됨" : "저장"}
+    </button>
   );
 }

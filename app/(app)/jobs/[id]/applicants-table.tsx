@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Loader2, MessageSquare, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -24,26 +26,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  APPLICATION_STATUS_META,
+  APPLICATION_STATUS_OPTIONS,
+} from "@/lib/application-status";
 import { cn } from "@/lib/utils";
 import type { Applicant } from "@/lib/queries/jobs";
 import type { ApplicationStatus } from "@/types/enums";
 import { updateApplicationAction } from "./actions";
-
-const STATUS_OPTIONS: {
-  value: ApplicationStatus;
-  label: string;
-  variant: "default" | "secondary" | "outline" | "destructive";
-}[] = [
-  { value: "pending", label: "대기", variant: "secondary" },
-  { value: "reviewing", label: "검토중", variant: "default" },
-  { value: "pass", label: "합격", variant: "default" },
-  { value: "hold", label: "보류", variant: "outline" },
-  { value: "reject", label: "반려", variant: "destructive" },
-];
-
-const STATUS_META = Object.fromEntries(
-  STATUS_OPTIONS.map((opt) => [opt.value, opt]),
-) as Record<ApplicationStatus, (typeof STATUS_OPTIONS)[number]>;
 
 export function ApplicantsTable({ applicants }: { applicants: Applicant[] }) {
   return (
@@ -86,6 +76,11 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
       if (!result.ok) {
         setStatus(prev);
         setError(result.error);
+        toast.error(result.error);
+      } else {
+        toast.success(
+          `${applicant.actor_name}님 상태를 ${APPLICATION_STATUS_META[next].label}(으)로 변경했어요.`,
+        );
       }
     });
   }
@@ -98,22 +93,22 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <Badge variant={STATUS_META[status].variant}>
-            {STATUS_META[status].label}
+          <Badge variant={APPLICATION_STATUS_META[status].variant}>
+            {APPLICATION_STATUS_META[status].label}
           </Badge>
-          <select
+          <Select
             value={status}
             onChange={(e) => submitStatus(e.target.value as ApplicationStatus)}
             disabled={pending}
             aria-label="상태 변경"
-            className="h-8 rounded-md border border-input bg-transparent px-2 text-xs shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-8 px-2 text-xs"
           >
-            {STATUS_OPTIONS.map((opt) => (
+            {APPLICATION_STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
-          </select>
+          </Select>
           {pending && (
             <Loader2 aria-hidden="true" className="size-4 animate-spin text-muted-foreground" />
           )}
@@ -174,10 +169,12 @@ function CastingMemoCell({
       const result = await updateApplicationAction(data);
       if (!result.ok) {
         setError(result.error);
+        toast.error(result.error);
         return;
       }
       onSaved(draft.trim() ? draft.trim() : null);
       setOpen(false);
+      toast.success("내부 메모를 저장했어요.");
     });
   }
 
@@ -225,7 +222,7 @@ function CastingMemoCell({
             취소
           </Button>
           <Button onClick={handleSave} disabled={pending}>
-            {pending ? "저장 중..." : "저장"}
+            {pending ? "저장하는 중이에요" : "저장"}
           </Button>
         </DialogFooter>
       </DialogContent>

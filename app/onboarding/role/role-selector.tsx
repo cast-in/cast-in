@@ -13,7 +13,7 @@ const OPTIONS: { value: Role; title: string; desc: string; label: string }[] = [
   {
     value: "actor",
     title: getRoleEntityLabel("actor"),
-    desc: "나에게 맞는 오디션을 찾고 지원 현황을 한눈에 봐요.",
+    desc: "나에게 맞는 공고를 찾고 지원 흐름을 한눈에 봐요.",
     label: getRoleModeLabel("actor"),
   },
   {
@@ -70,7 +70,7 @@ export function RoleSelector() {
         disabled={!selected || submitting}
         className="w-full"
       >
-        {submitting ? "넘어가는 중..." : "다음으로"}
+        {submitting ? "다음 화면으로 이동해요" : "프로필 입력하기"}
       </Button>
     </div>
   );

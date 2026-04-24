@@ -22,37 +22,50 @@ export function SearchFilterBar({
   filters?: FilterField[];
   extras?: ReactNode;
 }) {
+  const formId = action.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+  const searchId = `${formId || "search"}-${searchField.name}`;
+
   return (
     <form
       action={action}
       method="get"
-      className="grid gap-3 rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/70"
+      className="grid gap-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-border/70"
     >
       <div className="relative">
+        <label htmlFor={searchId} className="sr-only">
+          {searchField.label}
+        </label>
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
         />
         <Input
+          id={searchId}
           type="search"
           name={searchField.name}
           defaultValue={searchField.defaultValue}
           placeholder={searchField.placeholder}
-          aria-label={searchField.label}
           className="pl-9"
         />
       </div>
       {(filters.length > 0 || extras) && (
         <div className="grid gap-3 sm:grid-cols-[repeat(auto-fit,minmax(160px,1fr))]">
-          {filters.map((filter) => (
-            <Input
-              key={filter.name}
-              name={filter.name}
-              defaultValue={filter.defaultValue}
-              placeholder={filter.placeholder ?? filter.label}
-              aria-label={filter.label}
-            />
-          ))}
+          {filters.map((filter) => {
+            const filterId = `${formId || "filter"}-${filter.name}`;
+            return (
+              <div key={filter.name}>
+                <label htmlFor={filterId} className="sr-only">
+                  {filter.label}
+                </label>
+                <Input
+                  id={filterId}
+                  name={filter.name}
+                  defaultValue={filter.defaultValue}
+                  placeholder={filter.placeholder ?? filter.label}
+                />
+              </div>
+            );
+          })}
           {extras}
         </div>
       )}

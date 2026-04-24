@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatCard } from "@/components/ui/stat-card";
 import {
   Table,
   TableBody,
@@ -17,33 +19,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageContainer } from "@/components/page-container";
+import type { ApplicationWithJob } from "@/lib/queries/jobs";
 import {
   listMyApplicationsWithJobs,
   listMyJobsWithCounts,
 } from "@/lib/queries/jobs";
+import { ErrorNotice } from "@/components/ui/error-notice";
+import { APPLICATION_STATUS_META } from "@/lib/application-status";
+import { formatDate, formatDeadline } from "@/lib/format";
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { getViewerProfile } from "@/lib/queries/viewer";
-import type { ApplicationStatus } from "@/types/enums";
-
-const APPLICATION_STATUS_LABEL: Record<
-  ApplicationStatus,
-  {
-    text: string;
-    variant: "default" | "secondary" | "outline" | "destructive";
-  }
-> = {
-  pending: { text: "대기", variant: "secondary" },
-  reviewing: { text: "검토중", variant: "default" },
-  pass: { text: "합격", variant: "default" },
-  hold: { text: "보류", variant: "outline" },
-  reject: { text: "반려", variant: "destructive" },
-};
-
-function formatDeadline(iso: string | null) {
-  if (!iso) return "상시모집";
-  const deadline = new Date(iso);
-  return `${deadline.getMonth() + 1}월 ${deadline.getDate()}일 마감`;
-}
 
 export default async function JobsPage({
   searchParams,
@@ -87,7 +72,10 @@ async function CastingJobsPage({
     if (filter === "all") return true;
     if (filter === "open") return isJobAccepting(job);
     if (filter === "closed") {
-      return job.status !== "draft" && (job.status === "closed" || !isJobAccepting(job));
+      return (
+        job.status !== "draft" &&
+        (job.status === "closed" || !isJobAccepting(job))
+      );
     }
     return job.status === "draft";
   });
@@ -102,12 +90,12 @@ async function CastingJobsPage({
         </Link>
       }
     >
-      {errorMessage && <ErrorCard message={errorMessage} />}
+      {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <SummaryCard label="전체 지원자" value={totalApplicants} />
-        <SummaryCard label="검토중" value={totalChecked} />
-        <SummaryCard label="합격" value={totalPass} />
+        <StatCard label="전체 지원자" value={totalApplicants} />
+        <StatCard label="검토 중" value={totalChecked} />
+        <StatCard label="합격" value={totalPass} />
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -130,14 +118,17 @@ async function CastingJobsPage({
         ))}
       </div>
 
-      <Card>
-        {filteredJobs.length === 0 ? (
-          <CardContent className="p-10 text-center text-muted-foreground">
-            {errorMessage
-              ? "잠시 후 다시 시도해주세요."
-              : "조건에 맞는 공고가 없어요."}
-          </CardContent>
-        ) : (
+      {filteredJobs.length === 0 ? (
+        <EmptyState
+          title={
+            errorMessage
+              ? "공고를 보여줄 수 없어요"
+              : "조건에 맞는 공고가 없어요"
+          }
+          description={errorMessage ? "잠시 후 다시 확인해주세요." : undefined}
+        />
+      ) : (
+        <Card>
           <Table>
             <TableHeader>
               <TableRow>
@@ -178,7 +169,8 @@ async function CastingJobsPage({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {job.applicant_count} / {job.reviewing_count} / {job.pass_count}
+                    {job.applicant_count} / {job.reviewing_count} /{" "}
+                    {job.pass_count}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-2">
@@ -203,8 +195,8 @@ async function CastingJobsPage({
               ))}
             </TableBody>
           </Table>
-        )}
-      </Card>
+        </Card>
+      )}
     </PageContainer>
   );
 }
@@ -232,113 +224,190 @@ async function ActorJobsPage() {
 
   return (
     <PageContainer
-      pageTitle="지원 관리"
-      description="지원한 공고의 상태와 최근 대화 흐름을 확인하고 다음 액션을 준비해요."
+      pageTitle="내 지원"
+      description="지원한 공고와 다음에 할 일을 한곳에서 확인해요."
     >
-      {errorMessage && <ErrorCard message={errorMessage} />}
+      {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <SummaryCard label="지원 완료" value={applications.length} />
-        <SummaryCard label="검토중" value={reviewingCount} />
-        <SummaryCard label="합격" value={passCount} />
+        <StatusInsightCard
+          title={`${applications.length}건 지원했어요`}
+          description="최근 지원한 공고부터 보여드려요."
+        />
+        <StatusInsightCard
+          title={`${reviewingCount}건 검토 중이에요`}
+          description="캐스팅팀이 프로필을 확인하고 있어요."
+        />
+        <StatusInsightCard
+          title={
+            passCount > 0 ? `${passCount}건 합격했어요` : "결과를 기다리고 있어요"
+          }
+          description="상태가 바뀌면 알림으로 알려드려요."
+        />
       </div>
 
-      <Card>
-        {applications.length === 0 ? (
-          <CardContent className="p-10 text-center text-muted-foreground">
-            {errorMessage
-              ? "잠시 후 다시 시도해주세요."
-              : "아직 지원한 공고가 없어요. 오디션 탐색에서 공고를 확인해보세요."}
-          </CardContent>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>공고명</TableHead>
-                <TableHead>지원 메모</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>최근 메시지</TableHead>
-                <TableHead>상세</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {applications.map((application) => (
-                <TableRow key={application.id}>
-                  <TableCell className="font-medium">
-                    <div>{application.job_title}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      {application.job_region ?? "-"} ·{" "}
-                      {formatDeadline(application.deadline)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {application.memo ?? "메모 없음"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={APPLICATION_STATUS_LABEL[application.status].variant}>
-                      {APPLICATION_STATUS_LABEL[application.status].text}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {application.last_message_at
-                      ? new Date(application.last_message_at).toLocaleDateString()
-                      : "새 메시지 없음"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Link
-                        href={`/jobs/${application.job_id}`}
-                        className={buttonVariants({
-                          variant: "secondary",
-                          size: "sm",
-                        })}
-                      >
-                        공고 보기
-                      </Link>
-                      <Link
-                        href={`/messages?job=${application.job_id}`}
-                        className={buttonVariants({ size: "sm" })}
-                      >
-                        메시지
-                      </Link>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
+      {applications.length === 0 ? (
+        <EmptyState
+          title={
+            errorMessage
+              ? "지원 내역을 보여줄 수 없어요"
+              : "아직 지원한 공고가 없어요"
+          }
+          description={
+            errorMessage
+              ? "잠시 후 다시 확인해주세요."
+              : "공고를 둘러보고 마음에 드는 역할에 지원해보세요."
+          }
+          action={
+            !errorMessage ? (
+              <Link
+                href="/talents"
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                공고 찾기
+              </Link>
+            ) : null
+          }
+        />
+      ) : (
+        <div className="grid gap-3">
+          {applications.map((application) => (
+            <ApplicationCard key={application.id} application={application} />
+          ))}
+        </div>
+      )}
 
       {applications.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardDescription>지금 확인할 상태</CardDescription>
-            <CardTitle className="text-xl">대기 {pendingCount}건</CardTitle>
-          </CardHeader>
-        </Card>
+        <StatCard label="다음에 볼 지원" value={`대기 ${pendingCount}건`} />
       ) : null}
     </PageContainer>
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
+function StatusInsightCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-3xl font-bold tracking-tight">
-          {value}
-        </CardTitle>
+    <Card className="min-h-28">
+      <CardHeader className="gap-2">
+        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
     </Card>
   );
 }
 
-function ErrorCard({ message }: { message: string }) {
+function ApplicationCard({
+  application,
+}: {
+  application: ApplicationWithJob;
+}) {
+  const statusMeta = APPLICATION_STATUS_META[application.status];
+
   return (
-    <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-      {message}
-    </div>
+    <Card>
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <CardTitle className="line-clamp-2 text-lg">
+              {application.job_title}
+            </CardTitle>
+            <CardDescription>
+              {application.job_region ?? "지역 협의"} ·{" "}
+              {application.job_genre ?? "장르 미정"} ·{" "}
+              {formatDeadline(application.deadline)}
+            </CardDescription>
+          </div>
+          <Badge variant={statusMeta.variant} className="shrink-0">
+            {statusMeta.label}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ApplicationProgress status={application.status} />
+
+        <div className="grid gap-2 rounded-lg bg-muted/40 p-3 text-sm md:grid-cols-3">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">지원일</p>
+            <p className="mt-1">{formatDate(application.created_at)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">최근 대화</p>
+            <p className="mt-1">
+              {application.last_message_at
+                ? formatDate(application.last_message_at)
+                : "아직 대화가 없어요"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">
+              내가 남긴 말
+            </p>
+            <p className="mt-1 line-clamp-1">
+              {application.memo ?? "남긴 말이 없어요"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/jobs/${application.job_id}`}
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
+          >
+            자세히 보기
+          </Link>
+          <Link
+            href={`/messages?job=${application.job_id}`}
+            className={buttonVariants({ size: "sm" })}
+          >
+            대화 보기
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ApplicationProgress({
+  status,
+}: {
+  status: ApplicationWithJob["status"];
+}) {
+  const currentStep =
+    status === "pending"
+      ? 0
+      : status === "reviewing" || status === "hold"
+        ? 1
+        : 2;
+  const steps = ["지원", "검토", "결과"] as const;
+
+  return (
+    <ol aria-label="지원 진행 단계" className="grid grid-cols-3 gap-2">
+      {steps.map((step, index) => {
+        const active = index <= currentStep;
+        return (
+          <li key={step} className="space-y-2">
+            <div
+              className={
+                active ? "h-1.5 rounded-full bg-primary" : "h-1.5 rounded-full bg-muted"
+              }
+            />
+            <p
+              className={
+                active
+                  ? "text-xs font-medium text-foreground"
+                  : "text-xs text-muted-foreground"
+              }
+            >
+              {step}
+            </p>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

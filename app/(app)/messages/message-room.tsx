@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -125,7 +126,7 @@ export function MessageRoom({
       body: text,
     });
     setSending(false);
-    if (error) alert("메시지를 보내지 못했어요. 다시 시도해주세요.");
+    if (error) toast.error("메시지를 보낼 수 없어요. 잠시 후 다시 보내주세요.");
     else setBody("");
   }
 
