@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 
 type PageContainerProps = {
   pageTitle?: string;
-  description?: string;
   actions?: ReactNode;
   size?: "narrow" | "default" | "wide";
   className?: string;
@@ -18,13 +17,12 @@ const sizeClassName = {
 
 export function PageContainer({
   pageTitle,
-  description,
   actions,
   size = "default",
   className,
   children,
 }: PageContainerProps) {
-  const hasHeader = Boolean(pageTitle || description || actions);
+  const hasHeader = Boolean(pageTitle || actions);
 
   return (
     <div className={cn("mx-auto w-full space-y-6", sizeClassName[size], className)}>
@@ -35,11 +33,6 @@ export function PageContainer({
               <h1 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
                 {pageTitle}
               </h1>
-            ) : null}
-            {description ? (
-              <p className="max-w-2xl text-pretty text-sm text-muted-foreground">
-                {description}
-              </p>
             ) : null}
           </div>
           {actions ? (

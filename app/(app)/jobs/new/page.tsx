@@ -9,10 +9,7 @@ export default async function NewJobPage() {
   if (activeRole !== "casting") redirect("/jobs");
 
   return (
-    <PageContainer
-      pageTitle="새 공고 만들기"
-      description="필수 정보만 채워도 모집을 바로 시작할 수 있어요."
-    >
+    <PageContainer pageTitle="새 공고 만들기">
       <Card>
         <CardContent className="p-6">
           <NewJobForm />

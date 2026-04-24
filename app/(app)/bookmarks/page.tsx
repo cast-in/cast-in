@@ -12,10 +12,7 @@ export default async function BookmarksPage() {
   const bookmarks = await listMyBookmarks();
 
   return (
-    <PageContainer
-      pageTitle="저장한 항목"
-      description="다시 보고 싶은 공고와 배우를 모아봤어요."
-    >
+    <PageContainer pageTitle="저장한 항목">
       {bookmarks.length === 0 ? (
         <EmptyState
           icon={Bookmark}

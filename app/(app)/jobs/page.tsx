@@ -83,7 +83,6 @@ async function CastingJobsPage({
   return (
     <PageContainer
       pageTitle="공고 관리"
-      description="내가 올린 공고와 지원자 현황을 한눈에 확인해요."
       actions={
         <Link href="/jobs/new" className={buttonVariants()}>
           새 공고 만들기
@@ -223,10 +222,7 @@ async function ActorJobsPage() {
   ).length;
 
   return (
-    <PageContainer
-      pageTitle="내 지원"
-      description="지원한 공고와 다음에 할 일을 한곳에서 확인해요."
-    >
+    <PageContainer pageTitle="내 지원">
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">

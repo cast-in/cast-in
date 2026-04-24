@@ -87,10 +87,7 @@ async function CastingTalentsPage({
   const redirectTo = buildTalentsPath({ q, region, genre, page });
 
   return (
-    <PageContainer
-      pageTitle="배우 탐색"
-      description="프로필 카드 중심으로 배우를 비교하고 다음으로 볼 후보를 빠르게 추려요."
-    >
+    <PageContainer pageTitle="배우 탐색">
       <SearchFilterBar
         action="/talents"
         searchField={{
@@ -220,10 +217,7 @@ async function ActorTalentsPage({
   });
 
   return (
-    <PageContainer
-      pageTitle="공고 찾기"
-      description="지역, 장르, 마감일을 보고 나에게 맞는 공고를 찾아요."
-    >
+    <PageContainer pageTitle="공고 찾기">
       <SearchFilterBar
         action="/talents"
         searchField={{

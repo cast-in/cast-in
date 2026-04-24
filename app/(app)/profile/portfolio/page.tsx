@@ -16,7 +16,6 @@ export default async function PortfolioPage() {
   return (
     <PageContainer
       pageTitle="포트폴리오 관리"
-      description="사진·영상을 올려 캐스팅 담당자에게 나를 보여주세요."
       actions={
         <Link
           href="/profile"

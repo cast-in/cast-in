@@ -18,7 +18,6 @@ export default async function NotificationsPage() {
   return (
     <PageContainer
       pageTitle="알림"
-      description="지원, 메시지, 상태 변경처럼 놓치면 안 되는 업데이트를 모아봤어요."
       actions={
         unreadCount > 0 ? (
           <form action={markAllNotificationsReadAction}>
