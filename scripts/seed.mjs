@@ -2,7 +2,8 @@
 //
 // 실행:
 //   node --env-file=.env.local scripts/seed.mjs
-//   node --env-file=.env.local scripts/seed.mjs --reset   # 기존 seed 유저 제거 후 재생성
+//   node --env-file=.env.local scripts/seed.mjs --reset          # 기존 seed 유저 제거 후 재생성
+//   node --env-file=.env.local scripts/seed.mjs --avatars-only   # 기존 seed 유저의 avatar_url만 갱신
 //
 // 필요: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL in .env.local
 
@@ -21,6 +22,20 @@ const SEED_PASSWORD = "seedPass123!";
 
 const args = new Set(process.argv.slice(2));
 const RESET = args.has("--reset");
+const AVATARS_ONLY = args.has("--avatars-only");
+
+function actorAvatarUrl(email) {
+  // pravatar: 시드 기반으로 실사 느낌의 프로필 사진 반환
+  return `https://i.pravatar.cc/300?u=${encodeURIComponent(email)}`;
+}
+function castingAvatarUrl(company) {
+  // DiceBear initials: 회사 로고 스타일
+  const palette = ["c0aede", "b6e3f4", "ffd5dc", "ffdfbf", "d1d4f9"];
+  let hash = 0;
+  for (const ch of company) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const bg = palette[hash % palette.length];
+  return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(company)}&backgroundColor=${bg}&fontWeight=600`;
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -206,10 +221,10 @@ async function createUser(email, name, role) {
   return data.user.id;
 }
 
-async function upsertProfile({ id, role, name, email }) {
+async function upsertProfile({ id, role, name, email, avatar_url }) {
   const { error } = await supabase
     .from("profiles")
-    .upsert({ id, role, name, email });
+    .upsert({ id, role, name, email, avatar_url });
   if (error) throw new Error(`profiles upsert(${email}) 실패: ${error.message}`);
 }
 
@@ -238,9 +253,53 @@ async function insertCastingProfile(userId, opts) {
   if (error) throw new Error(`casting_profiles insert 실패: ${error.message}`);
 }
 
+// ───────────── 아바타만 패치 ─────────────
+async function patchAvatarsOnly() {
+  let page = 1;
+  let updated = 0;
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw new Error("listUsers 실패: " + error.message);
+    const seedUsers = data.users.filter((u) => (u.email ?? "").startsWith(SEED_EMAIL_PREFIX));
+
+    for (const u of seedUsers) {
+      const email = u.email;
+      const role = u.user_metadata?.role;
+      let avatar_url = null;
+      if (role === "actor") {
+        avatar_url = actorAvatarUrl(email);
+      } else if (role === "casting") {
+        // 회사명이 casting_profiles에 저장됨 → 조회해서 시드로 사용
+        const { data: cp } = await supabase
+          .from("casting_profiles")
+          .select("company_name")
+          .eq("user_id", u.id)
+          .maybeSingle();
+        avatar_url = castingAvatarUrl(cp?.company_name ?? email);
+      } else {
+        continue;
+      }
+      const { error: upErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url })
+        .eq("id", u.id);
+      if (upErr) console.warn(`⚠ avatar update 실패(${email}):`, upErr.message);
+      else updated += 1;
+    }
+
+    if (data.users.length < 200) break;
+    page += 1;
+  }
+  console.log(`🖼  아바타 업데이트 완료: ${updated}명`);
+}
+
 // ───────────── 메인 ─────────────
 async function main() {
   console.log(`🚀 Supabase: ${SUPABASE_URL}`);
+  if (AVATARS_ONLY) {
+    await patchAvatarsOnly();
+    return;
+  }
   if (RESET) await deleteSeedUsers();
 
   // 1. 캐스팅 유저
@@ -250,7 +309,7 @@ async function main() {
     const { name: company, contactLead } = castingCompanies[i];
     const email = seedEmail("casting", i + 1);
     const id = await createUser(email, contactLead, "casting");
-    await upsertProfile({ id, role: "casting", name: contactLead, email });
+    await upsertProfile({ id, role: "casting", name: contactLead, email, avatar_url: castingAvatarUrl(company) });
     await insertCastingProfile(id, {
       company_name: company,
       contact: `010-${1000 + Math.floor(random() * 8999)}-${1000 + Math.floor(random() * 8999)}`,
@@ -278,7 +337,7 @@ async function main() {
 
     const email = seedEmail("actor", i + 1);
     const id = await createUser(email, name, "actor");
-    await upsertProfile({ id, role: "actor", name, email });
+    await upsertProfile({ id, role: "actor", name, email, avatar_url: actorAvatarUrl(email) });
     await insertActorProfile(id, {
       birth_date: randomBirthDate(),
       gender,

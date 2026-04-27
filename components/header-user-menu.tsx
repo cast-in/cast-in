@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { Popover } from "@base-ui/react/popover";
-import { ChevronDown, Repeat2, Settings } from "lucide-react";
+import { Bookmark, ChevronDown, LogOut, Repeat2, Settings, UserRound } from "lucide-react";
+import { signOutAction } from "@/app/(public)/login/actions";
 import { switchActiveRoleAction } from "@/app/(app)/settings/actions";
 import { getRoleModeLabel } from "@/lib/app-ia";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,22 @@ export function HeaderUserMenu({
             </div>
 
             <div className="mt-3 space-y-2">
+              <Link
+                href="/profile"
+                className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              >
+                <span>내 프로필</span>
+                <UserRound aria-hidden="true" className="size-4" />
+              </Link>
+
+              <Link
+                href="/bookmarks"
+                className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              >
+                <span>저장한 항목</span>
+                <Bookmark aria-hidden="true" className="size-4" />
+              </Link>
+
               {otherRoleEnabled ? (
                 <form action={switchActiveRoleAction}>
                   <input type="hidden" name="role" value={otherRole} />
@@ -114,6 +131,19 @@ export function HeaderUserMenu({
                 <span>설정</span>
                 <Settings aria-hidden="true" className="size-4" />
               </Link>
+
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className={cn(
+                    buttonVariants({ variant: "ghost" }),
+                    "w-full justify-between text-destructive hover:bg-destructive/10 hover:text-destructive",
+                  )}
+                >
+                  <span>로그아웃</span>
+                  <LogOut aria-hidden="true" className="size-4" />
+                </button>
+              </form>
             </div>
           </Popover.Popup>
         </Popover.Positioner>

@@ -61,7 +61,7 @@ export default async function MessagesPage({
           {rooms.map((r) => {
             const isActive = r.id === activeRoomId;
             return (
-              <a key={r.id} href={`/messages?room=${r.id}`} className="block">
+              <Link key={r.id} href={`/messages?room=${r.id}`} className="block">
                 <Card
                   className={cn(
                     "transition-colors",
@@ -91,7 +91,7 @@ export default async function MessagesPage({
                     )}
                   </CardContent>
                 </Card>
-              </a>
+              </Link>
             );
           })}
         </aside>

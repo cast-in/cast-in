@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Menu, Settings, X } from "lucide-react";
+import { Bookmark, ChevronRight, LogOut, Menu, Settings, X } from "lucide-react";
+import { signOutAction } from "@/app/(public)/login/actions";
 import { useState } from "react";
 import { APP_TABS, getRoleModeLabel } from "@/lib/app-ia";
 import type { UserRole } from "@/types/enums";
@@ -69,7 +70,7 @@ export function MobileSiteMenu({
 
           <div className="mt-6 rounded-2xl border bg-muted/30 p-4">
             <Link
-              href="/settings"
+              href="/profile"
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl transition-colors hover:bg-accent"
             >
@@ -126,7 +127,18 @@ export function MobileSiteMenu({
             </ul>
           </nav>
 
-          <div className="mt-6">
+          <div className="mt-6 grid gap-2">
+            <Link
+              href="/bookmarks"
+              onClick={() => setOpen(false)}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "lg" }),
+                "w-full justify-center",
+              )}
+            >
+              <Bookmark aria-hidden="true" />
+              저장한 항목
+            </Link>
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
@@ -138,6 +150,18 @@ export function MobileSiteMenu({
               <Settings aria-hidden="true" />
               설정 보기
             </Link>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "lg" }),
+                  "w-full justify-center text-destructive hover:bg-destructive/10 hover:text-destructive",
+                )}
+              >
+                <LogOut aria-hidden="true" />
+                로그아웃
+              </button>
+            </form>
           </div>
         </div>
       </DialogContent>

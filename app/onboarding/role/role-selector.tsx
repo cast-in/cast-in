@@ -1,9 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { getRoleEntityLabel, getRoleModeLabel } from "@/lib/app-ia";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -25,15 +25,8 @@ const OPTIONS: { value: Role; title: string; desc: string; label: string }[] = [
 ];
 
 export function RoleSelector() {
-  const router = useRouter();
   const [selected, setSelected] = useState<Role | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleNext() {
-    if (!selected) return;
-    setSubmitting(true);
-    router.push(`/onboarding/profile?role=${selected}`);
-  }
+  const profileHref = selected ? `/onboarding/profile?role=${selected}` : null;
 
   return (
     <div className="space-y-4">
@@ -64,14 +57,15 @@ export function RoleSelector() {
         })}
       </div>
 
-      <Button
-        type="button"
-        onClick={handleNext}
-        disabled={!selected || submitting}
-        className="w-full"
-      >
-        {submitting ? "다음 화면으로 이동해요" : "프로필 입력하기"}
-      </Button>
+      {profileHref ? (
+        <Link href={profileHref} className={cn(buttonVariants(), "w-full")}>
+          프로필 입력하기
+        </Link>
+      ) : (
+        <Button type="button" disabled className="w-full">
+          프로필 입력하기
+        </Button>
+      )}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -26,16 +26,12 @@ export function ModeSwitcher({
   activeRole: UserRole;
   availableRoles: readonly UserRole[];
 }) {
-  const router = useRouter();
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleToggle = (role: UserRole) => {
     if (role === activeRole) return;
-    if (!availableRoles.includes(role)) {
-      router.push(`/onboarding/profile?role=${role}&intent=add`);
-      return;
-    }
+    if (!availableRoles.includes(role)) return;
     setPendingRole(role);
   };
 
@@ -65,12 +61,21 @@ export function ModeSwitcher({
                 {!enabled ? <Badge variant="secondary">미추가</Badge> : null}
               </div>
 
-              <Switch
-                checked={active}
-                disabled={active || isPending}
-                onCheckedChange={() => handleToggle(role)}
-                aria-label={`${getRoleModeLabel(role)}로 전환`}
-              />
+              {enabled ? (
+                <Switch
+                  checked={active}
+                  disabled={active || isPending}
+                  onCheckedChange={() => handleToggle(role)}
+                  aria-label={`${getRoleModeLabel(role)}로 전환`}
+                />
+              ) : (
+                <Link
+                  href={`/onboarding/profile?role=${role}&intent=add`}
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  추가하기
+                </Link>
+              )}
             </div>
           );
         })}

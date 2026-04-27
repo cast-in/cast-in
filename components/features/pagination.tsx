@@ -71,17 +71,25 @@ function PageLink({
     disabled && "pointer-events-none opacity-50",
   );
   const Icon = icon === "prev" ? ChevronLeft : ChevronRight;
-
-  return (
-    <Link
-      href={disabled ? "#" : href}
-      className={className}
-      aria-disabled={disabled}
-      tabIndex={disabled ? -1 : 0}
-    >
+  const content = (
+    <>
       {icon === "prev" && <Icon aria-hidden="true" className="size-4" />}
       {label}
       {icon === "next" && <Icon aria-hidden="true" className="size-4" />}
+    </>
+  );
+
+  if (disabled) {
+    return (
+      <span className={className} aria-disabled="true">
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {content}
     </Link>
   );
 }
