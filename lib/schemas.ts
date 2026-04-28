@@ -41,6 +41,11 @@ export const ApplyToJobSchema = z.object({
   memo: optionalString,
 });
 
+export const StartJobConversationSchema = z.object({
+  job_id: z.string().uuid("공고 정보를 찾을 수 없어요."),
+  actor_id: z.string().uuid("배우 정보를 찾을 수 없어요.").optional(),
+});
+
 export const UpdateApplicationSchema = z
   .object({
     application_id: z.string().uuid("지원 정보를 찾을 수 없어요."),

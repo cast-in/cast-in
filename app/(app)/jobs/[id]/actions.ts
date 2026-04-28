@@ -5,6 +5,7 @@ import { getViewerProfile } from "@/lib/queries/viewer";
 import { isJobAccepting } from "@/lib/job-status";
 import {
   ApplyToJobSchema,
+  StartJobConversationSchema,
   UpdateApplicationSchema,
   formatZodError,
 } from "@/lib/schemas";
@@ -12,6 +13,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ApplyToJobResult =
   | { ok: true; applicationId: string }
+  | { ok: false; error: string };
+
+export type StartJobConversationResult =
+  | { ok: true; roomId: string }
   | { ok: false; error: string };
 
 export type UpdateApplicationResult =
@@ -101,7 +106,7 @@ export async function applyToJobAction(
 
   const { data: job, error: jobErr } = await supabase
     .from("jobs")
-    .select("id, casting_id, status, deadline")
+    .select("id, status, deadline")
     .eq("id", parsed.data.job_id)
     .maybeSingle();
   if (jobErr) return { ok: false, error: jobErr.message };
@@ -125,12 +130,72 @@ export async function applyToJobAction(
   }
   if (!application) return { ok: false, error: "지원 처리에 실패했어요." };
 
+  revalidatePath(`/jobs/${parsed.data.job_id}`);
+  revalidatePath("/jobs");
+  return { ok: true, applicationId: application.id };
+}
+
+export async function startJobConversationAction(
+  formData: FormData,
+): Promise<StartJobConversationResult> {
+  const parsed = StartJobConversationSchema.safeParse({
+    job_id: formData.get("job_id") ?? "",
+    actor_id: formData.has("actor_id")
+      ? formData.get("actor_id") ?? undefined
+      : undefined,
+  });
+  if (!parsed.success) {
+    return { ok: false, error: formatZodError(parsed.error) };
+  }
+
+  const { activeRole } = await getViewerProfile();
+  if (activeRole !== "actor" && activeRole !== "casting") {
+    return { ok: false, error: "대화를 시작할 수 있는 권한이 없어요." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "먼저 로그인해주세요." };
+
+  const { data: job, error: jobErr } = await supabase
+    .from("jobs")
+    .select("id, casting_id")
+    .eq("id", parsed.data.job_id)
+    .maybeSingle();
+  if (jobErr) return { ok: false, error: jobErr.message };
+  if (!job) return { ok: false, error: "공고를 찾을 수 없어요." };
+
+  const actorId =
+    activeRole === "actor" ? user.id : (parsed.data.actor_id ?? null);
+  if (!actorId) {
+    return { ok: false, error: "메시지를 보낼 배우를 찾을 수 없어요." };
+  }
+
+  if (activeRole === "casting") {
+    if (job.casting_id !== user.id) {
+      return { ok: false, error: "이 공고의 지원자에게만 메시지를 보낼 수 있어요." };
+    }
+
+    const { data: application, error: applicationErr } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("job_id", parsed.data.job_id)
+      .eq("actor_id", actorId)
+      .maybeSingle();
+    if (applicationErr) return { ok: false, error: applicationErr.message };
+    if (!application) {
+      return { ok: false, error: "지원자를 찾을 수 없어요." };
+    }
+  }
+
   const { data: room, error: roomErr } = await supabase
     .from("chat_rooms")
     .upsert(
       {
         job_id: parsed.data.job_id,
-        actor_id: user.id,
+        actor_id: actorId,
         casting_id: job.casting_id,
       },
       { onConflict: "job_id,actor_id,casting_id" },
@@ -139,16 +204,8 @@ export async function applyToJobAction(
     .maybeSingle();
   if (roomErr) return { ok: false, error: roomErr.message };
 
-  if (memo && room) {
-    const { error: msgErr } = await supabase.from("messages").insert({
-      room_id: room.id,
-      sender_id: user.id,
-      body: memo,
-    });
-    if (msgErr) return { ok: false, error: msgErr.message };
-  }
+  if (!room) return { ok: false, error: "대화방을 열 수 없어요." };
 
-  revalidatePath(`/jobs/${parsed.data.job_id}`);
-  revalidatePath("/jobs");
-  return { ok: true, applicationId: application.id };
+  revalidatePath("/messages");
+  return { ok: true, roomId: room.id };
 }

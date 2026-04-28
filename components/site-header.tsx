@@ -26,7 +26,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-5 py-3">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
         <Link href="/">
           <BrandLogo size={32} textClassName="text-lg" />
         </Link>
@@ -51,6 +51,12 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
                 userEmail={viewer.user?.email}
               />
 
+              <NotificationBell
+                unreadCount={viewer.unreadNotifications ?? 0}
+                notifications={viewer.recentNotifications ?? []}
+                panelClassName="right-[-2.75rem] md:right-0"
+              />
+
               <MobileSiteMenu
                 activeRole={viewer.activeRole}
                 profileName={viewer.profile?.name ?? "사용자"}
@@ -59,11 +65,6 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
                 counts={{
                   messages: viewer.unreadMessages,
                 }}
-              />
-
-              <NotificationBell
-                unreadCount={viewer.unreadNotifications ?? 0}
-                notifications={viewer.recentNotifications ?? []}
               />
             </div>
           </>

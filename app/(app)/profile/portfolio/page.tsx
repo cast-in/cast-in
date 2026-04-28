@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { buttonVariants } from "@/components/ui/button";
+import { BackButton } from "@/components/features/back-button";
 import { PageContainer } from "@/components/page-container";
 import { listMyPortfolio } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
@@ -14,17 +13,13 @@ export default async function PortfolioPage() {
   const items = await listMyPortfolio();
 
   return (
-    <PageContainer
-      pageTitle="포트폴리오 관리"
-      actions={
-        <Link
-          href="/profile"
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
-        >
-          ← 프로필로
-        </Link>
-      }
-    >
+    <PageContainer>
+      <header className="flex items-center gap-2">
+        <BackButton fallbackHref="/profile" />
+        <h1 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
+          포트폴리오 관리
+        </h1>
+      </header>
       <PortfolioManager userId={profile.id} initialItems={items} />
     </PageContainer>
   );

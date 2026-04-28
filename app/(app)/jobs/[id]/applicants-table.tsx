@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2, MessageSquare, Pencil } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +33,7 @@ import { cn } from "@/lib/utils";
 import type { Applicant } from "@/lib/queries/jobs";
 import type { ApplicationStatus } from "@/types/enums";
 import { updateApplicationAction } from "./actions";
+import { JobConversationButton } from "./job-conversation-button";
 
 export function ApplicantsTable({ applicants }: { applicants: Applicant[] }) {
   return (
@@ -124,13 +124,13 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
         />
       </TableCell>
       <TableCell>
-        <Link
-          href={`/messages?applicant=${applicant.actor_id}`}
-          className={buttonVariants({ size: "sm" })}
-        >
-          <MessageSquare aria-hidden="true" className="size-4" />
-          메시지
-        </Link>
+        <JobConversationButton
+          jobId={applicant.job_id}
+          actorId={applicant.actor_id}
+          label="메시지"
+          size="sm"
+          variant="default"
+        />
       </TableCell>
     </TableRow>
   );

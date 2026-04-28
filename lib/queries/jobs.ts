@@ -268,6 +268,7 @@ export async function searchOpenJobs(
 
 export type Applicant = {
   id: string;
+  job_id: string;
   memo: string | null;
   casting_memo: string | null;
   status: ApplicationStatus;
@@ -280,7 +281,7 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
   const supabase = await createClient();
   const { data: apps, error } = await supabase
     .from("applications")
-    .select("id, memo, casting_memo, status, created_at, actor_id")
+    .select("id, job_id, memo, casting_memo, status, created_at, actor_id")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -298,6 +299,7 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
 
   return apps.map((a) => ({
     id: a.id,
+    job_id: a.job_id,
     memo: a.memo,
     casting_memo: a.casting_memo,
     status: a.status,

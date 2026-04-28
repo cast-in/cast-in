@@ -1,9 +1,7 @@
 import type { ComponentType } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, MapPin, Ruler, Sparkles, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import {
   CardContent,
   CardDescription,
@@ -11,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { BackButton } from "@/components/features/back-button";
 import { BookmarkButton } from "@/components/features/bookmark-button";
 import { SocialLinksList } from "@/components/features/social-links-list";
 import { PageContainer } from "@/components/page-container";
@@ -53,13 +52,7 @@ export default async function ActorDetailPage({
 
   return (
     <PageContainer size="wide">
-      <Link
-        href="/talents"
-        className={buttonVariants({ variant: "ghost", size: "sm" })}
-      >
-        ← 배우 탐색
-      </Link>
-
+      {errorMessage && !actor ? <BackButton fallbackHref="/talents" /> : null}
       {errorMessage ? <ErrorNotice message={errorMessage} /> : null}
 
       {actor ? (
@@ -132,9 +125,12 @@ function ActorHero({
           ))}
         </div>
 
-        <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-          {actor.name}
-        </h1>
+        <div className="mt-4 flex items-center gap-2">
+          <BackButton fallbackHref="/talents" />
+          <h1 className="min-w-0 text-3xl font-bold tracking-tight md:text-4xl">
+            {actor.name}
+          </h1>
+        </div>
         <p className="mt-2 text-sm text-muted-foreground md:text-base">
           {subtitle}
         </p>

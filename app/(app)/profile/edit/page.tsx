@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BackButton } from "@/components/features/back-button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { PageContainer } from "@/components/page-container";
 import { getRoleModeLabel } from "@/lib/app-ia";
@@ -12,7 +13,6 @@ import { getViewerProfile } from "@/lib/queries/viewer";
 import { parseSocialLinks } from "@/lib/social-links";
 import { createClient } from "@/lib/supabase/server";
 import { AvatarUploader } from "./avatar-uploader";
-import { BackButton } from "./back-button";
 
 export default async function ProfileEditPage() {
   const { profile, activeRole } = await getViewerProfile();
@@ -108,7 +108,7 @@ export default async function ProfileEditPage() {
 function EditHeader() {
   return (
     <header className="flex items-center gap-2">
-      <BackButton />
+      <BackButton fallbackHref="/profile" />
       <h1 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
         프로필 수정
       </h1>

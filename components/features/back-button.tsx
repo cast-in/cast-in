@@ -3,8 +3,19 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function BackButton() {
+type BackButtonProps = {
+  fallbackHref: string;
+  ariaLabel?: string;
+  className?: string;
+};
+
+export function BackButton({
+  fallbackHref,
+  ariaLabel = "이전 페이지로 돌아가기",
+  className,
+}: BackButtonProps) {
   const router = useRouter();
 
   function handleBack() {
@@ -13,7 +24,7 @@ export function BackButton() {
       return;
     }
 
-    router.push("/profile");
+    router.push(fallbackHref);
   }
 
   return (
@@ -21,8 +32,8 @@ export function BackButton() {
       type="button"
       variant="ghost"
       size="icon"
-      className="translate-y-px"
-      aria-label="이전 페이지로 돌아가기"
+      className={cn("translate-y-px", className)}
+      aria-label={ariaLabel}
       onClick={handleBack}
     >
       <ArrowLeft aria-hidden="true" className="size-5" />

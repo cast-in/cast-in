@@ -64,7 +64,6 @@ async function CastingDiscoverPage() {
   return (
     <PageContainer
       pageTitle="대시보드"
-      size="wide"
       actions={
         <Link href="/jobs/new" className={buttonVariants({ size: "sm" })}>
           <Plus aria-hidden="true" />
@@ -364,7 +363,6 @@ async function ActorDiscoverPage() {
   return (
     <PageContainer
       pageTitle="대시보드"
-      size="wide"
       actions={
         <Link href="/profile" className={buttonVariants({ size: "sm" })}>
           <Pencil aria-hidden="true" />

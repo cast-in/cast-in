@@ -12,11 +12,13 @@ import { cn } from "@/lib/utils";
 type NotificationBellProps = {
   unreadCount: number;
   notifications: NotificationItem[];
+  panelClassName?: string;
 };
 
 export function NotificationBell({
   unreadCount,
   notifications,
+  panelClassName,
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -79,7 +81,10 @@ export function NotificationBell({
           id={menuId}
           role="dialog"
           aria-labelledby={menuTitleId}
-          className="absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-[24px] border bg-popover p-3 text-popover-foreground shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
+          className={cn(
+            "absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-[24px] border bg-popover p-3 text-popover-foreground shadow-[0_24px_64px_rgba(15,23,42,0.18)]",
+            panelClassName,
+          )}
         >
           <div className="flex items-center justify-between gap-3 px-2 py-2">
             <h2 id={menuTitleId} className="text-sm font-semibold">
