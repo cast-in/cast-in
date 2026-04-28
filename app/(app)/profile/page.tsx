@@ -10,11 +10,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { SocialLinksList } from "@/components/features/social-links-list";
 import { PageContainer } from "@/components/page-container";
 import { getRoleEntityLabel, getRoleModeLabel } from "@/lib/app-ia";
 import { calculateAge } from "@/lib/format";
 import { listMyPortfolio, type PortfolioItem } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
+import { parseSocialLinks, type ActorSocialLink } from "@/lib/social-links";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
@@ -87,7 +89,7 @@ export default async function ProfilePage() {
   const [{ data: actorProfile }, portfolioItems] = await Promise.all([
     supabase
       .from("actor_profiles")
-      .select("region, birth_date, gender, height_cm, genres, bio, skills, visibility")
+      .select("region, birth_date, gender, height_cm, genres, bio, skills, social_links, visibility")
       .eq("user_id", profile.id)
       .maybeSingle(),
     listMyPortfolio(),
@@ -95,6 +97,7 @@ export default async function ProfilePage() {
 
   const genres = actorProfile?.genres?.filter(Boolean) ?? [];
   const skills = actorProfile?.skills?.filter(Boolean) ?? [];
+  const socialLinks = parseSocialLinks(actorProfile?.social_links);
   const bio =
     actorProfile?.bio ??
     "자기소개를 아직 입력하지 않았어요. 강점과 분위기를 먼저 짧게 남겨보세요.";
@@ -140,6 +143,8 @@ export default async function ProfilePage() {
         title="자기소개"
         body={bio}
       />
+
+      {socialLinks.length > 0 ? <SocialLinksSectionCard links={socialLinks} /> : null}
 
       <SurfaceCard>
         <CardHeader className="px-6 pt-6">
@@ -234,6 +239,20 @@ function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
             ))}
           </div>
         )}
+      </CardContent>
+    </SurfaceCard>
+  );
+}
+
+function SocialLinksSectionCard({ links }: { links: ActorSocialLink[] }) {
+  return (
+    <SurfaceCard>
+      <CardHeader className="px-6 pt-6">
+        <CardDescription>링크</CardDescription>
+        <CardTitle className="text-xl">SNS와 웹사이트</CardTitle>
+      </CardHeader>
+      <CardContent className="px-3 pb-4">
+        <SocialLinksList links={links} />
       </CardContent>
     </SurfaceCard>
   );

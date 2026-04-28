@@ -12,6 +12,7 @@ import {
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { BookmarkButton } from "@/components/features/bookmark-button";
+import { SocialLinksList } from "@/components/features/social-links-list";
 import { PageContainer } from "@/components/page-container";
 import { formatDate } from "@/lib/format";
 import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
@@ -75,6 +76,9 @@ export default async function ActorDetailPage({
             </div>
             <aside className="space-y-4">
               <ProfileFacts actor={actor} />
+              {actor.social_links.length > 0 ? (
+                <SocialLinksCard links={actor.social_links} />
+              ) : null}
               <KeywordSection actor={actor} />
             </aside>
           </div>
@@ -215,6 +219,20 @@ function KeywordSection({ actor }: { actor: ActorDetail }) {
           <Sparkles aria-hidden="true" className="size-3.5" />
           <span>최근 업데이트 {formatDate(actor.updated_at)}</span>
         </div>
+      </CardContent>
+    </SurfaceCard>
+  );
+}
+
+function SocialLinksCard({ links }: { links: ActorDetail["social_links"] }) {
+  return (
+    <SurfaceCard>
+      <CardHeader className="px-6 pt-6">
+        <CardDescription>링크</CardDescription>
+        <h2 className="text-xl font-semibold tracking-tight">SNS와 웹사이트</h2>
+      </CardHeader>
+      <CardContent className="px-3 pb-4">
+        <SocialLinksList links={links} />
       </CardContent>
     </SurfaceCard>
   );

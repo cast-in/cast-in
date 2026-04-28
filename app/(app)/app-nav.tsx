@@ -8,7 +8,6 @@ import type { UserRole } from "@/types/enums";
 
 export type AppNavCounts = {
   messages?: number;
-  notifications?: number;
 };
 
 export function AppNav({
@@ -29,9 +28,7 @@ export function AppNav({
         const count =
           tab.href === "/messages"
             ? counts.messages ?? 0
-            : tab.href === "/notifications"
-              ? counts.notifications ?? 0
-              : 0;
+            : 0;
         return (
           <Link
             key={tab.href}

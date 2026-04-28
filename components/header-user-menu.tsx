@@ -114,24 +114,6 @@ export function HeaderUserMenu({
           </div>
 
           <div className="mt-3 space-y-2">
-            <Link
-              href="/profile"
-              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
-              onClick={() => setOpen(false)}
-            >
-              <span>내 프로필</span>
-              <UserRound aria-hidden="true" className="size-4" />
-            </Link>
-
-            <Link
-              href="/bookmarks"
-              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
-              onClick={() => setOpen(false)}
-            >
-              <span>저장한 항목</span>
-              <Bookmark aria-hidden="true" className="size-4" />
-            </Link>
-
             {otherRoleEnabled ? (
               <form action={switchActiveRoleAction} onSubmit={() => setOpen(false)}>
                 <input type="hidden" name="role" value={otherRole} />
@@ -160,6 +142,24 @@ export function HeaderUserMenu({
                 <Repeat2 aria-hidden="true" className="size-4" />
               </Link>
             )}
+
+            <Link
+              href="/profile"
+              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              onClick={() => setOpen(false)}
+            >
+              <span>내 프로필</span>
+              <UserRound aria-hidden="true" className="size-4" />
+            </Link>
+
+            <Link
+              href="/bookmarks"
+              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              onClick={() => setOpen(false)}
+            >
+              <span>저장한 항목</span>
+              <Bookmark aria-hidden="true" className="size-4" />
+            </Link>
 
             <Link
               href="/settings"

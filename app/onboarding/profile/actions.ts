@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { parseSocialLinksFromForm, socialLinksToJson } from "@/lib/social-links";
 import type { Database } from "@/types/database";
 
 type ActorProfileUpsert =
@@ -63,6 +64,11 @@ export async function saveOnboardingProfile(
     }
     if (formData.has("skills")) {
       payload.skills = parseCsv(String(formData.get("skills") ?? ""));
+    }
+    if (formData.has("social_url") || formData.has("social_title")) {
+      const socialLinks = parseSocialLinksFromForm(formData);
+      if (!socialLinks.ok) return { ok: false, error: socialLinks.error };
+      payload.social_links = socialLinksToJson(socialLinks.links);
     }
     if (formData.has("visibility")) {
       payload.visibility = parseVisibility(String(formData.get("visibility") ?? ""));

@@ -24,17 +24,14 @@ const args = new Set(process.argv.slice(2));
 const RESET = args.has("--reset");
 const AVATARS_ONLY = args.has("--avatars-only");
 
-function actorAvatarUrl(email) {
-  // pravatar: 시드 기반으로 실사 느낌의 프로필 사진 반환
-  return `https://i.pravatar.cc/300?u=${encodeURIComponent(email)}`;
+function actorAvatarUrl() {
+  // 배우 기본 샘플 사진은 품질 편차가 커서 비워둔다.
+  // 발표용 커스텀 배우 사진은 DB/Storage에 별도로 반영한다.
+  return null;
 }
-function castingAvatarUrl(company) {
-  // DiceBear initials: 회사 로고 스타일
-  const palette = ["c0aede", "b6e3f4", "ffd5dc", "ffdfbf", "d1d4f9"];
-  let hash = 0;
-  for (const ch of company) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  const bg = palette[hash % palette.length];
-  return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(company)}&backgroundColor=${bg}&fontWeight=600`;
+function castingAvatarUrl() {
+  // 회사명 이니셜보다 담당자 이름 fallback이 자연스러워서 기본 이미지는 비워둔다.
+  return null;
 }
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -63,6 +60,69 @@ const actorBios = [
   "밝고 에너지 있는 캐릭터를 주로 맡아왔어요.",
   "단편·독립영화 중심으로 필모를 쌓고 있습니다.",
   "유튜브 콘텐츠 호스트 2년, 카메라 앞이 편해요.",
+];
+
+const actorSeeds = [
+  { name: "박예원", gender: "female", height_cm: 167 },
+  { name: "정하윤", gender: "female", height_cm: 157 },
+  { name: "구도현", gender: "male", height_cm: 176 },
+  { name: "임해린", gender: "female", height_cm: 164 },
+  { name: "배서준", gender: "male", height_cm: 180 },
+  { name: "도소민", gender: "female", height_cm: 174 },
+  { name: "김하늘", gender: "female", height_cm: 170 },
+  { name: "배채원", gender: "female", height_cm: 166 },
+  { name: "김도현", gender: "male", height_cm: 178 },
+  { name: "박민서", gender: "female", height_cm: 166 },
+  { name: "안지원", gender: "female", height_cm: 164 },
+  { name: "맹지연", gender: "female", height_cm: 169 },
+  { name: "원수아", gender: "female", height_cm: 162 },
+  { name: "정유진", gender: "female", height_cm: 168 },
+  { name: "현주아", gender: "female", height_cm: 170 },
+  { name: "문지후", gender: "male", height_cm: 177 },
+  { name: "정민서", gender: "female", height_cm: 156 },
+  { name: "현하늘", gender: "female", height_cm: 170 },
+  { name: "송현우", gender: "male", height_cm: 178 },
+  { name: "한아린", gender: "female", height_cm: 167 },
+  { name: "임지훈", gender: "male", height_cm: 177 },
+  { name: "배주아", gender: "female", height_cm: 158 },
+  { name: "염은서", gender: "female", height_cm: 165 },
+  { name: "홍태준", gender: "male", height_cm: 181 },
+  { name: "홍유진", gender: "female", height_cm: 167 },
+  { name: "곽건우", gender: "male", height_cm: 188 },
+  { name: "문도윤", gender: "male", height_cm: 174 },
+  { name: "양승민", gender: "male", height_cm: 179 },
+  { name: "유시윤", gender: "female", height_cm: 168 },
+  { name: "표예린", gender: "female", height_cm: 170 },
+  { name: "현태호", gender: "male", height_cm: 178 },
+  { name: "표시호", gender: "male", height_cm: 174 },
+  { name: "송지후", gender: "male", height_cm: 176 },
+  { name: "우하린", gender: "female", height_cm: 159 },
+  { name: "배하늘", gender: "female", height_cm: 164 },
+  { name: "백지연", gender: "female", height_cm: 159 },
+  { name: "표준혁", gender: "male", height_cm: 177 },
+  { name: "김도윤", gender: "male", height_cm: 179 },
+  { name: "송태준", gender: "male", height_cm: 181 },
+  { name: "홍다은", gender: "female", height_cm: 168 },
+  { name: "이도훈", gender: "male", height_cm: 176 },
+  { name: "맹재호", gender: "male", height_cm: 188 },
+  { name: "문은서", gender: "female", height_cm: 168 },
+  { name: "이지완", gender: "male", height_cm: 174 },
+  { name: "전예빈", gender: "female", height_cm: 162 },
+  { name: "우다인", gender: "female", height_cm: 167 },
+  { name: "노예원", gender: "female", height_cm: 166 },
+  { name: "차정우", gender: "male", height_cm: 183 },
+  { name: "남지아", gender: "female", height_cm: 167 },
+  { name: "손재호", gender: "male", height_cm: 178 },
+  { name: "정민석", gender: "male", height_cm: 172 },
+  { name: "문시우", gender: "male", height_cm: 178 },
+  { name: "조주아", gender: "female", height_cm: 159 },
+  { name: "신예빈", gender: "female", height_cm: 157 },
+  { name: "안하린", gender: "female", height_cm: 155 },
+  { name: "배가은", gender: "female", height_cm: 166 },
+  { name: "손시우", gender: "male", height_cm: 176 },
+  { name: "안은비", gender: "female", height_cm: 170 },
+  { name: "차도영", gender: "male", height_cm: 175 },
+  { name: "안서윤", gender: "female", height_cm: 167 },
 ];
 
 const castingIntros = [
@@ -178,6 +238,11 @@ function randomBirthDate() {
   const day = 1 + Math.floor(random() * 27);
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
+function randomHeightCm(gender) {
+  if (gender === "male") return 168 + Math.floor(random() * 21);
+  if (gender === "female") return 155 + Math.floor(random() * 21);
+  return 155 + Math.floor(random() * 34);
+}
 function randomFutureOrPastISO() {
   // 80%는 앞으로 1~60일, 20%는 지난 1~30일(마감된 공고)
   const offsetDays = random() < 0.8 ? 1 + Math.floor(random() * 60) : -(1 + Math.floor(random() * 30));
@@ -267,15 +332,15 @@ async function patchAvatarsOnly() {
       const role = u.user_metadata?.role;
       let avatar_url = null;
       if (role === "actor") {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("id", u.id)
+          .maybeSingle();
+        if (profile?.avatar_url && !profile.avatar_url.includes("pravatar.cc")) continue;
         avatar_url = actorAvatarUrl(email);
       } else if (role === "casting") {
-        // 회사명이 casting_profiles에 저장됨 → 조회해서 시드로 사용
-        const { data: cp } = await supabase
-          .from("casting_profiles")
-          .select("company_name")
-          .eq("user_id", u.id)
-          .maybeSingle();
-        avatar_url = castingAvatarUrl(cp?.company_name ?? email);
+        avatar_url = castingAvatarUrl();
       } else {
         continue;
       }
@@ -326,12 +391,15 @@ async function main() {
   const actors = [];
   const usedNames = new Set();
   for (let i = 0; i < ACTOR_COUNT; i++) {
-    const gender = random() < 0.5 ? "male" : "female";
-    let name = koreanName(gender);
-    let tries = 0;
-    while (usedNames.has(name) && tries < 10) {
-      name = koreanName(gender);
-      tries++;
+    const actorSeed = actorSeeds[i];
+    const gender = actorSeed?.gender ?? (random() < 0.5 ? "male" : "female");
+    let name = actorSeed?.name ?? koreanName(gender);
+    if (!actorSeed) {
+      let tries = 0;
+      while (usedNames.has(name) && tries < 10) {
+        name = koreanName(gender);
+        tries++;
+      }
     }
     usedNames.add(name);
 
@@ -342,7 +410,7 @@ async function main() {
       birth_date: randomBirthDate(),
       gender,
       region: pick(regions),
-      height_cm: 155 + Math.floor(random() * 35),
+      height_cm: actorSeed?.height_cm ?? randomHeightCm(gender),
       genres: pickMany(allGenres, 1, 4),
       skills: pickMany(allSkills, 1, 5),
       bio: pick(actorBios),
@@ -356,7 +424,6 @@ async function main() {
   console.log(`\n📢 공고 생성...`);
   const jobs = [];
   const statuses = ["open", "open", "open", "open", "closed", "draft"]; // 가중치
-  let jobNo = 1;
   for (const c of castings) {
     const count = 1 + Math.floor(random() * 4);
     for (let k = 0; k < count; k++) {
@@ -382,7 +449,6 @@ async function main() {
         .single();
       if (error) throw new Error(`jobs insert 실패: ${error.message}`);
       jobs.push({ id: data.id, casting_id: c.id, status: data.status, deadline: data.deadline, title });
-      jobNo += 1;
     }
     process.stdout.write(".");
   }

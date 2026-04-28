@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { DateTimePicker } from "@/components/features/date-picker";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,12 @@ export function NewJobForm() {
 
       <div className="grid gap-2">
         <Label htmlFor="deadline">마감 일시</Label>
-        <Input id="deadline" name="deadline" type="datetime-local" />
+        <DateTimePicker
+          id="deadline"
+          name="deadline"
+          placeholder="마감 일시 선택"
+          minDate={new Date()}
+        />
       </div>
 
       <div className="grid gap-2">

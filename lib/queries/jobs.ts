@@ -1,4 +1,5 @@
 import { calculateAge } from "@/lib/format";
+import { parseSocialLinks, type ActorSocialLink } from "@/lib/social-links";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import type { ApplicationStatus } from "@/types/enums";
@@ -58,6 +59,7 @@ export type ActorPreview = {
   name: string;
   region: string | null;
   age: number | null;
+  gender: string | null;
   genres: string[];
   avatar_url: string | null;
 };
@@ -67,6 +69,7 @@ export type ActorDetail = ActorPreview & {
   birth_date: string | null;
   gender: string | null;
   height_cm: number | null;
+  social_links: ActorSocialLink[];
   skills: string[];
   updated_at: string;
 };
@@ -76,7 +79,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
 
   const { data: actorProfiles, error } = await supabase
     .from("actor_profiles")
-    .select("user_id, region, birth_date, genres")
+    .select("user_id, region, birth_date, gender, genres")
     .eq("visibility", "public")
     .limit(limit);
   if (error) throw error;
@@ -97,6 +100,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
       name: profile?.name ?? "이름 미등록",
       region: actorProfile.region ?? null,
       age: calculateAge(actorProfile.birth_date ?? null),
+      gender: actorProfile.gender ?? null,
       genres: actorProfile.genres ?? [],
       avatar_url: profile?.avatar_url ?? null,
     };
@@ -129,7 +133,7 @@ export async function searchActors(
 
   let query = supabase
     .from("actor_profiles")
-    .select("user_id, region, birth_date, genres, profiles!inner(name, avatar_url)", {
+    .select("user_id, region, birth_date, gender, genres, profiles!inner(name, avatar_url)", {
       count: "exact",
     })
     .eq("visibility", "public")
@@ -159,6 +163,7 @@ export async function searchActors(
       name: profile?.name ?? "이름 미등록",
       region: row.region ?? null,
       age: calculateAge(row.birth_date ?? null),
+      gender: row.gender ?? null,
       genres: row.genres ?? [],
       avatar_url: profile?.avatar_url ?? null,
     };
@@ -172,7 +177,7 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
   const { data, error } = await supabase
     .from("actor_profiles")
     .select(
-      "user_id, bio, birth_date, gender, height_cm, region, genres, skills, updated_at, profiles!inner(name, avatar_url)",
+      "user_id, bio, birth_date, gender, height_cm, region, genres, skills, social_links, updated_at, profiles!inner(name, avatar_url)",
     )
     .eq("user_id", actorId)
     .eq("visibility", "public")
@@ -194,6 +199,7 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
     birth_date: data.birth_date ?? null,
     gender: data.gender ?? null,
     height_cm: data.height_cm ?? null,
+    social_links: parseSocialLinks(data.social_links),
     skills: data.skills ?? [],
     updated_at: data.updated_at,
   };
@@ -303,8 +309,11 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
 
 export type JobWithCounts = JobRow & {
   applicant_count: number;
+  pending_count: number;
   reviewing_count: number;
   pass_count: number;
+  hold_count: number;
+  reject_count: number;
 };
 
 export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
@@ -330,24 +339,53 @@ export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
 
   const byJob = new Map<
     string,
-    { total: number; reviewing: number; pass: number }
+    {
+      total: number;
+      pending: number;
+      reviewing: number;
+      pass: number;
+      hold: number;
+      reject: number;
+    }
   >();
-  for (const j of jobs) byJob.set(j.id, { total: 0, reviewing: 0, pass: 0 });
+  for (const j of jobs) {
+    byJob.set(j.id, {
+      total: 0,
+      pending: 0,
+      reviewing: 0,
+      pass: 0,
+      hold: 0,
+      reject: 0,
+    });
+  }
   for (const a of apps ?? []) {
     const agg = byJob.get(a.job_id);
     if (!agg) continue;
     agg.total += 1;
+    if (a.status === "pending") agg.pending += 1;
     if (a.status === "reviewing") agg.reviewing += 1;
     if (a.status === "pass") agg.pass += 1;
+    if (a.status === "hold") agg.hold += 1;
+    if (a.status === "reject") agg.reject += 1;
   }
 
   return jobs.map((j) => {
-    const agg = byJob.get(j.id) ?? { total: 0, reviewing: 0, pass: 0 };
+    const agg = byJob.get(j.id) ?? {
+      total: 0,
+      pending: 0,
+      reviewing: 0,
+      pass: 0,
+      hold: 0,
+      reject: 0,
+    };
     return {
       ...j,
       applicant_count: agg.total,
+      pending_count: agg.pending,
       reviewing_count: agg.reviewing,
       pass_count: agg.pass,
+      hold_count: agg.hold,
+      reject_count: agg.reject,
     };
   });
 }

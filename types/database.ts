@@ -48,6 +48,7 @@ export type Database = {
           height_cm: number | null
           region: string | null
           skills: string[]
+          social_links: Json
           updated_at: string
           user_id: string
           visibility: string
@@ -60,6 +61,7 @@ export type Database = {
           height_cm?: number | null
           region?: string | null
           skills?: string[]
+          social_links?: Json
           updated_at?: string
           user_id: string
           visibility?: string
@@ -72,6 +74,7 @@ export type Database = {
           height_cm?: number | null
           region?: string | null
           skills?: string[]
+          social_links?: Json
           updated_at?: string
           user_id?: string
           visibility?: string

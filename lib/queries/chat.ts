@@ -8,6 +8,7 @@ export type ChatRoomSummary = {
   unread_count: number;
   other_id: string;
   other_name: string;
+  other_avatar_url: string | null;
 };
 
 export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
@@ -41,7 +42,7 @@ export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
   );
 
   const [{ data: profiles }, { data: jobs }] = await Promise.all([
-    supabase.from("profiles").select("id, name").in("id", otherIds),
+    supabase.from("profiles").select("id, name, avatar_url").in("id", otherIds),
     jobIds.length > 0
       ? supabase.from("jobs").select("id, title").in("id", jobIds)
       : Promise.resolve({ data: [] as { id: string; title: string }[] }),
@@ -61,6 +62,9 @@ export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
   }
 
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+  const avatarById = new Map(
+    (profiles ?? []).map((p) => [p.id, p.avatar_url ?? null]),
+  );
   const titleById = new Map((jobs ?? []).map((j) => [j.id, j.title]));
 
   return rooms.map((r) => {
@@ -73,6 +77,7 @@ export async function listMyChatRooms(): Promise<ChatRoomSummary[]> {
       unread_count: unreadByRoom.get(r.id) ?? 0,
       other_id: otherId,
       other_name: nameById.get(otherId) ?? "익명",
+      other_avatar_url: avatarById.get(otherId) ?? null,
     };
   });
 }

@@ -28,6 +28,7 @@ create table public.actor_profiles (
   height_cm int,
   genres text[] not null default '{}',
   skills text[] not null default '{}',
+  social_links jsonb not null default '[]'::jsonb check (jsonb_typeof(social_links) = 'array'),
   bio text,
   visibility text not null default 'public' check (visibility in ('public','connections','private')),
   updated_at timestamptz not null default now()

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/select";
 import { BookmarkButton } from "@/components/features/bookmark-button";
@@ -14,7 +14,6 @@ import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
 import type { ActorPreview, OpenJobPreview } from "@/lib/queries/jobs";
 import { searchActors, searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
-import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
 
@@ -185,6 +184,7 @@ function ActorTalentCard({
   redirectTo: string;
 }) {
   const actorHref = `/talents/${actor.id}`;
+  const actorMeta = getActorCardMeta(actor);
 
   return (
     <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
@@ -211,16 +211,15 @@ function ActorTalentCard({
         />
       </div>
       <CardContent className="flex flex-1 flex-col gap-4 p-4">
-        <div className="space-y-1">
+        <div className="flex items-start justify-between gap-3">
           <Link
             href={actorHref}
-            className="block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
-            <CardTitle className="line-clamp-2 text-lg">{actor.name}</CardTitle>
+            <CardTitle className="truncate text-lg">{actor.name}</CardTitle>
           </Link>
-          <div className="text-sm text-muted-foreground">
-            {actor.region ?? "지역 미등록"}
-            {actor.age ? ` · ${actor.age}세` : ""}
+          <div className="shrink-0 whitespace-nowrap pt-0.5 text-right text-sm text-muted-foreground">
+            {actorMeta}
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -233,6 +232,17 @@ function ActorTalentCard({
       </CardContent>
     </Card>
   );
+}
+
+function getActorCardMeta(actor: ActorPreview) {
+  const age = actor.age !== null ? `${actor.age}세` : "나이 미등록";
+  return `${age} · ${getGenderLabel(actor.gender)}`;
+}
+
+function getGenderLabel(value: string | null) {
+  if (value === "male") return "남성";
+  if (value === "female") return "여성";
+  return value?.trim() || "성별 미등록";
 }
 
 async function ActorTalentsPage({
@@ -383,57 +393,59 @@ function ActorJobCard({
 }) {
   const accepting = isJobAccepting(job);
   const deadlineSignal = formatDeadlineSignal(job.deadline);
+  const jobHref = `/jobs/${job.id}`;
 
   return (
-    <Card className="h-full transition-shadow hover:shadow-md">
-      <CardHeader className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <Badge variant={accepting ? "default" : "secondary"} className="w-fit">
+    <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
+      <div className="relative">
+        <Link
+          href={jobHref}
+          className="group block aspect-[4/3] bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <JobPostingPreview />
+          <Badge
+            variant={accepting ? "default" : "secondary"}
+            className="absolute left-3 top-3 bg-background/85 text-foreground backdrop-blur"
+          >
             {deadlineSignal}
           </Badge>
-          <BookmarkButton
-            targetType="job"
-            targetId={job.id}
-            bookmarked={bookmarked}
-            redirectTo={redirectTo}
-            compact
-            className="-mt-2 -mr-2 shrink-0"
-          />
-        </div>
-        <div className="space-y-2">
-          <CardTitle className="line-clamp-2 text-lg">{job.title}</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {job.region ?? "지역 협의"} · {job.genre ?? "장르 미정"}
-          </p>
-        </div>
-      </CardHeader>
-      <CardContent className="mt-auto space-y-4">
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <DecisionPill label="상태" value={getJobAvailabilityLabel(job)} />
-          <DecisionPill label="마감" value={formatDeadline(job.deadline)} />
-        </div>
-        <Link
-          href={`/jobs/${job.id}`}
-          className={cn(
-            buttonVariants({ variant: accepting ? "default" : "secondary", size: "sm" }),
-            "w-full",
-          )}
-        >
-          자세히 보기
         </Link>
+        <BookmarkButton
+          targetType="job"
+          targetId={job.id}
+          bookmarked={bookmarked}
+          redirectTo={redirectTo}
+          compact
+          className="absolute right-3 top-3 z-10 bg-background/85 backdrop-blur hover:bg-background"
+        />
+      </div>
+      <CardContent className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <Link
+            href={jobHref}
+            className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <CardTitle className="line-clamp-2 text-lg">{job.title}</CardTitle>
+          </Link>
+          <div className="shrink-0 whitespace-nowrap pt-0.5 text-right text-sm text-muted-foreground">
+            {getJobAvailabilityLabel(job)}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline">{job.genre ?? "장르 미정"}</Badge>
+          <Badge variant="outline">{job.region ?? "지역 협의"}</Badge>
+        </div>
+        <p className="mt-auto text-sm text-muted-foreground">
+          {formatDeadline(job.deadline)}
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-function DecisionPill({ label, value }: { label: string; value: string }) {
+function JobPostingPreview() {
   return (
-    <div className="rounded-lg bg-muted/50 px-3 py-2">
-      <div className="text-[0.72rem] font-medium text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-0.5 truncate font-medium">{value}</div>
-    </div>
+    <div className="h-full w-full overflow-hidden bg-muted transition-transform duration-200 group-hover:scale-[1.02]" />
   );
 }
 

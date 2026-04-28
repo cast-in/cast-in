@@ -1,7 +1,4 @@
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { ProfileForm } from "@/app/onboarding/profile/profile-form";
-import { Badge } from "@/components/ui/badge";
 import {
   CardContent,
   CardDescription,
@@ -10,10 +7,12 @@ import {
 } from "@/components/ui/card";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { PageContainer } from "@/components/page-container";
-import { getRoleEntityLabel, getRoleModeLabel } from "@/lib/app-ia";
+import { getRoleModeLabel } from "@/lib/app-ia";
 import { getViewerProfile } from "@/lib/queries/viewer";
+import { parseSocialLinks } from "@/lib/social-links";
 import { createClient } from "@/lib/supabase/server";
 import { AvatarUploader } from "./avatar-uploader";
+import { BackButton } from "./back-button";
 
 export default async function ProfileEditPage() {
   const { profile, activeRole } = await getViewerProfile();
@@ -30,7 +29,7 @@ export default async function ProfileEditPage() {
 
     return (
       <PageContainer>
-        <EditHeader activeRole={activeRole} />
+        <EditHeader />
         <SurfaceCard>
           <CardHeader className="px-6 pt-6">
             <CardDescription>{getRoleModeLabel(activeRole)}</CardDescription>
@@ -62,7 +61,7 @@ export default async function ProfileEditPage() {
 
   const { data: actorProfile } = await supabase
     .from("actor_profiles")
-    .select("region, birth_date, genres, bio, skills, visibility")
+    .select("region, birth_date, genres, bio, skills, social_links, visibility")
     .eq("user_id", profile.id)
     .maybeSingle();
   const visibility =
@@ -72,7 +71,7 @@ export default async function ProfileEditPage() {
 
   return (
     <PageContainer>
-      <EditHeader activeRole={activeRole} />
+      <EditHeader />
       <SurfaceCard>
         <CardHeader className="px-6 pt-6">
           <CardDescription>{getRoleModeLabel(activeRole)}</CardDescription>
@@ -95,6 +94,7 @@ export default async function ProfileEditPage() {
               region: actorProfile?.region ?? "",
               genres: actorProfile?.genres ?? [],
               skills: actorProfile?.skills ?? [],
+              social_links: parseSocialLinks(actorProfile?.social_links),
               bio: actorProfile?.bio ?? "",
               visibility,
             }}
@@ -105,22 +105,13 @@ export default async function ProfileEditPage() {
   );
 }
 
-function EditHeader({ activeRole }: { activeRole: "actor" | "casting" }) {
+function EditHeader() {
   return (
-    <div className="space-y-3">
-      <Link
-        href="/profile"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ChevronLeft aria-hidden="true" className="size-4" />
-        프로필로
-      </Link>
-      <div className="space-y-2">
-        <Badge variant="secondary">프로필 수정</Badge>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {getRoleEntityLabel(activeRole)} 프로필 수정
-        </h1>
-      </div>
-    </div>
+    <header className="flex items-center gap-2">
+      <BackButton />
+      <h1 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
+        프로필 수정
+      </h1>
+    </header>
   );
 }

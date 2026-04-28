@@ -3,11 +3,14 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/features/date-picker";
+import { SocialLinksEditor } from "@/components/features/social-links-editor";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { ActorSocialLink } from "@/lib/social-links";
 import { saveOnboardingProfile } from "./actions";
 
 export type ProfileFormDefaults = {
@@ -18,6 +21,7 @@ export type ProfileFormDefaults = {
   genres?: string[] | null;
   bio?: string | null;
   skills?: string[] | null;
+  social_links?: ActorSocialLink[] | null;
   visibility?: "public" | "connections" | "private" | null;
   // casting
   company_name?: string | null;
@@ -83,11 +87,12 @@ export function ProfileForm({
           <div className="grid gap-3 md:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="birth_date">생년월일</Label>
-              <Input
+              <DatePicker
                 id="birth_date"
                 name="birth_date"
-                type="date"
                 defaultValue={d.birth_date ?? ""}
+                placeholder="생년월일 선택"
+                disabled={{ after: new Date() }}
               />
             </div>
             <div className="grid gap-2">
@@ -130,6 +135,7 @@ export function ProfileForm({
                   placeholder="강점과 분위기를 짧게 남겨보세요."
                 />
               </div>
+              <SocialLinksEditor defaultLinks={d.social_links ?? []} />
               <div className="grid gap-2">
                 <Label htmlFor="visibility">프로필 공개 범위</Label>
                 <Select

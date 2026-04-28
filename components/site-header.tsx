@@ -4,7 +4,9 @@ import type { UserRole } from "@/types/enums";
 import { BrandLogo } from "@/components/brand-logo";
 import { HeaderUserMenu } from "@/components/header-user-menu";
 import { MobileSiteMenu } from "@/components/mobile-site-menu";
+import { NotificationBell } from "@/components/notification-bell";
 import { buttonVariants } from "@/components/ui/button";
+import type { NotificationItem } from "@/lib/queries/notifications";
 
 type HeaderViewer = {
   user: { email?: string | null } | null;
@@ -13,6 +15,7 @@ type HeaderViewer = {
   availableRoles: UserRole[];
   unreadMessages?: number;
   unreadNotifications?: number;
+  recentNotifications?: NotificationItem[];
 };
 
 export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
@@ -35,29 +38,34 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
                 role={viewer.activeRole}
                 counts={{
                   messages: viewer.unreadMessages,
-                  notifications: viewer.unreadNotifications,
                 }}
               />
             </div>
 
-            <HeaderUserMenu
-              activeRole={viewer.activeRole}
-              availableRoles={viewer.availableRoles}
-              profileName={viewer.profile?.name ?? "사용자"}
-              avatarUrl={viewer.profile?.avatar_url ?? null}
-              userEmail={viewer.user?.email}
-            />
+            <div className="flex items-center gap-2">
+              <HeaderUserMenu
+                activeRole={viewer.activeRole}
+                availableRoles={viewer.availableRoles}
+                profileName={viewer.profile?.name ?? "사용자"}
+                avatarUrl={viewer.profile?.avatar_url ?? null}
+                userEmail={viewer.user?.email}
+              />
 
-            <MobileSiteMenu
-              activeRole={viewer.activeRole}
-              profileName={viewer.profile?.name ?? "사용자"}
-              avatarUrl={viewer.profile?.avatar_url ?? null}
-              userEmail={viewer.user?.email}
-              counts={{
-                messages: viewer.unreadMessages,
-                notifications: viewer.unreadNotifications,
-              }}
-            />
+              <MobileSiteMenu
+                activeRole={viewer.activeRole}
+                profileName={viewer.profile?.name ?? "사용자"}
+                avatarUrl={viewer.profile?.avatar_url ?? null}
+                userEmail={viewer.user?.email}
+                counts={{
+                  messages: viewer.unreadMessages,
+                }}
+              />
+
+              <NotificationBell
+                unreadCount={viewer.unreadNotifications ?? 0}
+                notifications={viewer.recentNotifications ?? []}
+              />
+            </div>
           </>
         ) : (
           <div className="flex items-center gap-2">

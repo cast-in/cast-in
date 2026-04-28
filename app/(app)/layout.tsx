@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { countUnreadMessages } from "@/lib/queries/chat";
-import { countUnreadNotifications } from "@/lib/queries/notifications";
+import {
+  countUnreadNotifications,
+  listMyNotifications,
+} from "@/lib/queries/notifications";
 import { getViewerProfile } from "@/lib/queries/viewer";
 
 export default async function AppLayout({
@@ -14,9 +17,10 @@ export default async function AppLayout({
   if (!profile) redirect("/onboarding/role");
   if (!activeRole || availableRoles.length === 0) redirect("/onboarding/role");
 
-  const [unreadMessages, unreadNotifications] = await Promise.all([
+  const [unreadMessages, unreadNotifications, recentNotifications] = await Promise.all([
     countUnreadMessages().catch(() => 0),
     countUnreadNotifications().catch(() => 0),
+    listMyNotifications(5).catch(() => []),
   ]);
 
   return (
@@ -29,6 +33,7 @@ export default async function AppLayout({
           availableRoles,
           unreadMessages,
           unreadNotifications,
+          recentNotifications,
         }}
       />
 

@@ -26,7 +26,6 @@ type MobileSiteMenuProps = {
   userEmail?: string | null;
   counts?: {
     messages?: number;
-    notifications?: number;
   };
 };
 
@@ -177,10 +176,9 @@ export function MobileSiteMenu({
 
 function getTabCount(
   href: string,
-  counts: { messages?: number; notifications?: number },
+  counts: { messages?: number },
 ) {
   if (href === "/messages") return counts.messages ?? 0;
-  if (href === "/notifications") return counts.notifications ?? 0;
   return 0;
 }
 
