@@ -360,7 +360,7 @@ function AvatarBlock({
   avatarUrl: string | null;
 }) {
   return (
-    <div className="flex size-20 items-center justify-center overflow-hidden rounded-[24px] bg-background text-2xl font-semibold shadow-sm ring-4 ring-background md:size-24 md:text-3xl">
+    <div className="flex size-20 items-center justify-center overflow-hidden rounded-[24px] bg-muted text-2xl font-semibold text-muted-foreground shadow-sm ring-4 ring-background md:size-24 md:text-3xl">
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

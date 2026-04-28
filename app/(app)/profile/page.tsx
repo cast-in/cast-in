@@ -5,14 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { SocialLinksList } from "@/components/features/social-links-list";
 import { PageContainer } from "@/components/page-container";
-import { getRoleEntityLabel, getRoleModeLabel } from "@/lib/app-ia";
+import { getRoleEntityLabel } from "@/lib/app-ia";
 import { calculateAge } from "@/lib/format";
 import { listMyPortfolio, type PortfolioItem } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
@@ -41,10 +40,9 @@ export default async function ProfilePage() {
     return (
       <PageContainer>
         <ProfileHeroCard
-          modeLabel={getRoleModeLabel(activeRole)}
           entityLabel={getRoleEntityLabel(activeRole)}
           title={companyName}
-          subtitle={`${profile.name} 담당 · 캐스팅 담당자 프로필`}
+          subtitle={`${profile.name} 담당 · 캐스팅 디렉터 프로필`}
           summary={intro}
           tone="casting"
           avatarUrl={profile.avatar_url ?? null}
@@ -64,15 +62,10 @@ export default async function ProfilePage() {
           ]}
         />
 
-        <InfoSectionCard
-          eyebrow="소개"
-          title="회사 소개"
-          body={intro}
-        />
+        <InfoSectionCard title="회사 소개" body={intro} />
 
         <SurfaceCard>
           <CardHeader className="px-6 pt-6">
-            <CardDescription>기본 정보</CardDescription>
             <CardTitle className="text-xl">프로필 정보</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 px-6 pb-6 md:grid-cols-2">
@@ -113,7 +106,6 @@ export default async function ProfilePage() {
   return (
     <PageContainer>
       <ProfileHeroCard
-        modeLabel={getRoleModeLabel(activeRole)}
         entityLabel={getRoleEntityLabel(activeRole)}
         title={profile.name}
         subtitle={[location, age !== null ? `${age}세` : null]
@@ -138,17 +130,12 @@ export default async function ProfilePage() {
         ]}
       />
 
-      <InfoSectionCard
-        eyebrow="소개"
-        title="자기소개"
-        body={bio}
-      />
+      <InfoSectionCard title="자기소개" body={bio} />
 
       {socialLinks.length > 0 ? <SocialLinksSectionCard links={socialLinks} /> : null}
 
       <SurfaceCard>
         <CardHeader className="px-6 pt-6">
-          <CardDescription>기본 정보</CardDescription>
           <CardTitle className="text-xl">프로필 정보</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 px-6 pb-6 md:grid-cols-2">
@@ -160,7 +147,6 @@ export default async function ProfilePage() {
       </SurfaceCard>
 
       <ChipSectionCard
-        eyebrow="프로필 키워드"
         title="대표 장르와 특기"
         sections={[
           {
@@ -190,8 +176,7 @@ function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
   return (
     <SurfaceCard>
       <CardHeader className="flex flex-row items-start justify-between gap-3 px-6 pt-6">
-        <div className="space-y-1">
-          <CardDescription>포트폴리오</CardDescription>
+        <div>
           <CardTitle className="text-xl">사진과 영상</CardTitle>
         </div>
         <Link
@@ -248,7 +233,6 @@ function SocialLinksSectionCard({ links }: { links: ActorSocialLink[] }) {
   return (
     <SurfaceCard>
       <CardHeader className="px-6 pt-6">
-        <CardDescription>링크</CardDescription>
         <CardTitle className="text-xl">SNS와 웹사이트</CardTitle>
       </CardHeader>
       <CardContent className="px-3 pb-4">
@@ -259,7 +243,6 @@ function SocialLinksSectionCard({ links }: { links: ActorSocialLink[] }) {
 }
 
 function ProfileHeroCard({
-  modeLabel,
   entityLabel,
   title,
   subtitle,
@@ -268,7 +251,6 @@ function ProfileHeroCard({
   avatarUrl,
   meta,
 }: {
-  modeLabel: string;
   entityLabel: string;
   title: string;
   subtitle: string;
@@ -278,9 +260,7 @@ function ProfileHeroCard({
   meta: { icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>; label: string }[];
 }) {
   const bannerClassName =
-    tone === "actor"
-      ? "bg-gradient-to-r from-actor/90 via-brand-blue/75 to-background"
-      : "bg-gradient-to-r from-casting/90 via-primary/70 to-background";
+    "bg-gradient-to-r from-primary/80 via-primary/45 to-background";
 
   const badgeToneClassName =
     tone === "actor"
@@ -292,7 +272,7 @@ function ProfileHeroCard({
       <div aria-hidden="true" className={`h-28 md:h-32 ${bannerClassName}`} />
       <div className="px-6 pb-6">
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
-          <div className="flex size-20 items-center justify-center overflow-hidden rounded-[24px] bg-background text-2xl font-semibold shadow-sm ring-4 ring-background md:size-24 md:text-3xl">
+          <div className="flex size-20 items-center justify-center overflow-hidden rounded-[24px] bg-muted text-2xl font-semibold text-muted-foreground shadow-sm ring-4 ring-background md:size-24 md:text-3xl">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -307,24 +287,25 @@ function ProfileHeroCard({
           <div className="flex items-center gap-2">
             <Link
               href="/profile/edit"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
+              className={buttonVariants({
+                size: "sm",
+                className: "border-0 shadow-none",
+              })}
             >
               <Pencil aria-hidden="true" className="size-4" />
-              수정
+              프로필 수정
             </Link>
-            <Badge variant="secondary" className={badgeToneClassName}>
-              {entityLabel}
-            </Badge>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Badge>{modeLabel}</Badge>
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+            {title}
+          </h1>
+          <Badge variant="secondary" className={badgeToneClassName}>
+            {entityLabel}
+          </Badge>
         </div>
-
-        <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-          {title}
-        </h1>
         <p className="mt-2 text-sm text-muted-foreground md:text-base">
           {subtitle}
         </p>
@@ -349,18 +330,15 @@ function ProfileHeroCard({
 }
 
 function InfoSectionCard({
-  eyebrow,
   title,
   body,
 }: {
-  eyebrow: string;
   title: string;
   body: string;
 }) {
   return (
     <SurfaceCard>
       <CardHeader className="px-6 pt-6">
-        <CardDescription>{eyebrow}</CardDescription>
         <CardTitle className="text-xl">{title}</CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6">
@@ -373,18 +351,15 @@ function InfoSectionCard({
 }
 
 function ChipSectionCard({
-  eyebrow,
   title,
   sections,
 }: {
-  eyebrow: string;
   title: string;
   sections: { label: string; items: string[]; emptyLabel: string }[];
 }) {
   return (
     <SurfaceCard>
       <CardHeader className="px-6 pt-6">
-        <CardDescription>{eyebrow}</CardDescription>
         <CardTitle className="text-xl">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 px-6 pb-6">

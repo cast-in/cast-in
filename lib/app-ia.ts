@@ -32,5 +32,5 @@ export function getRoleModeLabel(role: UserRole) {
 }
 
 export function getRoleEntityLabel(role: UserRole) {
-  return role === "actor" ? "배우" : "캐스팅 담당자";
+  return role === "actor" ? "배우" : "캐스팅 디렉터";
 }

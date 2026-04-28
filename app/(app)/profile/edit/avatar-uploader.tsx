@@ -86,7 +86,7 @@ export function AvatarUploader({
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-muted/40 p-4 ring-1 ring-border/70 sm:flex-row sm:items-center">
-      <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-background text-2xl font-semibold text-muted-foreground ring-1 ring-border/70">
+      <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-muted text-2xl font-semibold text-muted-foreground ring-1 ring-border/70">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
