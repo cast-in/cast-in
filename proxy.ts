@@ -8,8 +8,8 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * _next/static, _next/image, favicon, public 파일 제외
+     * Next 내부 개발/정적 리소스, favicon, public 파일 제외
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/|_nextjs|__nextjs|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|otf)$).*)",
   ],
 };

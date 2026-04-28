@@ -62,6 +62,15 @@ export type ActorPreview = {
   avatar_url: string | null;
 };
 
+export type ActorDetail = ActorPreview & {
+  bio: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  height_cm: number | null;
+  skills: string[];
+  updated_at: string;
+};
+
 export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
   const supabase = await createClient();
 
@@ -98,6 +107,7 @@ export type SearchActorsParams = {
   q?: string;
   region?: string;
   genre?: string;
+  gender?: "male" | "female";
   page?: number;
   pageSize?: number;
 };
@@ -112,7 +122,7 @@ export type PagedResult<T> = {
 export async function searchActors(
   params: SearchActorsParams = {},
 ): Promise<PagedResult<ActorPreview>> {
-  const { q, region, genre, page = 1, pageSize = 12 } = params;
+  const { q, region, genre, gender, page = 1, pageSize = 12 } = params;
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -135,6 +145,9 @@ export async function searchActors(
   if (genre?.trim()) {
     query = query.contains("genres", [genre.trim()]);
   }
+  if (gender === "male" || gender === "female") {
+    query = query.eq("gender", gender);
+  }
 
   const { data, count, error } = await query;
   if (error) throw error;
@@ -152,6 +165,38 @@ export async function searchActors(
   });
 
   return { items, total: count ?? 0, page, pageSize };
+}
+
+export async function getActorDetail(actorId: string): Promise<ActorDetail | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("actor_profiles")
+    .select(
+      "user_id, bio, birth_date, gender, height_cm, region, genres, skills, updated_at, profiles!inner(name, avatar_url)",
+    )
+    .eq("user_id", actorId)
+    .eq("visibility", "public")
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const profile = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+
+  return {
+    id: data.user_id,
+    name: profile?.name ?? "이름 미등록",
+    region: data.region ?? null,
+    age: calculateAge(data.birth_date ?? null),
+    genres: data.genres ?? [],
+    avatar_url: profile?.avatar_url ?? null,
+    bio: data.bio ?? null,
+    birth_date: data.birth_date ?? null,
+    gender: data.gender ?? null,
+    height_cm: data.height_cm ?? null,
+    skills: data.skills ?? [],
+    updated_at: data.updated_at,
+  };
 }
 
 export type SearchJobsParams = {

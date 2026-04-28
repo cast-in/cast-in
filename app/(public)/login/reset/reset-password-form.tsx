@@ -1,29 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updatePasswordAction } from "../actions";
+import { updatePasswordFormAction, type AuthResult } from "../actions";
 
 export function ResetPasswordForm() {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    const data = new FormData(e.currentTarget);
-    startTransition(async () => {
-      const result = await updatePasswordAction(data);
-      if (result && !result.ok) setError(result.error);
-    });
-  }
+  const [state, action, pending] = useActionState<AuthResult | null, FormData>(
+    updatePasswordFormAction,
+    null,
+  );
+  const error = state && !state.ok ? state.error : null;
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
+    <form action={action} className="grid gap-4">
       {error ? <ErrorNotice message={error} size="sm" /> : null}
 
       <div className="grid gap-2">

@@ -87,7 +87,7 @@ export default async function ProfilePage() {
   const [{ data: actorProfile }, portfolioItems] = await Promise.all([
     supabase
       .from("actor_profiles")
-      .select("region, birth_date, genres, bio, skills, visibility")
+      .select("region, birth_date, gender, height_cm, genres, bio, skills, visibility")
       .eq("user_id", profile.id)
       .maybeSingle(),
     listMyPortfolio(),
@@ -102,6 +102,10 @@ export default async function ProfilePage() {
     actorProfile?.region ??
     "활동 지역을 아직 등록하지 않았어요.";
   const age = calculateAge(actorProfile?.birth_date ?? null);
+  const gender = getGenderLabel(actorProfile?.gender ?? null);
+  const height = actorProfile?.height_cm
+    ? `${actorProfile.height_cm}cm`
+    : "신장 미등록";
 
   return (
     <PageContainer>
@@ -136,6 +140,19 @@ export default async function ProfilePage() {
         title="자기소개"
         body={bio}
       />
+
+      <SurfaceCard>
+        <CardHeader className="px-6 pt-6">
+          <CardDescription>기본 정보</CardDescription>
+          <CardTitle className="text-xl">프로필 정보</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 px-6 pb-6 md:grid-cols-2">
+          <DetailItem label="활동 지역" value={location} />
+          <DetailItem label="나이" value={age !== null ? `${age}세` : "나이 미등록"} />
+          <DetailItem label="성별" value={gender} />
+          <DetailItem label="신장" value={height} />
+        </CardContent>
+      </SurfaceCard>
 
       <ChipSectionCard
         eyebrow="프로필 키워드"
@@ -395,4 +412,10 @@ function getVisibilityLabel(value: string) {
   if (value === "connections") return "연결된 캐스팅만";
   if (value === "private") return "비공개";
   return "전체 공개";
+}
+
+function getGenderLabel(value: string | null) {
+  if (value === "male") return "남성";
+  if (value === "female") return "여성";
+  return value?.trim() || "성별 미등록";
 }

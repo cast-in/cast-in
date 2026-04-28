@@ -11,7 +11,7 @@ import { SearchFilterBar } from "@/components/features/search-filter-bar";
 import { formatDeadline, formatDeadlineSignal } from "@/lib/format";
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
-import type { OpenJobPreview } from "@/lib/queries/jobs";
+import type { ActorPreview, OpenJobPreview } from "@/lib/queries/jobs";
 import { searchActors, searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,11 @@ function asString(raw: string | string[] | undefined) {
   return value?.trim() ?? "";
 }
 
+function asGender(raw: string | string[] | undefined) {
+  const value = asString(raw);
+  return value === "male" || value === "female" ? value : "";
+}
+
 export default async function TalentsPage({
   searchParams,
 }: {
@@ -41,10 +46,19 @@ export default async function TalentsPage({
   const q = asString(sp.q);
   const region = asString(sp.region);
   const genre = asString(sp.genre);
+  const gender = asGender(sp.gender);
   const page = parsePage(sp.page);
 
   if (activeRole === "casting") {
-    return <CastingTalentsPage q={q} region={region} genre={genre} page={page} />;
+    return (
+      <CastingTalentsPage
+        q={q}
+        region={region}
+        genre={genre}
+        gender={gender}
+        page={page}
+      />
+    );
   }
 
   const sort = asString(sp.sort) === "latest" ? "latest" : "deadline";
@@ -66,17 +80,21 @@ async function CastingTalentsPage({
   q,
   region,
   genre,
+  gender,
   page,
 }: {
   q: string;
   region: string;
   genre: string;
+  gender: "" | "male" | "female";
   page: number;
 }) {
+  const hasFilters = Boolean(q || region || genre || gender);
   const { items, total } = await searchActors({
     q,
     region,
     genre,
+    gender: gender || undefined,
     page,
     pageSize: PAGE_SIZE,
   });
@@ -84,7 +102,7 @@ async function CastingTalentsPage({
     "actor",
     items.map((actor) => actor.id),
   );
-  const redirectTo = buildTalentsPath({ q, region, genre, page });
+  const redirectTo = buildTalentsPath({ q, region, genre, gender, page });
 
   return (
     <PageContainer pageTitle="배우 탐색">
@@ -110,72 +128,110 @@ async function CastingTalentsPage({
             defaultValue: genre,
           },
         ]}
+        extras={
+          <div>
+            <label htmlFor="talents-gender" className="sr-only">
+              성별
+            </label>
+            <Select id="talents-gender" name="gender" defaultValue={gender}>
+              <option value="">성별 전체</option>
+              <option value="female">여성</option>
+              <option value="male">남성</option>
+            </Select>
+          </div>
+        }
       />
 
       {items.length === 0 ? (
         <EmptyState
           title={
-            q || region || genre
+            hasFilters
               ? "조건에 맞는 배우가 없어요"
               : "아직 탐색할 배우가 없어요"
           }
-          description={q || region || genre ? "검색어나 필터를 바꿔보세요." : undefined}
+          description={hasFilters ? "검색어나 필터를 바꿔보세요." : undefined}
         />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((actor) => (
-            <Card key={actor.id} className="h-full">
-              <CardHeader className="space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <AvatarPreview
-                      name={actor.name}
-                      avatarUrl={actor.avatar_url}
-                    />
-                    <div className="min-w-0">
-                      <Badge variant="secondary" className="mb-2 w-fit">
-                        배우
-                      </Badge>
-                      <CardTitle>{actor.name}</CardTitle>
-                    </div>
-                  </div>
-                  <BookmarkButton
-                    targetType="actor"
-                    targetId={actor.id}
-                    bookmarked={bookmarkedIds.has(actor.id)}
-                    redirectTo={redirectTo}
-                    className="shrink-0"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-sm text-muted-foreground">
-                  {actor.region ?? "지역 미등록"}
-                  {actor.age ? ` · ${actor.age}세` : ""}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(actor.genres.length > 0 ? actor.genres : ["장르 준비 중"]).map(
-                    (g) => (
-                      <Badge key={g} variant="outline">
-                        {g}
-                      </Badge>
-                    ),
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <ActorTalentCard
+              key={actor.id}
+              actor={actor}
+              bookmarked={bookmarkedIds.has(actor.id)}
+              redirectTo={redirectTo}
+            />
           ))}
         </div>
       )}
 
       <Pagination
         basePath="/talents"
-        params={{ q, region, genre }}
+        params={{ q, region, genre, gender }}
         page={page}
         pageSize={PAGE_SIZE}
         total={total}
       />
     </PageContainer>
+  );
+}
+
+function ActorTalentCard({
+  actor,
+  bookmarked,
+  redirectTo,
+}: {
+  actor: ActorPreview;
+  bookmarked: boolean;
+  redirectTo: string;
+}) {
+  const actorHref = `/talents/${actor.id}`;
+
+  return (
+    <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
+      <div className="relative">
+        <Link
+          href={actorHref}
+          className="group block aspect-[4/5] bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <ActorPortraitPreview name={actor.name} avatarUrl={actor.avatar_url} />
+          <Badge
+            variant="secondary"
+            className="absolute left-3 top-3 bg-background/85 backdrop-blur"
+          >
+            배우
+          </Badge>
+        </Link>
+        <BookmarkButton
+          targetType="actor"
+          targetId={actor.id}
+          bookmarked={bookmarked}
+          redirectTo={redirectTo}
+          compact
+          className="absolute right-3 top-3 z-10 bg-background/85 backdrop-blur hover:bg-background"
+        />
+      </div>
+      <CardContent className="flex flex-1 flex-col gap-4 p-4">
+        <div className="space-y-1">
+          <Link
+            href={actorHref}
+            className="block rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <CardTitle className="line-clamp-2 text-lg">{actor.name}</CardTitle>
+          </Link>
+          <div className="text-sm text-muted-foreground">
+            {actor.region ?? "지역 미등록"}
+            {actor.age ? ` · ${actor.age}세` : ""}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(actor.genres.length > 0 ? actor.genres : ["장르 준비 중"]).map((g) => (
+            <Badge key={g} variant="outline">
+              {g}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -381,7 +437,7 @@ function DecisionPill({ label, value }: { label: string; value: string }) {
   );
 }
 
-function AvatarPreview({
+function ActorPortraitPreview({
   name,
   avatarUrl,
 }: {
@@ -389,7 +445,7 @@ function AvatarPreview({
   avatarUrl: string | null;
 }) {
   return (
-    <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted text-sm font-semibold text-muted-foreground">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-muted text-5xl font-semibold text-muted-foreground transition-transform duration-200 group-hover:scale-[1.02]">
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

@@ -98,6 +98,35 @@ export async function updatePasswordAction(
   redirect("/discover");
 }
 
+// useActionState 시그니처용 래퍼 — 서버 액션이어야 React가 form action 바인딩을 정상 처리해요.
+export async function signInFormAction(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  return signInWithPassword(formData);
+}
+
+export async function signUpFormAction(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  return signUpWithPassword(formData);
+}
+
+export async function requestPasswordResetFormAction(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  return requestPasswordResetAction(formData);
+}
+
+export async function updatePasswordFormAction(
+  _prev: AuthResult | null,
+  formData: FormData,
+): Promise<AuthResult> {
+  return updatePasswordAction(formData);
+}
+
 export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -106,7 +135,7 @@ export async function signOutAction() {
 
 function getOrigin() {
   // Server action에서 window 접근 불가 — env 기반
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3333";
 }
 
 function translateAuthError(msg: string) {

@@ -9,7 +9,7 @@ import { APP_TABS, getRoleModeLabel } from "@/lib/app-ia";
 import type { UserRole } from "@/types/enums";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -45,7 +45,10 @@ export function MobileSiteMenu({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        render={<Button variant="ghost" size="icon-sm" className="md:hidden" />}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          "md:hidden",
+        )}
       >
         <Menu aria-hidden="true" />
         <span className="sr-only">메뉴 열기</span>
@@ -59,7 +62,10 @@ export function MobileSiteMenu({
           <div className="flex items-center justify-between gap-4">
             <BrandLogo size={30} textClassName="text-[1.75rem] leading-none" />
             <DialogClose
-              render={<Button variant="ghost" size="icon-sm" className="shrink-0" />}
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                "shrink-0",
+              )}
             >
               <X aria-hidden="true" />
               <span className="sr-only">메뉴 닫기</span>

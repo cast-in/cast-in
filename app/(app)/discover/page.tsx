@@ -106,10 +106,10 @@ async function CastingDiscoverPage() {
                   </div>
 
                   <Link
-                    href="/talents"
+                    href={`/talents/${actor.id}`}
                     className={buttonVariants({ variant: "secondary", size: "sm" })}
                   >
-                    배우 탐색에서 보기
+                    상세 보기
                   </Link>
                 </CardContent>
               </Card>

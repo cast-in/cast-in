@@ -110,7 +110,7 @@ export async function listMyBookmarks(): Promise<BookmarkItem[]> {
             .filter(Boolean)
             .join(" · "),
           badge: "배우",
-          href: `/talents?q=${encodeURIComponent(profile.name ?? "")}`,
+          href: `/talents/${encodeURIComponent(bookmark.target_id)}`,
           avatar_url: profile.avatar_url,
         };
       }
