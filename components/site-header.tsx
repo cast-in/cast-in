@@ -27,9 +27,14 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
-        <Link href="/">
-          <BrandLogo size={32} textClassName="text-lg" />
-        </Link>
+        <div className="flex min-w-0 items-center gap-2">
+          <Link href="/" className="shrink-0">
+            <BrandLogo size={32} textClassName="text-lg" />
+          </Link>
+          {showAuthenticatedHeader && viewer.activeRole ? (
+            <RoleModeBadge role={viewer.activeRole} />
+          ) : null}
+        </div>
 
         {showAuthenticatedHeader && viewer.activeRole ? (
           <>
@@ -91,5 +96,21 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         )}
       </div>
     </header>
+  );
+}
+
+function RoleModeBadge({ role }: { role: UserRole }) {
+  const isActor = role === "actor";
+
+  return (
+    <span
+      className={
+        isActor
+          ? "inline-flex h-6 shrink-0 items-center rounded-full border border-actor/20 bg-actor-soft px-2 text-[11px] font-semibold leading-none text-actor"
+          : "inline-flex h-6 shrink-0 items-center rounded-full border border-casting/20 bg-casting-soft px-2 text-[11px] font-semibold leading-none text-casting"
+      }
+    >
+      {isActor ? "배우 모드" : "캐스팅 모드"}
+    </span>
   );
 }
