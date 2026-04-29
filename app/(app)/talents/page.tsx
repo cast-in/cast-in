@@ -188,7 +188,7 @@ function ActorTalentCard({
 
   return (
     <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
-      <div className="relative">
+      <div className="relative isolate">
         <Link
           href={actorHref}
           className="group block aspect-[4/5] bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -397,7 +397,7 @@ function ActorJobCard({
 
   return (
     <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
-      <div className="relative">
+      <div className="relative isolate">
         <Link
           href={jobHref}
           className="group block aspect-[4/3] bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

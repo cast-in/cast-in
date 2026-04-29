@@ -25,7 +25,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   const needsOnboarding = Boolean(viewer.user && !showAuthenticatedHeader);
 
   return (
-    <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <Link href="/" className="shrink-0">
