@@ -44,14 +44,14 @@ export function ResetPasswordForm() {
         />
       </div>
 
-      <Button type="submit" disabled={pending} className="mt-2 w-full">
-        {pending ? "변경하는 중이에요" : "비밀번호 바꾸기"}
+      <Button type="submit" isLoading={pending} className="mt-2 w-full">
+        비밀번호 바꾸기
       </Button>
       <Link
         href="/login"
-        className="text-center text-sm text-muted-foreground hover:text-foreground"
+        className="text-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
       >
-        로그인하기
+        로그인
       </Link>
     </form>
   );

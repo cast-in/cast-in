@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/ui/error-notice";
@@ -11,31 +11,40 @@ import {
   signInFormAction,
   type AuthResult,
 } from "./actions";
+import { OAuthButtons } from "./oauth-buttons";
 
-type Mode = "signin" | "reset";
+export type AuthMode = "signin" | "reset";
 
-export function AuthForm() {
-  const [mode, setMode] = useState<Mode>("signin");
+type AuthFormProps = {
+  mode: AuthMode;
+  onModeChange: (mode: AuthMode) => void;
+};
 
+const authLinkClass =
+  "text-sm font-medium text-muted-foreground transition-colors hover:text-primary hover:underline disabled:pointer-events-none disabled:opacity-50";
+
+export function AuthForm({ mode, onModeChange }: AuthFormProps) {
   return (
     <div className="space-y-4">
       {mode === "signin" ? (
-        <SignInForm onForgot={() => setMode("reset")} />
+        <>
+          <SignInForm onForgot={() => onModeChange("reset")} />
+          <AuthDivider />
+          <OAuthButtons />
+        </>
       ) : (
-        <ResetForm onBack={() => setMode("signin")} />
+        <ResetForm onBack={() => onModeChange("signin")} />
       )}
+    </div>
+  );
+}
 
-      {mode === "signin" ? (
-        <p className="text-center text-sm text-muted-foreground">
-          처음이신가요?{" "}
-          <Link
-            href="/signup"
-            className="font-medium text-primary hover:underline"
-          >
-            새로 시작하기
-          </Link>
-        </p>
-      ) : null}
+function AuthDivider() {
+  return (
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="h-px flex-1 bg-border" />
+      <span>또는</span>
+      <div className="h-px flex-1 bg-border" />
     </div>
   );
 }
@@ -73,19 +82,28 @@ function SignInForm({ onForgot }: { onForgot: () => void }) {
           autoComplete="current-password"
           placeholder="비밀번호"
         />
-        <button
-          type="button"
-          className="w-fit text-sm text-primary hover:underline"
-          onClick={onForgot}
-        >
-          비밀번호를 잊었나요?
-        </button>
       </div>
 
-      <Button type="submit" disabled={pending} className="mt-2 w-full">
-        {pending ? "처리하는 중이에요" : "로그인하기"}
+      <Button type="submit" isLoading={pending} className="mt-2 w-full">
+        로그인하기
       </Button>
+
+      <AuthLinks onForgot={onForgot} />
     </form>
+  );
+}
+
+function AuthLinks({ onForgot }: { onForgot: () => void }) {
+  return (
+    <div className="flex items-center justify-center gap-4 text-sm">
+      <Link href="/signup" className={authLinkClass}>
+        회원가입
+      </Link>
+      <span className="h-3 w-px bg-border" aria-hidden="true" />
+      <button type="button" className={authLinkClass} onClick={onForgot}>
+        비밀번호 재설정
+      </button>
+    </div>
   );
 }
 
@@ -121,12 +139,19 @@ function ResetForm({ onBack }: { onBack: () => void }) {
         />
       </div>
 
-      <Button type="submit" disabled={pending} className="mt-2 w-full">
-        {pending ? "처리하는 중이에요" : "비밀번호 재설정 메일 받기"}
+      <Button type="submit" isLoading={pending} className="mt-2 w-full">
+        재설정 메일 보내기
       </Button>
-      <Button type="button" variant="ghost" disabled={pending} onClick={onBack}>
-        로그인으로 돌아가기
-      </Button>
+      <div className="flex justify-center">
+        <button
+          type="button"
+          className={authLinkClass}
+          disabled={pending}
+          onClick={onBack}
+        >
+          로그인
+        </button>
+      </div>
     </form>
   );
 }

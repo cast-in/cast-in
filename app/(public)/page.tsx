@@ -72,11 +72,11 @@ const FOOTER_INFO_COLUMNS = [
 
 export default async function LandingPage() {
   const { user, profile, activeRole, availableRoles } = await getViewerProfile();
-  const primaryHref = user ? "/discover" : "/login";
+  const primaryHref = user ? "/dashboard" : "/login";
   const serviceEntryLabel = user ? "내 화면 열기" : "로그인";
   const servicePrimaryLabel = user ? "바로 시작하기" : "무료로 시작하기";
   const footerServiceLinks = [
-    { label: "둘러보기", href: "/discover" },
+    { label: "둘러보기", href: "/dashboard" },
     { label: serviceEntryLabel, href: primaryHref },
     { label: servicePrimaryLabel, href: primaryHref },
   ] as const;
@@ -102,7 +102,7 @@ export default async function LandingPage() {
                 무료로 시작하기
               </Link>
               <Link
-                href="/discover"
+                href="/dashboard"
                 className={buttonVariants({ variant: "secondary", size: "lg" })}
               >
                 둘러보기
@@ -288,7 +288,7 @@ export default async function LandingPage() {
                 <Link href="/login" className="hover:text-foreground">
                   로그인
                 </Link>
-                <Link href="/discover" className="hover:text-foreground">
+                <Link href="/dashboard" className="hover:text-foreground">
                   둘러보기
                 </Link>
               </div>

@@ -1,10 +1,11 @@
 import type { UserRole } from "@/types/enums";
 
+export const APP_HOME_HREF = "/dashboard";
+
 export const APP_TABS: Record<
   UserRole,
   readonly {
     href:
-      | "/discover"
       | "/talents"
       | "/jobs"
       | "/profile"
@@ -13,14 +14,12 @@ export const APP_TABS: Record<
   }[]
 > = {
   actor: [
-    { href: "/discover", label: "대시보드" },
     { href: "/talents", label: "공고 찾기" },
     { href: "/jobs", label: "내 지원" },
     { href: "/profile", label: "프로필" },
     { href: "/messages", label: "메시지" },
   ],
   casting: [
-    { href: "/discover", label: "대시보드" },
     { href: "/talents", label: "배우 탐색" },
     { href: "/jobs", label: "공고 관리" },
     { href: "/messages", label: "메시지" },

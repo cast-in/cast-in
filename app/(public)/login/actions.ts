@@ -30,7 +30,7 @@ export async function signInWithPassword(
     .eq("id", user.id)
     .maybeSingle();
 
-  redirect(profile ? "/discover" : "/onboarding/role");
+  redirect(profile ? "/dashboard" : "/onboarding/role");
 }
 
 export async function signUpWithPassword(
@@ -38,8 +38,20 @@ export async function signUpWithPassword(
 ): Promise<AuthResult> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const privacyConsentAccepted =
+    formData.get("privacy_consent") === "accepted";
+  const marketingConsentAccepted =
+    formData.get("marketing_consent") === "accepted";
   if (!email || password.length < 6)
     return { ok: false, error: "비밀번호는 6자 이상으로 만들어주세요." };
+  if (!privacyConsentAccepted) {
+    return {
+      ok: false,
+      error: "개인정보 수집 및 이용에 동의해주세요.",
+    };
+  }
+
+  const consentedAt = new Date().toISOString();
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -48,6 +60,10 @@ export async function signUpWithPassword(
     options: {
       // 이메일 확인 설정이 켜져 있어도 리다이렉트 경로 통일
       emailRedirectTo: `${getOrigin()}/auth/callback`,
+      data: {
+        privacy_consent_at: consentedAt,
+        marketing_consent_at: marketingConsentAccepted ? consentedAt : null,
+      },
     },
   });
   if (error) return { ok: false, error: translateAuthError(error.message) };
@@ -95,7 +111,7 @@ export async function updatePasswordAction(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { ok: false, error: translateAuthError(error.message) };
 
-  redirect("/discover");
+  redirect("/dashboard");
 }
 
 // useActionState 시그니처용 래퍼 — 서버 액션이어야 React가 form action 바인딩을 정상 처리해요.

@@ -6,6 +6,7 @@ import { HeaderUserMenu } from "@/components/header-user-menu";
 import { MobileSiteMenu } from "@/components/mobile-site-menu";
 import { NotificationBell } from "@/components/notification-bell";
 import { buttonVariants } from "@/components/ui/button";
+import { APP_HOME_HREF } from "@/lib/app-ia";
 import type { NotificationItem } from "@/lib/queries/notifications";
 
 type HeaderViewer = {
@@ -23,12 +24,13 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
     viewer.user && viewer.profile && viewer.activeRole,
   );
   const needsOnboarding = Boolean(viewer.user && !showAuthenticatedHeader);
+  const logoHref = showAuthenticatedHeader ? APP_HOME_HREF : "/";
 
   return (
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Link href="/" className="shrink-0">
+          <Link href={logoHref} className="shrink-0">
             <BrandLogo size={32} textClassName="text-lg" />
           </Link>
           {showAuthenticatedHeader && viewer.activeRole ? (

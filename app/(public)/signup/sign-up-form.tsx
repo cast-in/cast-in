@@ -56,20 +56,67 @@ export function SignUpForm() {
           />
         </div>
 
-        <Button type="submit" disabled={pending} className="mt-2 w-full">
-          {pending ? "처리하는 중이에요" : "가입하고 시작하기"}
+        <fieldset className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+          <legend className="sr-only">개인정보 수집 동의</legend>
+          <ConsentCheckbox
+            id="privacy_consent"
+            name="privacy_consent"
+            required
+            disabled={pending}
+            label="[필수] 개인정보 수집 및 이용에 동의해요"
+          />
+          <ConsentCheckbox
+            id="marketing_consent"
+            name="marketing_consent"
+            disabled={pending}
+            label="[선택] 광고·마케팅 정보 수신에 동의해요"
+          />
+        </fieldset>
+
+        <Button type="submit" isLoading={pending} className="mt-2 w-full">
+          이메일로 가입하기
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
-        이미 계정이 있나요?{" "}
+      <div className="flex justify-center">
         <Link
           href="/login"
-          className="font-medium text-primary hover:underline"
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
         >
-          로그인하기
+          로그인으로 돌아가기
         </Link>
-      </p>
+      </div>
+    </div>
+  );
+}
+
+function ConsentCheckbox({
+  id,
+  name,
+  label,
+  required = false,
+  disabled = false,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  required?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <input
+        id={id}
+        name={name}
+        type="checkbox"
+        value="accepted"
+        required={required}
+        disabled={disabled}
+        className="mt-0.5 size-5 shrink-0 rounded-sm border border-input accent-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+      />
+      <label htmlFor={id} className="text-sm font-medium leading-5">
+        <span>{label}</span>
+      </label>
     </div>
   );
 }

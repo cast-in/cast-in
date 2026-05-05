@@ -9,6 +9,7 @@ type ActorProfileUpsert =
   Database["public"]["Tables"]["actor_profiles"]["Insert"];
 type CastingProfileUpsert =
   Database["public"]["Tables"]["casting_profiles"]["Insert"];
+type ProfileUpsert = Database["public"]["Tables"]["profiles"]["Insert"];
 
 export type SaveProfileResult = { ok: true } | { ok: false; error: string };
 
@@ -38,15 +39,24 @@ export async function saveOnboardingProfile(
   if (!name) return { ok: false, error: "이름을 입력해주세요." };
 
   const rawRedirect = String(formData.get("redirect_to") ?? "");
-  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/discover";
+  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/dashboard";
 
   // 1. profiles upsert
-  const { error: pErr } = await supabase.from("profiles").upsert({
+  const profilePayload: ProfileUpsert = {
     id: user.id,
     role,
     name,
     email: user.email ?? null,
-  });
+  };
+  const consentMetadata = getConsentMetadata(user.user_metadata);
+  if (consentMetadata.privacyConsentAt) {
+    profilePayload.privacy_consent_at = consentMetadata.privacyConsentAt;
+  }
+  if (consentMetadata.marketingConsentAt !== undefined) {
+    profilePayload.marketing_consent_at = consentMetadata.marketingConsentAt;
+  }
+
+  const { error: pErr } = await supabase.from("profiles").upsert(profilePayload);
   if (pErr) return { ok: false, error: pErr.message };
 
   // 2. 역할별 상세 프로필
@@ -91,4 +101,27 @@ export async function saveOnboardingProfile(
   }
 
   redirect(redirectTo);
+}
+
+function getConsentMetadata(metadata: {
+  [key: string]: unknown;
+} | null): {
+  privacyConsentAt: string | null;
+  marketingConsentAt?: string | null;
+} {
+  const hasMarketingConsentAt = Boolean(
+    metadata &&
+      Object.prototype.hasOwnProperty.call(metadata, "marketing_consent_at"),
+  );
+
+  return {
+    privacyConsentAt: getMetadataString(metadata?.privacy_consent_at),
+    marketingConsentAt: hasMarketingConsentAt
+      ? getMetadataString(metadata?.marketing_consent_at)
+      : undefined,
+  };
+}
+
+function getMetadataString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : null;
 }

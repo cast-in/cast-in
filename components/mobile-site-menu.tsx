@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Bookmark, ChevronRight, LogOut, Menu, Settings, X } from "lucide-react";
 import { signOutAction } from "@/app/(public)/login/actions";
 import { useState } from "react";
-import { APP_TABS, getRoleModeLabel } from "@/lib/app-ia";
+import { APP_HOME_HREF, APP_TABS, getRoleModeLabel } from "@/lib/app-ia";
 import type { UserRole } from "@/types/enums";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -59,7 +59,13 @@ export function MobileSiteMenu({
       >
         <div className="rounded-[28px] bg-popover p-6">
           <div className="flex items-center justify-between gap-4">
-            <BrandLogo size={30} textClassName="text-[1.75rem] leading-none" />
+            <Link
+              href={APP_HOME_HREF}
+              onClick={() => setOpen(false)}
+              className="shrink-0"
+            >
+              <BrandLogo size={30} textClassName="text-[1.75rem] leading-none" />
+            </Link>
             <DialogClose
               className={cn(
                 buttonVariants({ variant: "ghost", size: "icon-sm" }),

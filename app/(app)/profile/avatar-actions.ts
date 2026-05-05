@@ -40,7 +40,7 @@ export async function updateProfileAvatarAction(input: {
 
   revalidatePath("/profile");
   revalidatePath("/profile/edit");
-  revalidatePath("/discover");
+  revalidatePath("/dashboard");
   revalidatePath("/talents");
   return { ok: true };
 }
