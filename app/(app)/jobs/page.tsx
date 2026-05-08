@@ -108,7 +108,8 @@ async function CastingJobsPage({
             key={value}
             href={value === "all" ? "/jobs" : `/jobs?status=${value}`}
             className={buttonVariants({
-              variant: filter === value ? "default" : "outline",
+              color: filter === value ? "primary" : "neutral",
+              variant: filter === value ? "fill" : "outline",
               size: "sm",
             })}
           >
@@ -161,9 +162,7 @@ async function CastingJobsPage({
                     {formatDeadline(job.deadline)}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={isJobAccepting(job) ? "default" : "secondary"}
-                    >
+                    <Badge color={isJobAccepting(job) ? "primary" : "secondary"}>
                       {getJobAvailabilityLabel(job)}
                     </Badge>
                   </TableCell>
@@ -176,7 +175,7 @@ async function CastingJobsPage({
                       <Link
                         href={`/jobs/${job.id}`}
                         className={buttonVariants({
-                          variant: "secondary",
+                          color: "secondary",
                           size: "sm",
                         })}
                       >
@@ -258,7 +257,7 @@ async function ActorJobsPage() {
             !errorMessage ? (
               <Link
                 href="/talents"
-                className={buttonVariants({ variant: "secondary", size: "sm" })}
+                className={buttonVariants({ color: "secondary", size: "sm" })}
               >
                 공고 찾기
               </Link>
@@ -318,7 +317,11 @@ function ApplicationCard({
               {formatDeadline(application.deadline)}
             </CardDescription>
           </div>
-          <Badge variant={statusMeta.variant} className="shrink-0">
+          <Badge
+            color={statusMeta.color}
+            variant={statusMeta.variant}
+            className="shrink-0"
+          >
             {statusMeta.label}
           </Badge>
         </div>
@@ -352,7 +355,7 @@ function ApplicationCard({
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/jobs/${application.job_id}`}
-            className={buttonVariants({ variant: "secondary", size: "sm" })}
+            className={buttonVariants({ color: "secondary", size: "sm" })}
           >
             자세히 보기
           </Link>

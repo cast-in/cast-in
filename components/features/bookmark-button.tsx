@@ -52,7 +52,8 @@ export function BookmarkButton({
       aria-label={optimistic ? "저장 취소" : "저장하기"}
       className={cn(
         buttonVariants({
-          variant: compact ? "ghost" : optimistic ? "secondary" : "outline",
+          color: compact ? "neutral" : optimistic ? "secondary" : "neutral",
+          variant: compact ? "ghost" : optimistic ? "fill" : "outline",
           size: compact ? "icon-lg" : "sm",
         }),
         compact && "rounded-full text-muted-foreground hover:text-foreground",

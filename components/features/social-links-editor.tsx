@@ -103,7 +103,7 @@ export function SocialLinksEditor({
             </div>
             <Button
               type="button"
-              variant="ghost"
+              color="neutral" variant="ghost"
               size="icon"
               aria-label={`링크 ${index + 1} 삭제`}
               onClick={() => removeLink(link.id)}
@@ -115,7 +115,7 @@ export function SocialLinksEditor({
       </div>
       <Button
         type="button"
-        variant="secondary"
+        color="secondary"
         size="sm"
         className="w-fit"
         disabled={links.length >= MAX_SOCIAL_LINKS}

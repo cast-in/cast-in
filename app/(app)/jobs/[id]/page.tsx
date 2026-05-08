@@ -222,7 +222,7 @@ function JobDetailBody({
         {job.requirements.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
             {job.requirements.map((requirement) => (
-              <Badge key={requirement} variant="secondary" className="h-8 px-3">
+              <Badge key={requirement} color="secondary" className="h-8 px-3">
                 {requirement}
               </Badge>
             ))}

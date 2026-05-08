@@ -67,7 +67,7 @@ function PageLink({
   icon: "prev" | "next";
 }) {
   const className = cn(
-    buttonVariants({ variant: "outline", size: "sm" }),
+    buttonVariants({ color: "neutral", variant: "outline", size: "sm" }),
     disabled && "pointer-events-none opacity-50",
   );
   const Icon = icon === "prev" ? ChevronLeft : ChevronRight;

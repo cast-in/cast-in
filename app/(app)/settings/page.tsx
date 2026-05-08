@@ -56,7 +56,7 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent className="pt-4">
           <form action={signOutAction}>
-            <Button type="submit" variant="secondary">
+            <Button type="submit" color="secondary">
               로그아웃
             </Button>
           </form>

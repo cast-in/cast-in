@@ -21,7 +21,7 @@ export default async function BookmarksPage() {
           action={
             <Link
               href="/talents"
-              className={buttonVariants({ variant: "secondary", size: "sm" })}
+              className={buttonVariants({ color: "secondary", size: "sm" })}
             >
               공고 찾기
             </Link>
@@ -41,7 +41,7 @@ export default async function BookmarksPage() {
                       />
                     ) : null}
                     <div className="min-w-0">
-                      <Badge variant="secondary" className="mb-2">
+                      <Badge color="secondary" className="mb-2">
                         {item.badge}
                       </Badge>
                       <h2 className="line-clamp-2 text-lg font-semibold">

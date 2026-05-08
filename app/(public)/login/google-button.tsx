@@ -29,7 +29,7 @@ export function GoogleSignInButton() {
       type="button"
       onClick={handleClick}
       disabled={loading}
-      className={buttonVariants({ size: "lg", variant: "outline" })}
+      className={buttonVariants({ size: "lg", color: "neutral", variant: "outline" })}
     >
       {loading ? "이동하는 중이에요" : "Google 계정으로 계속하기"}
     </button>

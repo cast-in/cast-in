@@ -195,8 +195,9 @@ function ActorTalentCard({
         >
           <ActorPortraitPreview name={actor.name} avatarUrl={actor.avatar_url} />
           <Badge
-            variant="secondary"
-            className="absolute left-3 top-3 bg-background/85 backdrop-blur"
+            color="secondary"
+            variant="soft-outline"
+            className="absolute left-3 top-3"
           >
             배우
           </Badge>
@@ -224,7 +225,7 @@ function ActorTalentCard({
         </div>
         <div className="flex flex-wrap gap-2">
           {(actor.genres.length > 0 ? actor.genres : ["장르 준비 중"]).map((g) => (
-            <Badge key={g} variant="outline">
+            <Badge key={g} color="neutral" variant="outline">
               {g}
             </Badge>
           ))}
@@ -351,7 +352,7 @@ async function ActorTalentsPage({
             q || region || genre || jobState !== "active" || sort !== "deadline" ? (
               <Link
                 href="/talents"
-                className={buttonVariants({ variant: "secondary", size: "sm" })}
+                className={buttonVariants({ color: "secondary", size: "sm" })}
               >
                 필터 초기화
               </Link>
@@ -404,7 +405,7 @@ function ActorJobCard({
         >
           <JobPostingPreview />
           <Badge
-            variant={accepting ? "default" : "secondary"}
+            color={accepting ? "primary" : "secondary"}
             className="absolute left-3 top-3 bg-background/85 text-foreground backdrop-blur"
           >
             {deadlineSignal}
@@ -432,8 +433,12 @@ function ActorJobCard({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{job.genre ?? "장르 미정"}</Badge>
-          <Badge variant="outline">{job.region ?? "지역 협의"}</Badge>
+          <Badge color="neutral" variant="outline">
+            {job.genre ?? "장르 미정"}
+          </Badge>
+          <Badge color="neutral" variant="outline">
+            {job.region ?? "지역 협의"}
+          </Badge>
         </div>
         <p className="mt-auto text-sm text-muted-foreground">
           {formatDeadline(job.deadline)}

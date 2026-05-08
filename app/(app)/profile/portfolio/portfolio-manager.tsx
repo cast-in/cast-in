@@ -262,13 +262,13 @@ function PortfolioCard({
           />
         )}
         <Badge
-          variant="secondary"
+          color="secondary"
           className="absolute left-2 top-2 bg-background/80 backdrop-blur"
         >
           {item.type === "image" ? "사진" : "영상"}
         </Badge>
         <Button
-          variant="destructive"
+          color="destructive"
           size="sm"
           className="absolute right-2 top-2 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
           onClick={handleDelete}

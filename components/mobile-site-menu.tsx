@@ -45,7 +45,7 @@ export function MobileSiteMenu({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          buttonVariants({ color: "neutral", variant: "ghost", size: "icon-sm" }),
           "md:hidden",
         )}
       >
@@ -68,7 +68,7 @@ export function MobileSiteMenu({
             </Link>
             <DialogClose
               className={cn(
-                buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                buttonVariants({ color: "neutral", variant: "ghost", size: "icon-sm" }),
                 "shrink-0",
               )}
             >
@@ -143,7 +143,7 @@ export function MobileSiteMenu({
               href="/bookmarks"
               onClick={() => setOpen(false)}
               className={cn(
-                buttonVariants({ variant: "ghost", size: "lg" }),
+                buttonVariants({ color: "neutral", variant: "ghost", size: "lg" }),
                 "w-full justify-center",
               )}
             >
@@ -154,7 +154,7 @@ export function MobileSiteMenu({
               href="/settings"
               onClick={() => setOpen(false)}
               className={cn(
-                buttonVariants({ variant: "secondary", size: "lg" }),
+                buttonVariants({ color: "secondary", size: "lg" }),
                 "w-full justify-center",
               )}
             >
@@ -165,7 +165,7 @@ export function MobileSiteMenu({
               <button
                 type="submit"
                 className={cn(
-                  buttonVariants({ variant: "ghost", size: "lg" }),
+                  buttonVariants({ color: "neutral", variant: "ghost", size: "lg" }),
                   "w-full justify-center text-destructive hover:bg-destructive/10 hover:text-destructive",
                 )}
               >

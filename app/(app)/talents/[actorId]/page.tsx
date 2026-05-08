@@ -101,7 +101,7 @@ function ActorHero({
     <SurfaceCard>
       <div
         aria-hidden="true"
-        className="h-28 bg-gradient-to-r from-actor/90 via-brand-blue/75 to-background md:h-36"
+        className="h-28 bg-gradient-to-r from-primary/90 via-primary/50 to-background md:h-36"
       />
       <div className="px-6 pb-6">
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
@@ -113,7 +113,10 @@ function ActorHero({
               bookmarked={bookmarked}
               redirectTo={`/talents/${actor.id}`}
             />
-            <Badge variant="secondary" className="bg-actor-soft text-actor">
+            <Badge
+              color="secondary"
+              className="bg-[#edf3ff] text-[#4f7cff] dark:bg-[#4f7cff]/16 dark:text-[#76a2ff]"
+            >
               배우
             </Badge>
           </div>
@@ -285,7 +288,7 @@ function PortfolioSection({
                     />
                   )}
                   <Badge
-                    variant="secondary"
+                    color="secondary"
                     className="absolute left-2 top-2 bg-background/85 backdrop-blur"
                   >
                     {item.type === "image" ? "사진" : "영상"}
@@ -340,7 +343,7 @@ function ChipGroup({
       {items.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {items.map((item) => (
-            <Badge key={item} variant="secondary" className="h-7 px-3">
+            <Badge key={item} color="secondary" className="h-7 px-3">
               {item}
             </Badge>
           ))}

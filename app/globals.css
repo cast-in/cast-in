@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@source inline("bg-secondary-soft bg-secondary-hover bg-secondary-soft-hover bg-success bg-success-soft bg-warning bg-warning-soft text-secondary-soft-foreground text-success text-success-foreground text-warning text-warning-foreground border-success border-warning hover:bg-secondary-soft-hover hover:bg-success/80 hover:bg-success/15 hover:bg-warning/80 hover:bg-warning/20 aria-expanded:bg-secondary-soft-hover aria-expanded:bg-success aria-expanded:bg-success/15 aria-expanded:bg-success-soft aria-expanded:bg-warning aria-expanded:bg-warning/20 aria-expanded:bg-warning-soft aria-expanded:text-secondary-soft-foreground aria-expanded:text-success aria-expanded:text-success-foreground aria-expanded:text-warning aria-expanded:text-warning-foreground");
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -9,14 +11,13 @@
   --color-foreground: var(--foreground);
   --color-ink: var(--ink);
   --color-muted-ink: var(--muted-ink);
-  --color-actor: var(--actor);
-  --color-actor-soft: var(--actor-soft);
-  --color-casting: var(--casting);
-  --color-casting-soft: var(--casting-soft);
-  --color-brand-blue: var(--brand-blue);
-  --font-sans: "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui,
+    sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
-  --font-heading: "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-heading:
+    "Noto Sans KR", "Noto Sans KR Fallback", ui-sans-serif, system-ui,
+    sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -33,14 +34,26 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning: var(--warning);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-success: var(--success);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  --color-secondary-soft-hover: var(--secondary-soft-hover);
+  --color-secondary-soft-foreground: var(--secondary-soft-foreground);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-secondary-hover: var(--secondary-hover);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -69,11 +82,6 @@
   /* 와이어프레임 브랜드 토큰 포팅 */
   --ink: #191f28;
   --muted-ink: #8b95a1;
-  --actor: #4f7cff;
-  --actor-soft: #edf3ff;
-  --casting: #0ea5a3;
-  --casting-soft: #e7fbfa;
-  --brand-blue: #3182f6;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -82,14 +90,26 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.7697 0.2124 148.67);
+  --primary-soft: oklch(0.7695 0.2127 148.73 / 10%);
   --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.4598 0.0267 254.54);
+  --secondary-foreground: oklch(1 0 0);
+  --secondary-hover: oklch(0.4598 0.0267 254.54 / 90%);
+  --secondary-soft: oklch(0.2487 0.0814 256.36 / 5.1%);
+  --secondary-soft-foreground: oklch(0.4598 0.0267 254.54);
+  --secondary-soft-hover: oklch(0.2201 0.0643 251.2 / 10.2%);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.6395 0.2085 21.18);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.6201 0.1906 258.2);
+  --success-soft: oklch(0.6201 0.1906 258.2 / 10%);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(79.5% 0.184 86.047);
+  --warning-soft: oklch(0.795 0.184 86.047 / 15%);
+  --warning-foreground: oklch(0.145 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -112,11 +132,6 @@
 .dark {
   --ink: oklch(0.985 0 0);
   --muted-ink: #8b95a1;
-  --actor: #76a2ff;
-  --actor-soft: rgba(79, 124, 255, 0.16);
-  --casting: #2dd4cf;
-  --casting-soft: rgba(14, 165, 163, 0.16);
-  --brand-blue: #60a5fa;
 
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -125,14 +140,26 @@
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.7697 0.2124 148.67);
+  --primary-soft: oklch(0.7697 0.2124 148.67 / 10%);
   --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.4598 0.0267 254.54);
+  --secondary-foreground: oklch(1 0 0);
+  --secondary-hover: oklch(0.4598 0.0267 254.54 / 90%);
+  --secondary-soft: oklch(0.8973 0.0519 285.31 / 10.98%);
+  --secondary-soft-foreground: oklch(0.9943 0.0013 286.38 / 89%);
+  --secondary-soft-hover: oklch(0.9108 0.0448 285.48 / 18.82%);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: oklch(0.6406 0.2075 21.05);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.6201 0.1906 258.2);
+  --success-soft: oklch(0.6201 0.1906 258.2 / 10%);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.681 0.162 75.834);
+  --warning-soft: oklch(0.795 0.184 86.047 / 15%);
+  --warning-foreground: oklch(0.145 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);

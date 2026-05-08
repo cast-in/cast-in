@@ -88,7 +88,7 @@ export default async function LandingPage() {
       <main className="overflow-hidden">
         <section className="mx-auto max-w-5xl px-5 py-18 md:py-24">
           <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-            <Badge variant="secondary">캐스트인</Badge>
+            <Badge color="secondary">캐스트인</Badge>
             <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight md:text-6xl">
               배우와 캐스팅을
               <br />
@@ -103,7 +103,7 @@ export default async function LandingPage() {
               </Link>
               <Link
                 href="/dashboard"
-                className={buttonVariants({ variant: "secondary", size: "lg" })}
+                className={buttonVariants({ color: "secondary", size: "lg" })}
               >
                 둘러보기
               </Link>

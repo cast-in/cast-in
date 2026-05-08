@@ -52,7 +52,7 @@ export default async function MessagesPage({
               action={
                 <Link
                   href="/jobs"
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                  className={buttonVariants({ color: "secondary", size: "sm" })}
                 >
                   내 지원 보기
                 </Link>

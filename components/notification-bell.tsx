@@ -63,7 +63,7 @@ export function NotificationBell({
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
-          buttonVariants({ variant: "outline", size: "icon-sm" }),
+          buttonVariants({ color: "neutral", variant: "outline", size: "icon-sm" }),
           "relative rounded-full",
         )}
         onClick={() => setOpen((current) => !current)}
@@ -91,7 +91,7 @@ export function NotificationBell({
               알림
             </h2>
             {unreadCount > 0 ? (
-              <Badge variant="secondary">
+              <Badge color="secondary">
                 새 알림 {unreadCount > 99 ? "99+" : unreadCount}
               </Badge>
             ) : null}
@@ -147,7 +147,7 @@ export function NotificationBell({
             href="/notifications"
             onClick={() => setOpen(false)}
             className={cn(
-              buttonVariants({ variant: "secondary", size: "sm" }),
+              buttonVariants({ color: "secondary", size: "sm" }),
               "mt-3 w-full justify-between",
             )}
           >

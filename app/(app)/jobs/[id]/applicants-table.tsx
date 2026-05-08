@@ -93,7 +93,10 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <Badge variant={APPLICATION_STATUS_META[status].variant}>
+          <Badge
+            color={APPLICATION_STATUS_META[status].color}
+            variant={APPLICATION_STATUS_META[status].variant}
+          >
             {APPLICATION_STATUS_META[status].label}
           </Badge>
           <Select
@@ -129,7 +132,8 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
           actorId={applicant.actor_id}
           label="메시지"
           size="sm"
-          variant="default"
+          color="primary"
+          variant="fill"
         />
       </TableCell>
     </TableRow>
@@ -190,7 +194,7 @@ function CastingMemoCell({
           {memo ?? "메모 없음"}
         </p>
         <DialogTrigger
-          render={<Button variant="ghost" size="sm" aria-label="내부 메모 수정" />}
+          render={<Button color="neutral" variant="ghost" size="sm" aria-label="내부 메모 수정" />}
         >
           <Pencil aria-hidden="true" className="size-4" />
         </DialogTrigger>
@@ -215,7 +219,7 @@ function CastingMemoCell({
         </div>
         <DialogFooter>
           <Button
-            variant="ghost"
+            color="neutral" variant="ghost"
             onClick={() => setOpen(false)}
             disabled={pending}
           >

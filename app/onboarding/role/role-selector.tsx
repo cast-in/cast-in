@@ -47,7 +47,7 @@ export function RoleSelector() {
             >
               <div className="flex items-center justify-between">
                 <strong className="text-lg">{opt.title}</strong>
-                <Badge variant={isActive ? "default" : "secondary"}>
+                <Badge color={isActive ? "primary" : "secondary"}>
                   {opt.label}
                 </Badge>
               </div>

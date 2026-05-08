@@ -55,7 +55,7 @@ export function DatePicker({
           <Button
             id={id}
             type="button"
-            variant="outline"
+            color="neutral" variant="outline"
             data-empty={!date}
             className={cn(
               "h-10 w-full justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
@@ -118,7 +118,7 @@ export function DateTimePicker({
           <Button
             id={id}
             type="button"
-            variant="outline"
+            color="neutral" variant="outline"
             data-empty={!date}
             className={cn(
               "h-10 w-full justify-start text-left font-normal data-[empty=true]:text-muted-foreground",

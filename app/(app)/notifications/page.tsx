@@ -21,7 +21,7 @@ export default async function NotificationsPage() {
       actions={
         unreadCount > 0 ? (
           <form action={markAllNotificationsReadAction}>
-            <Button type="submit" variant="secondary" size="sm">
+            <Button type="submit" color="secondary" size="sm">
               모두 읽음
             </Button>
           </form>
@@ -74,7 +74,7 @@ export default async function NotificationsPage() {
                       name="notification_id"
                       value={notification.id}
                     />
-                    <Button type="submit" variant="outline" size="sm">
+                    <Button type="submit" color="neutral" variant="outline" size="sm">
                       읽음
                     </Button>
                   </form>

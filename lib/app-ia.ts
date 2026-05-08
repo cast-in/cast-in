@@ -9,7 +9,8 @@ export const APP_TABS: Record<
       | "/talents"
       | "/jobs"
       | "/profile"
-      | "/messages";
+      | "/messages"
+      | "/cds";
     label: string;
   }[]
 > = {
@@ -18,11 +19,13 @@ export const APP_TABS: Record<
     { href: "/jobs", label: "내 지원" },
     { href: "/profile", label: "프로필" },
     { href: "/messages", label: "메시지" },
+    { href: "/cds", label: "CDS" },
   ],
   casting: [
     { href: "/talents", label: "배우 탐색" },
     { href: "/jobs", label: "공고 관리" },
     { href: "/messages", label: "메시지" },
+    { href: "/cds", label: "CDS" },
   ],
 };
 

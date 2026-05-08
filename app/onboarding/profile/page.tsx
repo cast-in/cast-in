@@ -17,7 +17,7 @@ export default async function OnboardingProfilePage({
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <Badge variant="secondary">
+        <Badge color="secondary">
           {isAddFlow ? "역할 추가" : "2/2 프로필 만들기"}
         </Badge>
         <h2 className="text-3xl font-bold tracking-tight">

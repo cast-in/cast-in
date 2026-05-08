@@ -91,7 +91,7 @@ export function ApplyForm({
 
           <DialogFooter>
             <DialogClose
-              render={<Button type="button" variant="ghost" disabled={pending} />}
+              render={<Button type="button" color="neutral" variant="ghost" disabled={pending} />}
             >
               닫기
             </DialogClose>

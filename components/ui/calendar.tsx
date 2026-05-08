@@ -56,12 +56,12 @@ function Calendar({
           defaultClassNames.nav,
         ),
         button_previous: cn(
-          buttonVariants({ variant: buttonVariant }),
+          buttonVariants({ color: "neutral", variant: buttonVariant }),
           "size-(--cell-size) p-0 select-none aria-disabled:opacity-50",
           defaultClassNames.button_previous,
         ),
         button_next: cn(
-          buttonVariants({ variant: buttonVariant }),
+          buttonVariants({ color: "neutral", variant: buttonVariant }),
           "size-(--cell-size) p-0 select-none aria-disabled:opacity-50",
           defaultClassNames.button_next,
         ),
@@ -202,7 +202,9 @@ function CalendarDayButton({
 
   return (
     <Button
+      {...props}
       ref={ref}
+      color="neutral"
       variant="ghost"
       size="icon"
       data-day={day.date.toLocaleDateString(locale?.code)}
@@ -220,7 +222,6 @@ function CalendarDayButton({
         defaultClassNames.day,
         className,
       )}
-      {...props}
     />
   );
 }

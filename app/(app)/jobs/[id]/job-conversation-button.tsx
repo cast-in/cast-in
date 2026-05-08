@@ -4,7 +4,11 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircleMore } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import {
+  Button,
+  type ButtonColor,
+  type ButtonVariant,
+} from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { startJobConversationAction } from "./actions";
 
@@ -15,8 +19,9 @@ type JobConversationButtonProps = {
   pendingLabel?: string;
   iconOnly?: boolean;
   ariaLabel?: string;
-  variant?: "default" | "outline" | "secondary" | "ghost";
-  size?: "default" | "sm" | "lg" | "icon-lg";
+  color?: ButtonColor;
+  variant?: ButtonVariant;
+  size?: "md" | "sm" | "lg" | "icon-lg";
   className?: string;
 };
 
@@ -27,8 +32,9 @@ export function JobConversationButton({
   pendingLabel = "여는 중이에요",
   iconOnly = false,
   ariaLabel,
+  color = "neutral",
   variant = "outline",
-  size = "default",
+  size = "md",
   className,
 }: JobConversationButtonProps) {
   const router = useRouter();
@@ -53,6 +59,7 @@ export function JobConversationButton({
   return (
     <Button
       type="button"
+      color={color}
       variant={variant}
       size={iconOnly ? "icon-lg" : size}
       className={cn(className)}

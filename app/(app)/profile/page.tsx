@@ -181,7 +181,7 @@ function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
         </div>
         <Link
           href="/profile/portfolio"
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          className={buttonVariants({ color: "neutral", variant: "outline", size: "sm" })}
         >
           관리
         </Link>
@@ -215,7 +215,7 @@ function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
                   />
                 )}
                 <Badge
-                  variant="secondary"
+                  color="secondary"
                   className="absolute left-2 top-2 bg-background/80 backdrop-blur"
                 >
                   {item.type === "image" ? "사진" : "영상"}
@@ -264,8 +264,8 @@ function ProfileHeroCard({
 
   const badgeToneClassName =
     tone === "actor"
-      ? "bg-actor-soft text-actor"
-      : "bg-casting-soft text-casting";
+      ? "bg-[#edf3ff] text-[#4f7cff] dark:bg-[#4f7cff]/16 dark:text-[#76a2ff]"
+      : "bg-[#e7fbfa] text-[#0ea5a3] dark:bg-[#0ea5a3]/16 dark:text-[#2dd4cf]";
 
   return (
     <SurfaceCard>
@@ -302,7 +302,7 @@ function ProfileHeroCard({
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
             {title}
           </h1>
-          <Badge variant="secondary" className={badgeToneClassName}>
+          <Badge color="secondary" className={badgeToneClassName}>
             {entityLabel}
           </Badge>
         </div>
@@ -371,7 +371,7 @@ function ChipSectionCard({
             {section.items.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {section.items.map((item) => (
-                  <Badge key={item} variant="secondary" className="h-7 px-3">
+                  <Badge key={item} color="secondary" className="h-7 px-3">
                     {item}
                   </Badge>
                 ))}

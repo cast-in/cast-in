@@ -105,7 +105,7 @@ export function NewJobForm() {
           name="status"
           value="draft"
           disabled={pending}
-          variant="secondary"
+          color="secondary"
         >
           임시저장
         </Button>

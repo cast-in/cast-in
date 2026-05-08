@@ -197,7 +197,7 @@ function ApplicantFlowCard({
             ))}
           </dl>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="secondary">
+            <Badge color="secondary">
               검토 필요 {dashboard.actionableApplicants}명
             </Badge>
             <span>대기와 검토 상태를 먼저 확인해요.</span>
@@ -247,7 +247,7 @@ function ClosingJobsCard({ jobs }: { jobs: CastingDashboardJob[] }) {
                         지원자 {job.applicant_count}명 · {formatDeadline(job.deadline)}
                       </span>
                     </span>
-                    <Badge variant="secondary" className="shrink-0">
+                    <Badge color="secondary" className="shrink-0">
                       {formatDeadlineSignal(job.deadline)}
                     </Badge>
                   </Link>
@@ -276,7 +276,7 @@ function ActorExplorePanel() {
           </div>
           <Link
             href="/talents"
-            className={buttonVariants({ variant: "secondary", size: "sm" })}
+            className={buttonVariants({ color: "secondary", size: "sm" })}
           >
             배우 탐색 보기
             <ArrowRight aria-hidden="true" />
@@ -454,7 +454,7 @@ function ActorApplicationFlowCard({
             ))}
           </dl>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="secondary">
+            <Badge color="secondary">
               진행 중 {dashboard.activeApplications}건
             </Badge>
             <span>상태가 바뀌면 알림으로 알려드려요.</span>
@@ -504,7 +504,7 @@ function ActorClosingJobsCard({ jobs }: { jobs: ActorDashboardJob[] }) {
                         {[job.region, job.genre].filter(Boolean).join(" · ") || "정보 미등록"}
                       </span>
                     </span>
-                    <Badge variant="secondary" className="shrink-0">
+                    <Badge color="secondary" className="shrink-0">
                       {formatDeadlineSignal(job.deadline)}
                     </Badge>
                   </Link>
@@ -533,7 +533,7 @@ function JobExplorePanel() {
           </div>
           <Link
             href="/talents"
-            className={buttonVariants({ variant: "secondary", size: "sm" })}
+            className={buttonVariants({ color: "secondary", size: "sm" })}
           >
             공고 찾기
             <ArrowRight aria-hidden="true" />

@@ -27,7 +27,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   const logoHref = showAuthenticatedHeader ? APP_HOME_HREF : "/";
 
   return (
-    <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-primary bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <Link href={logoHref} className="shrink-0">
@@ -85,7 +85,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
               <>
                 <Link
                   href="/login"
-                  className={buttonVariants({ variant: "ghost" })}
+                  className={buttonVariants({ color: "neutral", variant: "ghost" })}
                 >
                   로그인
                 </Link>
@@ -108,8 +108,8 @@ function RoleModeBadge({ role }: { role: UserRole }) {
     <span
       className={
         isActor
-          ? "inline-flex h-6 shrink-0 items-center rounded-full border border-actor/20 bg-actor-soft px-2 text-[11px] font-semibold leading-none text-actor"
-          : "inline-flex h-6 shrink-0 items-center rounded-full border border-casting/20 bg-casting-soft px-2 text-[11px] font-semibold leading-none text-casting"
+          ? "inline-flex h-6 shrink-0 items-center rounded-full border border-[#4f7cff]/20 bg-[#edf3ff] px-2 text-[11px] font-semibold leading-none text-[#4f7cff] dark:bg-[#4f7cff]/16 dark:text-[#76a2ff]"
+          : "inline-flex h-6 shrink-0 items-center rounded-full border border-[#0ea5a3]/20 bg-[#e7fbfa] px-2 text-[11px] font-semibold leading-none text-[#0ea5a3] dark:bg-[#0ea5a3]/16 dark:text-[#2dd4cf]"
       }
     >
       {isActor ? "배우 모드" : "캐스팅 모드"}

@@ -30,7 +30,7 @@ export function BackButton({
   return (
     <Button
       type="button"
-      variant="ghost"
+      color="neutral" variant="ghost"
       size="icon"
       className={cn("translate-y-px", className)}
       aria-label={ariaLabel}

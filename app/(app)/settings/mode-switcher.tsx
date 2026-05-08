@@ -58,7 +58,7 @@ export function ModeSwitcher({
             >
               <div className="flex items-center gap-2">
                 <span className="font-medium">{getRoleModeLabel(role)}</span>
-                {!enabled ? <Badge variant="secondary">미추가</Badge> : null}
+                {!enabled ? <Badge color="secondary">미추가</Badge> : null}
               </div>
 
               {enabled ? (
@@ -71,7 +71,7 @@ export function ModeSwitcher({
               ) : (
                 <Link
                   href={`/onboarding/profile?role=${role}&intent=add`}
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                  className={buttonVariants({ color: "secondary", size: "sm" })}
                 >
                   추가하기
                 </Link>
@@ -99,7 +99,7 @@ export function ModeSwitcher({
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
+              color="neutral" variant="outline"
               onClick={() => setPendingRole(null)}
               disabled={isPending}
             >

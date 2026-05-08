@@ -69,7 +69,7 @@ export function HeaderUserMenu({
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
-          buttonVariants({ variant: "outline" }),
+          buttonVariants({ color: "neutral", variant: "outline" }),
           "h-auto items-center gap-2 rounded-full px-3 py-1.5",
         )}
         onClick={() => setOpen((current) => !current)}
@@ -121,7 +121,7 @@ export function HeaderUserMenu({
                 <button
                   type="submit"
                   className={cn(
-                    buttonVariants({ variant: "ghost" }),
+                    buttonVariants({ color: "neutral", variant: "ghost" }),
                     "w-full justify-between",
                   )}
                 >
@@ -133,7 +133,7 @@ export function HeaderUserMenu({
               <Link
                 href={`/onboarding/profile?role=${otherRole}&intent=add`}
                 className={cn(
-                  buttonVariants({ variant: "ghost" }),
+                  buttonVariants({ color: "neutral", variant: "ghost" }),
                   "w-full justify-between",
                 )}
                 onClick={() => setOpen(false)}
@@ -145,7 +145,7 @@ export function HeaderUserMenu({
 
             <Link
               href="/profile"
-              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              className={cn(buttonVariants({ color: "neutral", variant: "ghost" }), "w-full justify-between")}
               onClick={() => setOpen(false)}
             >
               <span>내 프로필</span>
@@ -154,7 +154,7 @@ export function HeaderUserMenu({
 
             <Link
               href="/bookmarks"
-              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              className={cn(buttonVariants({ color: "neutral", variant: "ghost" }), "w-full justify-between")}
               onClick={() => setOpen(false)}
             >
               <span>저장한 항목</span>
@@ -163,7 +163,7 @@ export function HeaderUserMenu({
 
             <Link
               href="/settings"
-              className={cn(buttonVariants({ variant: "ghost" }), "w-full justify-between")}
+              className={cn(buttonVariants({ color: "neutral", variant: "ghost" }), "w-full justify-between")}
               onClick={() => setOpen(false)}
             >
               <span>설정</span>
@@ -174,7 +174,7 @@ export function HeaderUserMenu({
               <button
                 type="submit"
                 className={cn(
-                  buttonVariants({ variant: "ghost" }),
+                  buttonVariants({ color: "neutral", variant: "ghost" }),
                   "w-full justify-between text-destructive hover:bg-destructive/10 hover:text-destructive",
                 )}
               >

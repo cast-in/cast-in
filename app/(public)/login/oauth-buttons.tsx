@@ -52,7 +52,7 @@ export function OAuthButtons({ intent = "login" }: OAuthButtonsProps = {}) {
             key={provider.id}
             type="button"
             size="lg"
-            variant="outline"
+            color="neutral" variant="outline"
             aria-label={label}
             className={`${socialButtonClass} ${provider.className}`}
             onClick={() => toast(getUnavailableMessage(provider))}
