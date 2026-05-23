@@ -221,7 +221,7 @@ async function ActorJobsPage() {
   ).length;
 
   return (
-    <PageContainer pageTitle="내 지원">
+    <PageContainer pageTitle="지원 관리">
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="grid gap-3 md:grid-cols-3">

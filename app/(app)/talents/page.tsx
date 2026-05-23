@@ -284,7 +284,7 @@ async function ActorTalentsPage({
   });
 
   return (
-    <PageContainer pageTitle="공고 찾기">
+    <PageContainer pageTitle="공고 탐색">
       <SearchFilterBar
         action="/talents"
         searchField={{

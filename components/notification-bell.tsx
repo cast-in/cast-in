@@ -82,7 +82,7 @@ export function NotificationBell({
           role="dialog"
           aria-labelledby={menuTitleId}
           className={cn(
-            "absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-[24px] border bg-popover p-3 text-popover-foreground shadow-[0_24px_64px_rgba(15,23,42,0.18)]",
+            "absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border bg-popover p-3 text-popover-foreground shadow-[0_24px_64px_rgba(15,23,42,0.18)]",
             panelClassName,
           )}
         >
@@ -91,7 +91,7 @@ export function NotificationBell({
               알림
             </h2>
             {unreadCount > 0 ? (
-              <Badge color="secondary">
+              <Badge color="secondary" variant="soft">
                 새 알림 {unreadCount > 99 ? "99+" : unreadCount}
               </Badge>
             ) : null}
@@ -147,7 +147,7 @@ export function NotificationBell({
             href="/notifications"
             onClick={() => setOpen(false)}
             className={cn(
-              buttonVariants({ color: "secondary", size: "sm" }),
+              buttonVariants({ color: "neutral", variant: "ghost", size: "sm" }),
               "mt-3 w-full justify-between",
             )}
           >

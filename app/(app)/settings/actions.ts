@@ -43,5 +43,5 @@ export async function switchActiveRoleAction(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/talents");
 }

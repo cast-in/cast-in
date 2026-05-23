@@ -96,7 +96,7 @@ export function HeaderUserMenu({
           id={menuId}
           role="dialog"
           aria-labelledby={menuTitleId}
-          className="absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-[28px] border bg-popover p-3 text-popover-foreground shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
+          className="absolute right-0 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border bg-popover p-3 text-popover-foreground shadow-[0_24px_64px_rgba(15,23,42,0.18)]"
         >
           <h2 id={menuTitleId} className="sr-only">프로필 메뉴</h2>
 

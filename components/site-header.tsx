@@ -6,7 +6,6 @@ import { HeaderUserMenu } from "@/components/header-user-menu";
 import { MobileSiteMenu } from "@/components/mobile-site-menu";
 import { NotificationBell } from "@/components/notification-bell";
 import { buttonVariants } from "@/components/ui/button";
-import { APP_HOME_HREF } from "@/lib/app-ia";
 import type { NotificationItem } from "@/lib/queries/notifications";
 
 type HeaderViewer = {
@@ -24,15 +23,18 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
     viewer.user && viewer.profile && viewer.activeRole,
   );
   const needsOnboarding = Boolean(viewer.user && !showAuthenticatedHeader);
-  const logoHref = showAuthenticatedHeader ? APP_HOME_HREF : "/";
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:z-0 after:h-px after:bg-border after:content-['']">
       <div className="relative z-10 mx-auto flex h-full max-w-5xl items-center justify-between gap-6 px-5">
         <div className="flex min-w-0 items-center gap-2">
-          <Link href={logoHref} className="shrink-0">
+          {showAuthenticatedHeader ? (
             <BrandLogo size={32} />
-          </Link>
+          ) : (
+            <Link href="/" className="shrink-0">
+              <BrandLogo size={32} />
+            </Link>
+          )}
         </div>
 
         {showAuthenticatedHeader && viewer.activeRole ? (
