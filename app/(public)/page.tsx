@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ChevronDown, Mail, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { LogoMarquee } from "@/components/features/logo-marquee";
@@ -72,6 +73,12 @@ const FOOTER_INFO_COLUMNS = [
 
 export default async function LandingPage() {
   const { user, profile, activeRole, availableRoles } = await getViewerProfile();
+
+  if (user) {
+    if (!profile || !activeRole) redirect("/onboarding/role");
+    redirect("/talents");
+  }
+
   const primaryHref = user ? "/dashboard" : "/login";
   const serviceEntryLabel = user ? "내 화면 열기" : "로그인";
   const servicePrimaryLabel = user ? "바로 시작하기" : "무료로 시작하기";
