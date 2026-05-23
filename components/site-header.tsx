@@ -31,7 +31,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <Link href={logoHref} className="shrink-0">
-            <BrandLogo size={32} textClassName="text-lg" />
+            <BrandLogo size={32} />
           </Link>
           {showAuthenticatedHeader && viewer.activeRole ? (
             <RoleModeBadge role={viewer.activeRole} />

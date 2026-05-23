@@ -11,7 +11,6 @@ import {
   signInFormAction,
   type AuthResult,
 } from "./actions";
-import { OAuthButtons } from "./oauth-buttons";
 
 export type AuthMode = "signin" | "reset";
 
@@ -27,24 +26,10 @@ export function AuthForm({ mode, onModeChange }: AuthFormProps) {
   return (
     <div className="space-y-4">
       {mode === "signin" ? (
-        <>
-          <SignInForm onForgot={() => onModeChange("reset")} />
-          <AuthDivider />
-          <OAuthButtons />
-        </>
+        <SignInForm onForgot={() => onModeChange("reset")} />
       ) : (
         <ResetForm onBack={() => onModeChange("signin")} />
       )}
-    </div>
-  );
-}
-
-function AuthDivider() {
-  return (
-    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-      <div className="h-px flex-1 bg-border" />
-      <span>또는</span>
-      <div className="h-px flex-1 bg-border" />
     </div>
   );
 }

@@ -17,12 +17,7 @@ export function LoginCard() {
   return (
     <Card className="w-[min(460px,calc(100vw-40px))]">
       <CardHeader className="items-center text-center">
-        <BrandLogo
-          href="/"
-          className="mb-1"
-          size={28}
-          textClassName="text-base"
-        />
+        <BrandLogo href="/" className="mb-1" size={28} />
         <CardTitle className="text-2xl">{title}</CardTitle>
       </CardHeader>
       <CardContent>

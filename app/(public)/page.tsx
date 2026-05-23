@@ -211,7 +211,7 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-5xl">
             <div className="grid gap-10 lg:grid-cols-[1fr_1fr_1.4fr]">
               <div>
-                <BrandLogo textClassName="text-xl" />
+                <BrandLogo />
                 <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
                   캐스트인은 배우와 캐스팅이 더 빠르고 자연스럽게 연결되도록
                   돕는 캐스팅 협업 플랫폼이에요.

@@ -64,7 +64,7 @@ export function MobileSiteMenu({
               onClick={() => setOpen(false)}
               className="shrink-0"
             >
-              <BrandLogo size={30} textClassName="text-[1.75rem] leading-none" />
+              <BrandLogo size={30} />
             </Link>
             <DialogClose
               className={cn(

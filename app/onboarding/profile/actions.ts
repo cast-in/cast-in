@@ -10,6 +10,7 @@ type ActorProfileUpsert =
 type CastingProfileUpsert =
   Database["public"]["Tables"]["casting_profiles"]["Insert"];
 type ProfileUpsert = Database["public"]["Tables"]["profiles"]["Insert"];
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export type SaveProfileResult = { ok: true } | { ok: false; error: string };
 
@@ -56,7 +57,10 @@ export async function saveOnboardingProfile(
     profilePayload.marketing_consent_at = consentMetadata.marketingConsentAt;
   }
 
-  const { error: pErr } = await supabase.from("profiles").upsert(profilePayload);
+  const { error: pErr } = await upsertProfileWithConsentFallback(
+    supabase,
+    profilePayload,
+  );
   if (pErr) return { ok: false, error: pErr.message };
 
   // 2. 역할별 상세 프로필
@@ -124,4 +128,32 @@ function getConsentMetadata(metadata: {
 
 function getMetadataString(value: unknown) {
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+async function upsertProfileWithConsentFallback(
+  supabase: SupabaseServerClient,
+  profilePayload: ProfileUpsert,
+) {
+  const result = await supabase.from("profiles").upsert(profilePayload);
+  if (!isMissingConsentSchemaError(result.error)) return result;
+
+  const fallbackPayload: ProfileUpsert = { ...profilePayload };
+  delete fallbackPayload.privacy_consent_at;
+  delete fallbackPayload.marketing_consent_at;
+
+  return supabase.from("profiles").upsert(fallbackPayload);
+}
+
+function isMissingConsentSchemaError(
+  error: { message?: string; code?: string } | null,
+) {
+  if (!error?.message) return false;
+
+  const message = error.message.toLowerCase();
+  return (
+    (error.code === "PGRST204" || message.includes("schema cache")) &&
+    message.includes("profiles") &&
+    (message.includes("privacy_consent_at") ||
+      message.includes("marketing_consent_at"))
+  );
 }

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Google OAuth 콜백 — Supabase가 ?code=... 로 리다이렉트함.
- * code → session 교환 후 온보딩 or 홈으로 이동.
+ * Supabase 이메일 인증/비밀번호 재설정 콜백.
+ * code를 세션으로 교환한 뒤 온보딩 또는 요청된 경로로 이동한다.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
