@@ -14,27 +14,10 @@ export function getThemePreferenceScript() {
   return `
     (function () {
       try {
-        var key = "${THEME_PREFERENCE_KEY}";
         var root = document.documentElement;
-        var stored = localStorage.getItem(key);
-        var cookieMatch = document.cookie.match(new RegExp("(?:^|; )" + key + "=([^;]+)"));
-        var cookieValue = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
-        var preference = stored || cookieValue || "system";
-
-        if (!["light", "dark", "system"].includes(preference)) {
-          preference = "system";
-        }
-
-        var resolved =
-          preference === "system"
-            ? window.matchMedia("(prefers-color-scheme: dark)").matches
-              ? "dark"
-              : "light"
-            : preference;
-
-        root.dataset.themePreference = preference;
-        root.classList.toggle("dark", resolved === "dark");
-        root.style.colorScheme = resolved;
+        root.dataset.themePreference = "light";
+        root.classList.remove("dark");
+        root.style.colorScheme = "light";
       } catch (error) {
         console.error("Failed to apply theme preference", error);
       }

@@ -150,11 +150,13 @@ const tableRows = [
   },
 ];
 
+const SHOW_THEME_MODE_TABS = false;
+
 export default function CdsPage() {
   return (
     <PageContainer
       pageTitle="Cast In Design System (CDS)"
-      actions={<ThemeModeTabs />}
+      actions={SHOW_THEME_MODE_TABS ? <ThemeModeTabs /> : null}
     >
       <div className="space-y-10">
         <ShowcaseSection title="Tokens">

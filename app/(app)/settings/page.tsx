@@ -10,16 +10,12 @@ import { PageContainer } from "@/components/page-container";
 import { ThemePreferenceControl } from "@/components/theme-preference-control";
 import { signOutAction } from "@/app/(public)/login/actions";
 import { getViewerProfile } from "@/lib/queries/viewer";
-import { cookies } from "next/headers";
-import { isThemePreference, THEME_PREFERENCE_KEY } from "@/lib/theme";
 import { ModeSwitcher } from "./mode-switcher";
 
+const SHOW_THEME_SETTINGS = false;
+
 export default async function SettingsPage() {
-  const cookieStore = await cookies();
-  const storedThemePreference = cookieStore.get(THEME_PREFERENCE_KEY)?.value;
-  const themePreference = isThemePreference(storedThemePreference)
-    ? storedThemePreference
-    : "system";
+  const themePreference = "light";
   const { user, activeRole, availableRoles } = await getViewerProfile();
 
   return (
@@ -38,14 +34,16 @@ export default async function SettingsPage() {
         </Card>
       ) : null}
 
-      <Card>
+      {SHOW_THEME_SETTINGS ? (
+        <Card>
         <CardHeader>
           <CardTitle>화면 모드</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <ThemePreferenceControl initialPreference={themePreference} />
         </CardContent>
-      </Card>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
