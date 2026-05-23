@@ -69,14 +69,25 @@ export function HeaderUserMenu({
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
-          buttonVariants({ color: "neutral", variant: "outline" }),
-          "h-auto items-center gap-2 rounded-full px-3 py-1.5",
+          buttonVariants({ color: "neutral", variant: "outline", size: "md" }),
+          "items-center gap-2 rounded-full py-1 px-2",
         )}
         onClick={() => setOpen((current) => !current)}
       >
+        <Avatar size="sm">
+          {avatarUrl ? (
+            <AvatarImage src={avatarUrl} alt={`${profileName} 프로필 사진`} />
+          ) : null}
+          <AvatarFallback>
+            {getAvatarFallback(profileName || userEmail || "U")}
+          </AvatarFallback>
+        </Avatar>
         <span className="max-w-28 truncate text-sm font-medium">
           {profileName}
         </span>
+        <Badge color="primary" variant="soft-outline" size="sm">
+          {getRoleTriggerLabel(activeRole)}
+        </Badge>
         <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
       </button>
 
@@ -192,4 +203,8 @@ export function HeaderUserMenu({
 function getAvatarFallback(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 1).toUpperCase() : "U";
+}
+
+function getRoleTriggerLabel(role: UserRole) {
+  return role === "actor" ? "배우" : "캐스팅";
 }

@@ -27,15 +27,12 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   const logoHref = showAuthenticatedHeader ? APP_HOME_HREF : "/";
 
   return (
-    <header className="sticky top-0 z-30 border-b border-primary bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-5 py-3">
+    <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:z-0 after:h-px after:bg-border after:content-['']">
+      <div className="relative z-10 mx-auto flex h-full max-w-5xl items-center justify-between gap-6 px-5">
         <div className="flex min-w-0 items-center gap-2">
           <Link href={logoHref} className="shrink-0">
             <BrandLogo size={32} />
           </Link>
-          {showAuthenticatedHeader && viewer.activeRole ? (
-            <RoleModeBadge role={viewer.activeRole} />
-          ) : null}
         </div>
 
         {showAuthenticatedHeader && viewer.activeRole ? (
@@ -98,21 +95,5 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         )}
       </div>
     </header>
-  );
-}
-
-function RoleModeBadge({ role }: { role: UserRole }) {
-  const isActor = role === "actor";
-
-  return (
-    <span
-      className={
-        isActor
-          ? "inline-flex h-6 shrink-0 items-center rounded-full border border-[#4f7cff]/20 bg-[#edf3ff] px-2 text-[11px] font-semibold leading-none text-[#4f7cff] dark:bg-[#4f7cff]/16 dark:text-[#76a2ff]"
-          : "inline-flex h-6 shrink-0 items-center rounded-full border border-[#0ea5a3]/20 bg-[#e7fbfa] px-2 text-[11px] font-semibold leading-none text-[#0ea5a3] dark:bg-[#0ea5a3]/16 dark:text-[#2dd4cf]"
-      }
-    >
-      {isActor ? "배우 모드" : "캐스팅 모드"}
-    </span>
   );
 }

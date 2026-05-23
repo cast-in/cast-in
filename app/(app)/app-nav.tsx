@@ -33,10 +33,11 @@ export function AppNav({
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors",
+              "relative inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors after:pointer-events-none after:absolute after:-bottom-[12px] after:left-3 after:right-3 after:z-20 after:h-px after:rounded-full after:content-['']",
               active
-                ? "bg-primary/10 text-primary"
+                ? "text-primary after:bg-primary"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >

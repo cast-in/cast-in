@@ -454,7 +454,7 @@ function ActorApplicationFlowCard({
             ))}
           </dl>
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Badge color="secondary">
+            <Badge color="secondary" variant="soft">
               진행 중 {dashboard.activeApplications}건
             </Badge>
             <span>상태가 바뀌면 알림으로 알려드려요.</span>
@@ -504,7 +504,7 @@ function ActorClosingJobsCard({ jobs }: { jobs: ActorDashboardJob[] }) {
                         {[job.region, job.genre].filter(Boolean).join(" · ") || "정보 미등록"}
                       </span>
                     </span>
-                    <Badge color="secondary" className="shrink-0">
+                    <Badge color="secondary" variant="soft" className="shrink-0">
                       {formatDeadlineSignal(job.deadline)}
                     </Badge>
                   </Link>
@@ -533,7 +533,11 @@ function JobExplorePanel() {
           </div>
           <Link
             href="/talents"
-            className={buttonVariants({ color: "secondary", size: "sm" })}
+            className={buttonVariants({
+              color: "secondary",
+              variant: "soft",
+              size: "sm",
+            })}
           >
             공고 찾기
             <ArrowRight aria-hidden="true" />

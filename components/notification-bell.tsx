@@ -63,14 +63,14 @@ export function NotificationBell({
         aria-expanded={open}
         aria-haspopup="dialog"
         className={cn(
-          buttonVariants({ color: "neutral", variant: "outline", size: "icon-sm" }),
+          buttonVariants({ color: "neutral", variant: "outline", size: "icon" }),
           "relative rounded-full",
         )}
         onClick={() => setOpen((current) => !current)}
       >
         <Bell aria-hidden="true" />
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.65rem] font-semibold leading-4 text-primary-foreground">
+          <span className="absolute -right-1 -top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-[#EDFBF0] px-1 text-[0.65rem] font-semibold leading-4 text-primary ring-1 ring-primary/20">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         ) : null}
