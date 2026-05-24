@@ -21,6 +21,11 @@ function parseCsv(value: string): string[] {
     .filter(Boolean);
 }
 
+function parsePositiveInt(value: FormDataEntryValue | null) {
+  const parsed = Number.parseInt(String(value ?? "").trim(), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function parseVisibility(value: string) {
   if (value === "connections" || value === "private") return value;
   return "public";
@@ -78,6 +83,23 @@ export async function saveOnboardingProfile(
     }
     if (formData.has("skills")) {
       payload.skills = parseCsv(String(formData.get("skills") ?? ""));
+    }
+    if (formData.has("gender")) {
+      const gender = String(formData.get("gender") ?? "").trim();
+      payload.gender = gender || null;
+    }
+    if (formData.has("height_cm")) {
+      payload.height_cm = parsePositiveInt(formData.get("height_cm"));
+    }
+    if (formData.has("weight_kg")) {
+      payload.weight_kg = parsePositiveInt(formData.get("weight_kg"));
+    }
+    if (formData.has("affiliation")) {
+      payload.affiliation =
+        String(formData.get("affiliation") ?? "").trim() || "프리랜서";
+    }
+    if (formData.has("image_tags")) {
+      payload.image_tags = parseCsv(String(formData.get("image_tags") ?? ""));
     }
     if (formData.has("social_url") || formData.has("social_title")) {
       const socialLinks = parseSocialLinksFromForm(formData);

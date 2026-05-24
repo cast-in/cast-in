@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import Link from "next/link";
-import { Mail, MapPin, Pencil, Phone, Sparkles, UserRound } from "lucide-react";
+import { Mail, Pencil, Phone, UserRound } from "lucide-react";
+import { ActorProfileView } from "@/app/(app)/profile/actor-profile-view";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -9,13 +10,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { SocialLinksList } from "@/components/features/social-links-list";
 import { PageContainer } from "@/components/page-container";
 import { getRoleEntityLabel } from "@/lib/app-ia";
-import { calculateAge } from "@/lib/format";
-import { listMyPortfolio, type PortfolioItem } from "@/lib/queries/portfolio";
+import {
+  getActorProfileMetrics,
+  listActorAwards,
+  listActorCredits,
+} from "@/lib/queries/actor-profile-showcase";
+import { listMyPortfolio } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
-import { parseSocialLinks, type ActorSocialLink } from "@/lib/social-links";
+import { parseSocialLinks } from "@/lib/social-links";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ProfilePage() {
@@ -79,166 +83,37 @@ export default async function ProfilePage() {
     );
   }
 
-  const [{ data: actorProfile }, portfolioItems] = await Promise.all([
+  const [
+    { data: actorProfile },
+    portfolioItems,
+    credits,
+    awards,
+    metrics,
+  ] = await Promise.all([
     supabase
       .from("actor_profiles")
-      .select("region, birth_date, gender, height_cm, genres, bio, skills, social_links, visibility")
+      .select("affiliation, region, birth_date, gender, height_cm, weight_kg, genres, bio, skills, image_tags, social_links, updated_at")
       .eq("user_id", profile.id)
       .maybeSingle(),
     listMyPortfolio(),
+    listActorCredits(profile.id).catch(() => []),
+    listActorAwards(profile.id).catch(() => []),
+    getActorProfileMetrics(profile.id),
   ]);
 
-  const genres = actorProfile?.genres?.filter(Boolean) ?? [];
-  const skills = actorProfile?.skills?.filter(Boolean) ?? [];
   const socialLinks = parseSocialLinks(actorProfile?.social_links);
-  const bio =
-    actorProfile?.bio ??
-    "자기소개를 아직 입력하지 않았어요. 강점과 분위기를 먼저 짧게 남겨보세요.";
-  const location =
-    actorProfile?.region ??
-    "활동 지역을 아직 등록하지 않았어요.";
-  const age = calculateAge(actorProfile?.birth_date ?? null);
-  const gender = getGenderLabel(actorProfile?.gender ?? null);
-  const height = actorProfile?.height_cm
-    ? `${actorProfile.height_cm}cm`
-    : "신장 미등록";
 
   return (
-    <PageContainer>
-      <ProfileHeroCard
-        entityLabel={getRoleEntityLabel(activeRole)}
-        title={profile.name}
-        subtitle={[location, age !== null ? `${age}세` : null]
-          .filter(Boolean)
-          .join(" · ")}
-        summary={bio}
-        tone="actor"
-        avatarUrl={profile.avatar_url ?? null}
-        meta={[
-          {
-            icon: MapPin,
-            label: location,
-          },
-          {
-            icon: Sparkles,
-            label: genres.length > 0 ? genres.join(" · ") : "장르 미등록",
-          },
-          {
-            icon: Mail,
-            label: email,
-          },
-        ]}
-      />
-
-      <InfoSectionCard title="자기소개" body={bio} />
-
-      {socialLinks.length > 0 ? <SocialLinksSectionCard links={socialLinks} /> : null}
-
-      <SurfaceCard>
-        <CardHeader className="px-6 pt-6">
-          <CardTitle className="text-xl">프로필 정보</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 px-6 pb-6 md:grid-cols-2">
-          <DetailItem label="활동 지역" value={location} />
-          <DetailItem label="나이" value={age !== null ? `${age}세` : "나이 미등록"} />
-          <DetailItem label="성별" value={gender} />
-          <DetailItem label="신장" value={height} />
-        </CardContent>
-      </SurfaceCard>
-
-      <ChipSectionCard
-        title="대표 장르와 특기"
-        sections={[
-          {
-            label: "공개 범위",
-            items: [getVisibilityLabel(actorProfile?.visibility ?? "public")],
-            emptyLabel: "전체 공개",
-          },
-          {
-            label: "장르",
-            items: genres,
-            emptyLabel: "등록한 장르가 없어요.",
-          },
-          {
-            label: "특기",
-            items: skills,
-            emptyLabel: "등록한 특기가 없어요.",
-          },
-        ]}
-      />
-
-      <PortfolioSectionCard items={portfolioItems} />
-    </PageContainer>
-  );
-}
-
-function PortfolioSectionCard({ items }: { items: PortfolioItem[] }) {
-  return (
-    <SurfaceCard>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 px-6 pt-6">
-        <div>
-          <CardTitle className="text-xl">사진과 영상</CardTitle>
-        </div>
-        <Link
-          href="/profile/portfolio"
-          className={buttonVariants({ color: "neutral", variant: "outline", size: "sm" })}
-        >
-          관리
-        </Link>
-      </CardHeader>
-      <CardContent className="px-6 pb-6">
-        {items.length === 0 ? (
-          <p className="rounded-2xl bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-            아직 올린 포트폴리오가 없어요. 첫 번째 사진이나 영상을 추가해보세요.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            {items.slice(0, 6).map((item) => (
-              <div
-                key={item.id}
-                className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted ring-1 ring-border/60"
-              >
-                {item.type === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.url}
-                    alt={item.caption ?? "포트폴리오"}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <video
-                    src={item.url}
-                    className="h-full w-full object-cover"
-                    preload="metadata"
-                    muted
-                  />
-                )}
-                <Badge
-                  color="secondary"
-                  className="absolute left-2 top-2 bg-background/80 backdrop-blur"
-                >
-                  {item.type === "image" ? "사진" : "영상"}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </SurfaceCard>
-  );
-}
-
-function SocialLinksSectionCard({ links }: { links: ActorSocialLink[] }) {
-  return (
-    <SurfaceCard>
-      <CardHeader className="px-6 pt-6">
-        <CardTitle className="text-xl">SNS와 웹사이트</CardTitle>
-      </CardHeader>
-      <CardContent className="px-3 pb-4">
-        <SocialLinksList links={links} />
-      </CardContent>
-    </SurfaceCard>
+    <ActorProfileView
+      profile={profile}
+      actorProfile={actorProfile}
+      email={email}
+      socialLinks={socialLinks}
+      portfolioItems={portfolioItems}
+      credits={credits}
+      awards={awards}
+      metrics={metrics}
+    />
   );
 }
 
@@ -350,42 +225,6 @@ function InfoSectionCard({
   );
 }
 
-function ChipSectionCard({
-  title,
-  sections,
-}: {
-  title: string;
-  sections: { label: string; items: string[]; emptyLabel: string }[];
-}) {
-  return (
-    <SurfaceCard>
-      <CardHeader className="px-6 pt-6">
-        <CardTitle className="text-xl">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6 px-6 pb-6">
-        {sections.map((section) => (
-          <div key={section.label} className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">
-              {section.label}
-            </h2>
-            {section.items.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {section.items.map((item) => (
-                  <Badge key={item} color="secondary" className="h-7 px-3">
-                    {item}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">{section.emptyLabel}</p>
-            )}
-          </div>
-        ))}
-      </CardContent>
-    </SurfaceCard>
-  );
-}
-
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-muted/40 p-4">
@@ -400,16 +239,4 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 function getAvatarFallback(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 1).toUpperCase() : "U";
-}
-
-function getVisibilityLabel(value: string) {
-  if (value === "connections") return "연결된 캐스팅만";
-  if (value === "private") return "비공개";
-  return "전체 공개";
-}
-
-function getGenderLabel(value: string | null) {
-  if (value === "male") return "남성";
-  if (value === "female") return "여성";
-  return value?.trim() || "성별 미등록";
 }

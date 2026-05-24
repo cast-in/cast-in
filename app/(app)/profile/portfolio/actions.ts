@@ -38,6 +38,7 @@ export async function addPortfolioItemAction(input: {
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/profile");
+  revalidatePath("/profile/edit");
   revalidatePath("/profile/portfolio");
   return { ok: true };
 }
@@ -78,6 +79,7 @@ export async function deletePortfolioItemAction(
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/profile");
+  revalidatePath("/profile/edit");
   revalidatePath("/profile/portfolio");
   return { ok: true };
 }
