@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { isJobAccepting } from "@/lib/job-status";
 import {
   ApplyToJobSchema,
+  ManageJobSchema,
   StartJobConversationSchema,
   UpdateApplicationSchema,
   formatZodError,
@@ -22,6 +24,49 @@ export type StartJobConversationResult =
 export type UpdateApplicationResult =
   | { ok: true }
   | { ok: false; error: string };
+
+export async function closeJobAction(formData: FormData): Promise<void> {
+  const parsed = ManageJobSchema.safeParse({
+    job_id: formData.get("job_id") ?? "",
+  });
+  if (!parsed.success) {
+    throw new Error(formatZodError(parsed.error));
+  }
+
+  const { activeRole } = await getViewerProfile();
+  if (activeRole !== "casting") {
+    throw new Error("캐스팅만 공고를 마감할 수 있어요.");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("먼저 로그인해주세요.");
+
+  const { data: job, error: fetchErr } = await supabase
+    .from("jobs")
+    .select("id, casting_id")
+    .eq("id", parsed.data.job_id)
+    .maybeSingle();
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!job) throw new Error("공고를 찾을 수 없어요.");
+  if (job.casting_id !== user.id) {
+    throw new Error("이 공고를 마감할 권한이 없어요.");
+  }
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({ status: "closed" })
+    .eq("id", parsed.data.job_id)
+    .eq("casting_id", user.id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/jobs/${parsed.data.job_id}`);
+  revalidatePath("/jobs");
+  revalidatePath("/discover");
+  redirect(`/jobs/${parsed.data.job_id}`);
+}
 
 export async function updateApplicationAction(
   formData: FormData,

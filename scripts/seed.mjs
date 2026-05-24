@@ -47,6 +47,22 @@ const regions = ["서울","서울 · 강남","서울 · 마포","서울 · 성�
 const allGenres = ["드라마","영화","광고","뮤지컬","예능","웹드라마","뮤직비디오","다큐멘터리","연극","숏폼","시트콤"];
 const allSkills = ["보컬","댄스","승마","영어","일본어","중국어","펜싱","기타","피아노","발레","액션","방송 진행","MC","태권도","수영","서핑","스킨스쿠버","드럼","색소폰","바이올린","합기도","복싱"];
 const allImageTags = ["시크함","소년미","청량함","따뜻함","도시적","강렬함","자연스러움","고급스러움","반전 매력","차분함","밝은 에너지","신뢰감"];
+const jobRoleTypes = ["주연","조연","단역","엑스트라","더빙 / 내레이션"];
+const jobTargetGenders = ["female","male"];
+const jobTargetAgeGroups = ["10s","20s","30s","40s","50s_plus"];
+const jobPlatforms = ["넷플릭스","디즈니+","티빙","웨이브","독립 영화"];
+const jobFees = ["협의", "회차당 30만원", "회차당 50만원", "촬영 전체 120만원", "내부 규정에 따름"];
+const jobSchedules = [
+  "2026년 6월 중 2회차",
+  "2026년 7월 ~ 8월",
+  "오디션 후 일정 협의",
+  "주말 포함 3회차 촬영",
+  "프로덕션 일정에 따라 협의",
+];
+const jobMediaUrls = [
+  "/job-posters/sample-1.png",
+  "/job-posters/sample-2.png",
+];
 
 const creditTemplates = [
   { title: "영화 〈D.P〉", role: "조연" },
@@ -274,6 +290,40 @@ function randomFutureOrPastISO() {
   d.setHours(23, 59, 0, 0);
   return { iso: d.toISOString(), isPast: offsetDays < 0 };
 }
+function inferJobRoleType(text) {
+  if (text.includes("주연")) return "주연";
+  if (text.includes("조연")) return "조연";
+  if (text.includes("단역")) return "단역";
+  if (text.includes("엑스트라")) return "엑스트라";
+  if (text.includes("내레이션") || text.includes("내레이터")) return "더빙 / 내레이션";
+  return pick(jobRoleTypes);
+}
+function inferJobTargetGenders(text) {
+  if (text.includes("여주") || text.includes("여배우") || text.includes("여성")) {
+    return ["female"];
+  }
+  if (text.includes("남주") || text.includes("남자") || text.includes("남성")) {
+    return ["male"];
+  }
+  return pickMany(jobTargetGenders, 1, 2);
+}
+function inferJobTargetAgeGroups(text) {
+  const groups = [];
+  if (text.includes("10대")) groups.push("10s");
+  if (text.includes("20대") || text.includes("2030")) groups.push("20s");
+  if (text.includes("30대") || text.includes("2030")) groups.push("30s");
+  if (text.includes("40대")) groups.push("40s");
+  if (text.includes("50대")) groups.push("50s_plus");
+  return groups.length > 0 ? groups : pickMany(jobTargetAgeGroups, 1, 2);
+}
+function inferJobPlatforms(text, genre) {
+  if (text.includes("넷플릭스")) return ["넷플릭스"];
+  if (text.includes("디즈니")) return ["디즈니+"];
+  if (text.includes("티빙")) return ["티빙"];
+  if (text.includes("웨이브")) return ["웨이브"];
+  if (genre === "영화" || text.includes("독립영화")) return ["독립 영화"];
+  return [pick(jobPlatforms)];
+}
 function seedEmail(role, i) {
   return `${SEED_EMAIL_PREFIX}${role}-${String(i).padStart(2, "0")}@${SEED_DOMAIN}`;
 }
@@ -487,6 +537,7 @@ async function main() {
     for (let k = 0; k < count; k++) {
       const tpl = pick(jobTemplates);
       const title = tpl.title.replace("{name}", pick(["여름","겨울","봄","이방인","낯선 이"]));
+      const jobText = `${title} ${tpl.description}`;
       const { iso: deadline, isPast } = randomFutureOrPastISO();
       const rawStatus = pick(statuses);
       const status = isPast && rawStatus === "open" ? "closed" : rawStatus;
@@ -497,10 +548,17 @@ async function main() {
           casting_id: c.id,
           title,
           description: tpl.description,
+          fee_text: pick(jobFees),
           genre: tpl.genre,
+          media_urls: jobMediaUrls,
           region: pick(regions),
           deadline,
           requirements: pickMany(["연기 경력", "보컬", "영어", "승마", "운전 면허", "해외 촬영 가능"], 0, 3),
+          role_type: inferJobRoleType(jobText),
+          shooting_schedule: pick(jobSchedules),
+          target_genders: inferJobTargetGenders(jobText),
+          target_age_groups: inferJobTargetAgeGroups(jobText),
+          platforms: inferJobPlatforms(jobText, tpl.genre),
           status,
         })
         .select("id, status, deadline")

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { APP_TABS } from "@/lib/app-ia";
+import { usePathname, useSearchParams } from "next/navigation";
+import { APP_TABS, isAppTabActive } from "@/lib/app-ia";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/enums";
 
@@ -18,13 +18,18 @@ export function AppNav({
   counts?: AppNavCounts;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const tabs = APP_TABS[role];
 
   return (
     <nav aria-label="주요 메뉴" className="flex flex-wrap justify-center gap-1">
       {tabs.map((tab) => {
-        const active =
-          pathname === tab.href || pathname.startsWith(tab.href + "/");
+        const active = isAppTabActive({
+          href: tab.href,
+          pathname,
+          role,
+          source: searchParams.get("from"),
+        });
         const count =
           tab.href === "/messages"
             ? counts.messages ?? 0

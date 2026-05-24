@@ -392,11 +392,18 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string | null
+          fee_text: string | null
           genre: string | null
           id: string
+          media_urls: string[]
+          platforms: string[]
           region: string | null
           requirements: string[]
+          role_type: string | null
+          shooting_schedule: string | null
           status: Database["public"]["Enums"]["job_status"]
+          target_age_groups: string[]
+          target_genders: string[]
           title: string
           updated_at: string
         }
@@ -405,11 +412,18 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string | null
+          fee_text?: string | null
           genre?: string | null
           id?: string
+          media_urls?: string[]
+          platforms?: string[]
           region?: string | null
           requirements?: string[]
+          role_type?: string | null
+          shooting_schedule?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          target_age_groups?: string[]
+          target_genders?: string[]
           title: string
           updated_at?: string
         }
@@ -418,11 +432,18 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string | null
+          fee_text?: string | null
           genre?: string | null
           id?: string
+          media_urls?: string[]
+          platforms?: string[]
           region?: string | null
           requirements?: string[]
+          role_type?: string | null
+          shooting_schedule?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          target_age_groups?: string[]
+          target_genders?: string[]
           title?: string
           updated_at?: string
         }

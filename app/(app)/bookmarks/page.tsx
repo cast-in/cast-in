@@ -1,107 +1,211 @@
 import Link from "next/link";
-import { Bookmark } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Bookmark } from "lucide-react";
+import { JobCard } from "@/components/features/job-card";
+import { JobSearchPanel } from "@/components/features/job-search-panel";
+import { Pagination } from "@/components/features/pagination";
+import { PageContainer } from "@/components/page-container";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageContainer } from "@/components/page-container";
-import { BookmarkButton } from "@/components/features/bookmark-button";
-import { listMyBookmarks } from "@/lib/queries/bookmarks";
+import {
+  JOB_AGE_GROUP_OPTIONS,
+  JOB_PLATFORM_OPTIONS,
+  JOB_ROLE_TYPE_OPTIONS,
+  JOB_TARGET_GENDER_OPTIONS,
+} from "@/lib/job-filter-options";
+import { listMyBookmarkedJobs } from "@/lib/queries/bookmarks";
 
-export default async function BookmarksPage() {
-  const bookmarks = await listMyBookmarks();
+const BOOKMARK_JOB_PAGE_SIZE = 12;
+
+function parsePage(raw: string | string[] | undefined) {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  const n = Number(value ?? "1");
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
+}
+
+function asString(raw: string | string[] | undefined) {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value?.trim() ?? "";
+}
+
+function asOption(raw: string | string[] | undefined, options: readonly string[]) {
+  const value = asString(raw);
+  return options.includes(value) ? value : "";
+}
+
+export default async function BookmarksPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const q = asString(sp.q);
+  const region = asString(sp.region);
+  const genre = asString(sp.genre);
+  const roleType = asOption(sp.role, JOB_ROLE_TYPE_OPTIONS);
+  const targetGender = asOption(
+    sp.target_gender,
+    JOB_TARGET_GENDER_OPTIONS.map((option) => option.value),
+  );
+  const targetAgeGroup = asOption(
+    sp.age_group,
+    JOB_AGE_GROUP_OPTIONS.map((option) => option.value),
+  );
+  const platform = asOption(sp.platform, JOB_PLATFORM_OPTIONS);
+  const sort = asString(sp.sort) === "deadline" ? "deadline" : "latest";
+  const page = parsePage(sp.page);
+
+  const { items, total } = await listMyBookmarkedJobs({
+    q,
+    region,
+    genre,
+    roleType,
+    targetGender,
+    targetAgeGroup,
+    platform,
+    sort,
+    jobState: "all",
+    page,
+    pageSize: BOOKMARK_JOB_PAGE_SIZE,
+  });
+  const redirectTo = buildBookmarksPath({
+    q,
+    region,
+    genre,
+    role: roleType,
+    target_gender: targetGender,
+    age_group: targetAgeGroup,
+    platform,
+    sort,
+    page,
+  });
+  const hasFilters = Boolean(
+    q || region || genre || roleType || targetGender || targetAgeGroup || platform,
+  );
 
   return (
-    <PageContainer pageTitle="저장한 항목">
-      {bookmarks.length === 0 ? (
-        <EmptyState
-          icon={Bookmark}
-          title="아직 저장한 항목이 없어요"
-          description="공고나 배우를 저장하면 여기에서 바로 다시 볼 수 있어요."
-          action={
-            <Link
-              href="/talents"
-              className={buttonVariants({ color: "secondary", size: "sm" })}
-            >
-              공고 찾기
-            </Link>
-          }
-        />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {bookmarks.map((item) => (
-            <Card key={item.bookmark_id} className="h-full">
-              <CardContent className="flex h-full flex-col gap-4 p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    {item.target_type === "actor" ? (
-                      <AvatarPreview
-                        name={item.title}
-                        avatarUrl={item.avatar_url ?? null}
-                      />
-                    ) : null}
-                    <div className="min-w-0">
-                      <Badge color="secondary" className="mb-2">
-                        {item.badge}
-                      </Badge>
-                      <h2 className="line-clamp-2 text-lg font-semibold">
-                        {item.title}
-                      </h2>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {item.subtitle || "정보 미등록"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+    <PageContainer size="wide" className="space-y-8">
+      <SavedJobsHero />
 
-                <div className="mt-auto flex flex-wrap gap-2">
-                  <Link
-                    href={item.href}
-                    className={buttonVariants({ size: "sm" })}
-                  >
-                    자세히 보기
-                  </Link>
-                  <BookmarkButton
-                    targetType={item.target_type}
-                    targetId={item.target_id}
-                    bookmarked
-                    redirectTo="/bookmarks"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      <JobSearchPanel
+        action="/bookmarks"
+        resetHref="/bookmarks"
+        searchLabel="저장 공고 검색"
+        values={{
+          q,
+          region,
+          genre,
+          roleType,
+          targetGender,
+          targetAgeGroup,
+          platform,
+          sort,
+        }}
+      />
+
+      <section>
+        <div className="mb-5 flex items-end gap-3">
+          <h2 className="text-2xl font-extrabold tracking-normal">저장한 공고</h2>
+          <span className="text-2xl font-extrabold text-primary">
+            {total.toLocaleString("ko-KR")}
+          </span>
         </div>
-      )}
+
+        {items.length === 0 ? (
+          <EmptyState
+            icon={Bookmark}
+            title={
+              hasFilters
+                ? "조건에 맞는 저장 공고가 없어요"
+                : "아직 저장한 공고가 없어요"
+            }
+            description={
+              hasFilters
+                ? "검색어나 필터를 바꿔보세요."
+                : "관심 있는 공고를 저장하면 여기에서 바로 다시 볼 수 있어요."
+            }
+            action={
+              hasFilters ? (
+                <Link
+                  href="/bookmarks"
+                  className={buttonVariants({ color: "secondary", size: "sm" })}
+                >
+                  필터 초기화
+                </Link>
+              ) : (
+                <Link
+                  href="/talents"
+                  className={buttonVariants({ color: "secondary", size: "sm" })}
+                >
+                  공고 찾기
+                </Link>
+              )
+            }
+          />
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {items.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                bookmarked
+                redirectTo={redirectTo}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <Pagination
+        basePath="/bookmarks"
+        params={{
+          q,
+          region,
+          genre,
+          role: roleType,
+          target_gender: targetGender,
+          age_group: targetAgeGroup,
+          platform,
+          sort: sort === "latest" ? undefined : sort,
+        }}
+        page={page}
+        pageSize={BOOKMARK_JOB_PAGE_SIZE}
+        total={total}
+      />
     </PageContainer>
   );
 }
 
-function AvatarPreview({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl: string | null;
-}) {
+function SavedJobsHero() {
   return (
-    <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-muted text-sm font-semibold text-muted-foreground">
-      {avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={avatarUrl}
-          alt={`${name} 프로필 사진`}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        getAvatarFallback(name)
-      )}
-    </div>
+    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white shadow-[0_28px_70px_rgba(15,23,42,0.18)] md:px-9 md:py-9">
+      <Link
+        href="/talents"
+        className="inline-flex size-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-white/40"
+      >
+        <ArrowLeft aria-hidden="true" className="size-5" />
+        <span className="sr-only">공고 탐색으로 돌아가기</span>
+      </Link>
+      <h1 className="mt-5 text-3xl font-extrabold tracking-normal md:text-4xl">
+        저장한 공고
+      </h1>
+      <p className="mt-4 text-sm font-medium leading-7 text-secondary-foreground/75 md:text-base">
+        저장한 공고를 확인하고, 지금 바로 지원해보세요.
+      </p>
+    </section>
   );
 }
 
-function getAvatarFallback(value: string) {
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, 1).toUpperCase() : "U";
+function buildBookmarksPath(
+  params: Record<string, string | number | undefined>,
+) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    const normalized = String(value ?? "").trim();
+    if (!normalized) continue;
+    if (key === "page" && normalized === "1") continue;
+    if (key === "sort" && normalized === "latest") continue;
+    query.set(key, normalized);
+  }
+  const qs = query.toString();
+  return qs ? `/bookmarks?${qs}` : "/bookmarks";
 }

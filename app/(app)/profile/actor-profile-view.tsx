@@ -90,7 +90,7 @@ export function ActorProfileView({
   const videoItems = portfolioItems.filter((item) => item.type === "video");
 
   return (
-    <PageContainer size="wide" className="max-w-[1280px] space-y-5">
+    <PageContainer size="wide" className="space-y-5">
       <ActorHero
         name={profile.name}
         avatarUrl={profile.avatar_url ?? imageItems[0]?.url ?? null}

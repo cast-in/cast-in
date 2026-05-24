@@ -1,6 +1,8 @@
 import { calculateAge, formatDeadline } from "@/lib/format";
+import { isJobAccepting } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
+import type { OpenJobPreview, PagedResult } from "@/lib/queries/jobs";
 
 export type BookmarkTargetType = "actor" | "job";
 
@@ -17,6 +19,20 @@ export type BookmarkItem = {
 };
 
 type BookmarkRow = Database["public"]["Tables"]["bookmarks"]["Row"];
+
+export type SavedJobsParams = {
+  q?: string;
+  region?: string;
+  genre?: string;
+  roleType?: string;
+  targetGender?: string;
+  targetAgeGroup?: string;
+  platform?: string;
+  sort?: "deadline" | "latest";
+  jobState?: "active" | "closed" | "all";
+  page?: number;
+  pageSize?: number;
+};
 
 export async function listBookmarkedTargetIds(
   targetType: BookmarkTargetType,
@@ -40,6 +56,26 @@ export async function listBookmarkedTargetIds(
   if (error) throw error;
 
   return new Set((data ?? []).map((bookmark) => bookmark.target_id));
+}
+
+export async function countBookmarkedTargets(
+  targetType: BookmarkTargetType,
+): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  const { count, error } = await supabase
+    .from("bookmarks")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("target_type", targetType)
+    .eq("list_name", "기본");
+  if (error) throw error;
+
+  return count ?? 0;
 }
 
 export async function listMyBookmarks(): Promise<BookmarkItem[]> {
@@ -140,6 +176,128 @@ export async function listMyBookmarks(): Promise<BookmarkItem[]> {
       return null;
     })
     .filter((item): item is BookmarkItem => Boolean(item));
+}
+
+export async function listMyBookmarkedJobs(
+  params: SavedJobsParams = {},
+): Promise<PagedResult<OpenJobPreview>> {
+  const {
+    q,
+    region,
+    genre,
+    roleType,
+    targetGender,
+    targetAgeGroup,
+    platform,
+    sort = "latest",
+    jobState = "all",
+    page = 1,
+    pageSize = 12,
+  } = params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { items: [], total: 0, page, pageSize };
+
+  const { data: bookmarks, error } = await supabase
+    .from("bookmarks")
+    .select("id, target_id, created_at")
+    .eq("user_id", user.id)
+    .eq("target_type", "job")
+    .eq("list_name", "기본")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  if (!bookmarks || bookmarks.length === 0) {
+    return { items: [], total: 0, page, pageSize };
+  }
+
+  const jobIds = bookmarks.map((bookmark) => bookmark.target_id);
+  const { data: jobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select(
+      "id, title, description, genre, region, deadline, status, requirements, role_type, target_genders, target_age_groups, platforms, created_at",
+    )
+    .in("id", jobIds);
+  if (jobsError) throw jobsError;
+
+  const bookmarkIndexByJobId = new Map(
+    bookmarks.map((bookmark, index) => [bookmark.target_id, index]),
+  );
+  const searchText = q?.trim().toLowerCase();
+
+  const filtered = (jobs ?? [])
+    .filter((job) => {
+      if (jobState === "active" && !isJobAccepting(job)) return false;
+      if (jobState === "closed" && isJobAccepting(job)) return false;
+
+      if (searchText) {
+        const haystack = [
+          job.title,
+          job.description,
+          job.role_type,
+          job.genre,
+          ...(job.requirements ?? []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(searchText)) return false;
+      }
+      if (region?.trim() && !job.region?.includes(region.trim())) return false;
+      if (genre?.trim() && !job.genre?.includes(genre.trim())) return false;
+      if (roleType?.trim() && job.role_type !== roleType.trim()) return false;
+      if (
+        targetGender?.trim() &&
+        !(job.target_genders ?? []).includes(targetGender.trim())
+      ) {
+        return false;
+      }
+      if (
+        targetAgeGroup?.trim() &&
+        !(job.target_age_groups ?? []).includes(targetAgeGroup.trim())
+      ) {
+        return false;
+      }
+      if (platform?.trim() && !(job.platforms ?? []).includes(platform.trim())) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      if (sort === "deadline") {
+        if (!a.deadline && !b.deadline) return 0;
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return a.deadline.localeCompare(b.deadline);
+      }
+
+      return (
+        (bookmarkIndexByJobId.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (bookmarkIndexByJobId.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      );
+    });
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize;
+  const items = filtered.slice(from, to).map(
+    (job): OpenJobPreview => ({
+      id: job.id,
+      title: job.title,
+      genre: job.genre,
+      region: job.region,
+      deadline: job.deadline,
+      status: job.status,
+      requirements: job.requirements ?? [],
+      role_type: job.role_type,
+      target_genders: job.target_genders ?? [],
+      target_age_groups: job.target_age_groups ?? [],
+      platforms: job.platforms ?? [],
+    }),
+  );
+
+  return { items, total: filtered.length, page, pageSize };
 }
 
 function uniqueTargetIds(

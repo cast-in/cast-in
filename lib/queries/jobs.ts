@@ -33,9 +33,78 @@ export async function getJob(id: string) {
   return data;
 }
 
+export type JobDetailMeta = {
+  applicant_count: number;
+  casting_avatar_url: string | null;
+  casting_company_name: string | null;
+  casting_contact: string | null;
+  casting_intro: string | null;
+  casting_job_count: number;
+  casting_name: string;
+};
+
+export async function getJobDetailMeta(
+  job: Pick<JobRow, "id" | "casting_id">,
+): Promise<JobDetailMeta> {
+  const supabase = await createClient();
+  const [
+    { data: profile, error: profileError },
+    { data: castingProfile, error: castingProfileError },
+    { count: castingJobCount, error: castingJobCountError },
+    { count: applicantCount, error: applicantCountError },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("name, avatar_url")
+      .eq("id", job.casting_id)
+      .maybeSingle(),
+    supabase
+      .from("casting_profiles")
+      .select("company_name, contact, intro")
+      .eq("user_id", job.casting_id)
+      .maybeSingle(),
+    supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("casting_id", job.casting_id),
+    supabase
+      .from("applications")
+      .select("id", { count: "exact", head: true })
+      .eq("job_id", job.id),
+  ]);
+
+  const error =
+    profileError ??
+    castingProfileError ??
+    castingJobCountError ??
+    applicantCountError;
+  if (error) throw error;
+
+  return {
+    applicant_count: applicantCount ?? 0,
+    casting_avatar_url: profile?.avatar_url ?? null,
+    casting_company_name: castingProfile?.company_name ?? null,
+    casting_contact: castingProfile?.contact ?? null,
+    casting_intro: castingProfile?.intro ?? null,
+    casting_job_count: castingJobCount ?? 0,
+    casting_name:
+      profile?.name ?? castingProfile?.company_name ?? "캐스팅 담당자",
+  };
+}
+
 export type OpenJobPreview = Pick<
   JobRow,
-  "id" | "title" | "genre" | "region" | "deadline" | "status"
+  | "id"
+  | "title"
+  | "genre"
+  | "region"
+  | "deadline"
+  | "status"
+  | "requirements"
+  | "role_type"
+  | "target_genders"
+  | "target_age_groups"
+  | "platforms"
 >;
 
 export async function listOpenJobsPreview(
@@ -45,7 +114,9 @@ export async function listOpenJobsPreview(
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("jobs")
-    .select("id, title, genre, region, deadline, status")
+    .select(
+      "id, title, genre, region, deadline, status, requirements, role_type, target_genders, target_age_groups, platforms",
+    )
     .eq("status", "open")
     .or(`deadline.is.null,deadline.gte.${now}`)
     .order("deadline", { ascending: true, nullsFirst: false })
@@ -288,6 +359,11 @@ export type SearchJobsParams = {
   q?: string;
   region?: string;
   genre?: string;
+  requirement?: string;
+  roleType?: string;
+  targetGender?: string;
+  targetAgeGroup?: string;
+  platform?: string;
   sort?: "deadline" | "latest";
   jobState?: "active" | "closed" | "all";
   page?: number;
@@ -301,6 +377,11 @@ export async function searchOpenJobs(
     q,
     region,
     genre,
+    requirement,
+    roleType,
+    targetGender,
+    targetAgeGroup,
+    platform,
     sort = "deadline",
     jobState = "active",
     page = 1,
@@ -313,7 +394,10 @@ export async function searchOpenJobs(
 
   let query = supabase
     .from("jobs")
-    .select("id, title, genre, region, deadline, status", { count: "exact" })
+    .select(
+      "id, title, genre, region, deadline, status, requirements, role_type, target_genders, target_age_groups, platforms",
+      { count: "exact" },
+    )
     .range(from, to);
 
   if (jobState === "active") {
@@ -324,13 +408,30 @@ export async function searchOpenJobs(
 
   if (q?.trim()) {
     const pattern = `%${q.trim()}%`;
-    query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`);
+    query = query.or(
+      `title.ilike.${pattern},description.ilike.${pattern},role_type.ilike.${pattern}`,
+    );
   }
   if (region?.trim()) {
     query = query.ilike("region", `%${region.trim()}%`);
   }
   if (genre?.trim()) {
     query = query.ilike("genre", `%${genre.trim()}%`);
+  }
+  if (requirement?.trim()) {
+    query = query.contains("requirements", [requirement.trim()]);
+  }
+  if (roleType?.trim()) {
+    query = query.eq("role_type", roleType.trim());
+  }
+  if (targetGender?.trim()) {
+    query = query.contains("target_genders", [targetGender.trim()]);
+  }
+  if (targetAgeGroup?.trim()) {
+    query = query.contains("target_age_groups", [targetAgeGroup.trim()]);
+  }
+  if (platform?.trim()) {
+    query = query.contains("platforms", [platform.trim()]);
   }
 
   if (sort === "latest") {

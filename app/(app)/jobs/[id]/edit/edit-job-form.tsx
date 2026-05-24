@@ -15,10 +15,11 @@ import {
   JOB_ROLE_TYPE_OPTIONS,
   JOB_TARGET_GENDER_OPTIONS,
 } from "@/lib/job-filter-options";
+import type { JobRow } from "@/lib/queries/jobs";
 import { cn } from "@/lib/utils";
-import { createJobAction } from "./actions";
+import { updateJobAction } from "./actions";
 
-export function NewJobForm() {
+export function EditJobForm({ job }: { job: JobRow }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -26,13 +27,9 @@ export function NewJobForm() {
     e.preventDefault();
     setError(null);
     const data = new FormData(e.currentTarget);
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as
-      | HTMLButtonElement
-      | null;
-    if (submitter?.value) data.set("status", submitter.value);
 
     startTransition(async () => {
-      const result = await createJobAction(data);
+      const result = await updateJobAction(data);
       if (result && !result.ok) {
         setError(result.error);
         toast.error(result.error);
@@ -44,12 +41,16 @@ export function NewJobForm() {
     <form onSubmit={handleSubmit} className="grid gap-4">
       {error && <ErrorNotice message={error} size="sm" />}
 
+      <input type="hidden" name="job_id" value={job.id} />
+      <input type="hidden" name="status" value={job.status} />
+
       <div className="grid gap-2">
         <Label htmlFor="title">공고 제목</Label>
         <Input
           id="title"
           name="title"
           required
+          defaultValue={job.title}
           placeholder="공고 제목을 입력해주세요"
         />
       </div>
@@ -60,12 +61,18 @@ export function NewJobForm() {
           <Input
             id="genre"
             name="genre"
+            defaultValue={job.genre ?? ""}
             placeholder="공고 장르를 입력해주세요"
           />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="region">촬영 지역</Label>
-          <Input id="region" name="region" placeholder="촬영 지역을 입력해주세요" />
+          <Input
+            id="region"
+            name="region"
+            defaultValue={job.region ?? ""}
+            placeholder="촬영 지역을 입력해주세요"
+          />
         </div>
       </div>
 
@@ -75,6 +82,7 @@ export function NewJobForm() {
           <Input
             id="fee_text"
             name="fee_text"
+            defaultValue={job.fee_text ?? ""}
             placeholder="출연료 조건을 입력해주세요"
           />
         </div>
@@ -83,6 +91,7 @@ export function NewJobForm() {
           <Input
             id="shooting_schedule"
             name="shooting_schedule"
+            defaultValue={job.shooting_schedule ?? ""}
             placeholder="촬영 일정을 입력해주세요"
           />
         </div>
@@ -91,7 +100,7 @@ export function NewJobForm() {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="role_type">역할</Label>
-          <Select id="role_type" name="role_type" defaultValue="">
+          <Select id="role_type" name="role_type" defaultValue={job.role_type ?? ""}>
             <option value="">역할을 선택해주세요</option>
             {JOB_ROLE_TYPE_OPTIONS.map((roleType) => (
               <option key={roleType} value={roleType}>
@@ -107,6 +116,7 @@ export function NewJobForm() {
             label: platform,
             value: platform,
           }))}
+          selectedValues={job.platforms}
         />
       </div>
 
@@ -115,13 +125,13 @@ export function NewJobForm() {
           legend="대상 성별"
           name="target_genders"
           options={JOB_TARGET_GENDER_OPTIONS}
-          defaultAll
+          selectedValues={job.target_genders}
         />
         <ChoiceGroup
           legend="대상 연령대"
           name="target_age_groups"
           options={JOB_AGE_GROUP_OPTIONS}
-          defaultAll
+          selectedValues={job.target_age_groups}
         />
       </div>
 
@@ -130,8 +140,8 @@ export function NewJobForm() {
         <DateTimePicker
           id="deadline"
           name="deadline"
+          defaultValue={job.deadline}
           placeholder="마감 일시 선택"
-          minDate={new Date()}
         />
       </div>
 
@@ -140,6 +150,7 @@ export function NewJobForm() {
         <Input
           id="requirements"
           name="requirements"
+          defaultValue={job.requirements.join(", ")}
           placeholder="필요 조건을 쉼표로 구분해서 입력해주세요"
         />
       </div>
@@ -150,28 +161,14 @@ export function NewJobForm() {
           id="description"
           name="description"
           rows={6}
+          defaultValue={job.description ?? ""}
           placeholder="프로젝트 소개, 촬영 일정, 페이 조건 등을 입력해주세요"
         />
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-3">
-        <Button
-          type="submit"
-          name="status"
-          value="open"
-          disabled={pending}
-          className="flex-1"
-        >
-          {pending ? "올리는 중이에요" : "공고 올리기"}
-        </Button>
-        <Button
-          type="submit"
-          name="status"
-          value="draft"
-          disabled={pending}
-          color="secondary"
-        >
-          임시저장
+      <div className="mt-2 flex justify-end">
+        <Button type="submit" disabled={pending} className="min-w-32">
+          {pending ? "저장하는 중이에요" : "저장하기"}
         </Button>
       </div>
     </form>
@@ -187,13 +184,15 @@ function ChoiceGroup({
   legend,
   name,
   options,
-  defaultAll = false,
+  selectedValues,
 }: {
   legend: string;
   name: string;
   options: readonly ChoiceOption[];
-  defaultAll?: boolean;
+  selectedValues: readonly string[];
 }) {
+  const selected = new Set(selectedValues);
+
   return (
     <fieldset className="grid gap-2">
       <legend className="text-sm font-medium">{legend}</legend>
@@ -204,7 +203,7 @@ function ChoiceGroup({
               type="checkbox"
               name={name}
               value={option.value}
-              defaultChecked={defaultAll}
+              defaultChecked={selected.has(option.value)}
               className="peer sr-only"
             />
             <span

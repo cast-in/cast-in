@@ -1,22 +1,36 @@
 import Link from "next/link";
-import { FileImage } from "lucide-react";
+import {
+  ArrowDownRight,
+  FileImage,
+  SlidersHorizontal,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/select";
 import { BookmarkButton } from "@/components/features/bookmark-button";
+import { JobCard } from "@/components/features/job-card";
+import { JobSearchPanel } from "@/components/features/job-search-panel";
 import { PageContainer } from "@/components/page-container";
 import { Pagination } from "@/components/features/pagination";
 import { SearchFilterBar } from "@/components/features/search-filter-bar";
-import { formatDeadline, formatDeadlineSignal } from "@/lib/format";
-import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
-import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
-import type { ActorPreview, OpenJobPreview } from "@/lib/queries/jobs";
+import {
+  JOB_AGE_GROUP_OPTIONS,
+  JOB_PLATFORM_OPTIONS,
+  JOB_ROLE_TYPE_OPTIONS,
+  JOB_TARGET_GENDER_OPTIONS,
+} from "@/lib/job-filter-options";
+import {
+  countBookmarkedTargets,
+  listBookmarkedTargetIds,
+} from "@/lib/queries/bookmarks";
+import type { ActorPreview } from "@/lib/queries/jobs";
 import { searchActors, searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 
 const PAGE_SIZE = 12;
+const JOB_PAGE_SIZE = 8;
 
 function parsePage(raw: string | string[] | undefined) {
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -34,6 +48,11 @@ function asGender(raw: string | string[] | undefined) {
   return value === "male" || value === "female" ? value : "";
 }
 
+function asOption(raw: string | string[] | undefined, options: readonly string[]) {
+  const value = asString(raw);
+  return options.includes(value) ? value : "";
+}
+
 export default async function TalentsPage({
   searchParams,
 }: {
@@ -47,6 +66,16 @@ export default async function TalentsPage({
   const region = asString(sp.region);
   const genre = asString(sp.genre);
   const gender = asGender(sp.gender);
+  const roleType = asOption(sp.role, JOB_ROLE_TYPE_OPTIONS);
+  const targetGender = asOption(
+    sp.target_gender,
+    JOB_TARGET_GENDER_OPTIONS.map((option) => option.value),
+  );
+  const targetAgeGroup = asOption(
+    sp.age_group,
+    JOB_AGE_GROUP_OPTIONS.map((option) => option.value),
+  );
+  const platform = asOption(sp.platform, JOB_PLATFORM_OPTIONS);
   const page = parsePage(sp.page);
 
   if (activeRole === "casting") {
@@ -61,7 +90,7 @@ export default async function TalentsPage({
     );
   }
 
-  const sort = asString(sp.sort) === "latest" ? "latest" : "deadline";
+  const sort = asString(sp.sort) === "deadline" ? "deadline" : "latest";
   const status = asString(sp.status);
   const jobState = status === "closed" || status === "all" ? status : "active";
   return (
@@ -69,6 +98,10 @@ export default async function TalentsPage({
       q={q}
       region={region}
       genre={genre}
+      roleType={roleType}
+      targetGender={targetGender}
+      targetAgeGroup={targetAgeGroup}
+      platform={platform}
       sort={sort}
       jobState={jobState}
       page={page}
@@ -251,6 +284,10 @@ async function ActorTalentsPage({
   q,
   region,
   genre,
+  roleType,
+  targetGender,
+  targetAgeGroup,
+  platform,
   sort,
   jobState,
   page,
@@ -258,6 +295,10 @@ async function ActorTalentsPage({
   q: string;
   region: string;
   genre: string;
+  roleType: string;
+  targetGender: string;
+  targetAgeGroup: string;
+  platform: string;
   sort: "deadline" | "latest";
   jobState: "active" | "closed" | "all";
   page: number;
@@ -266,91 +307,81 @@ async function ActorTalentsPage({
     q,
     region,
     genre,
+    roleType,
+    targetGender,
+    targetAgeGroup,
+    platform,
     sort,
     jobState,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize: JOB_PAGE_SIZE,
   });
-  const bookmarkedIds = await listBookmarkedTargetIds(
-    "job",
-    items.map((job) => job.id),
-  );
+  const [bookmarkedIds, savedJobCount] = await Promise.all([
+    listBookmarkedTargetIds(
+      "job",
+      items.map((job) => job.id),
+    ),
+    countBookmarkedTargets("job").catch(() => 0),
+  ]);
   const redirectTo = buildTalentsPath({
     q,
     region,
     genre,
+    role: roleType,
+    target_gender: targetGender,
+    age_group: targetAgeGroup,
+    platform,
     sort,
     status: jobState,
     page,
   });
+  const hasFilters = Boolean(
+    q ||
+      region ||
+      genre ||
+      roleType ||
+      targetGender ||
+      targetAgeGroup ||
+      platform ||
+      jobState !== "active",
+  );
+  const recommendedJobs = items.slice(0, 5);
 
   return (
-    <PageContainer pageTitle="공고 탐색">
-      <SearchFilterBar
+    <PageContainer size="wide" className="space-y-8">
+      <ActorJobsHero savedJobCount={savedJobCount} />
+
+      <JobSearchPanel
         action="/talents"
-        searchField={{
-          name: "q",
-          label: "공고 검색",
-          placeholder: "작품명이나 역할을 검색해요",
-          defaultValue: q,
+        resetHref="/talents"
+        searchLabel="공고 검색"
+        values={{
+          q,
+          region,
+          genre,
+          roleType,
+          targetGender,
+          targetAgeGroup,
+          platform,
+          sort,
+          jobState,
         }}
-        filters={[
-          {
-            name: "region",
-            label: "지역",
-            placeholder: "지역 (예: 서울)",
-            defaultValue: region,
-          },
-          {
-            name: "genre",
-            label: "장르",
-            placeholder: "장르 (예: 드라마)",
-            defaultValue: genre,
-          },
-        ]}
-        extras={
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="talents-status" className="sr-only">
-                공고 상태
-              </label>
-              <Select
-                id="talents-status"
-                name="status"
-                defaultValue={jobState}
-              >
-                <option value="active">지원 가능한 공고</option>
-                <option value="closed">마감된 공고</option>
-                <option value="all">전체 공고</option>
-              </Select>
-            </div>
-            <div>
-              <label htmlFor="talents-sort" className="sr-only">
-                정렬
-              </label>
-              <Select id="talents-sort" name="sort" defaultValue={sort}>
-                <option value="deadline">마감 임박순</option>
-                <option value="latest">최신 등록순</option>
-              </Select>
-            </div>
-          </div>
-        }
       />
 
       {items.length === 0 ? (
         <EmptyState
           title={
-            q || region || genre
+            hasFilters
               ? "조건에 맞는 공고가 없어요"
               : "지금 볼 수 있는 공고가 없어요"
           }
           description={
-            q || region || genre
+            hasFilters
               ? "검색어를 줄이거나 필터를 바꿔보세요."
               : "새 공고가 올라오면 여기에서 볼 수 있어요."
           }
           action={
-            q || region || genre || jobState !== "active" || sort !== "deadline" ? (
+            hasFilters || sort !== "latest" ? (
               <Link
                 href="/talents"
                 className={buttonVariants({ color: "secondary", size: "sm" })}
@@ -361,97 +392,114 @@ async function ActorTalentsPage({
           }
         />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((job) => (
-            <ActorJobCard
-              key={job.id}
-              job={job}
-              bookmarked={bookmarkedIds.has(job.id)}
-              redirectTo={redirectTo}
-            />
-          ))}
-        </div>
+        <>
+          {recommendedJobs.length > 0 ? (
+            <section className="rounded-xl bg-primary-soft px-5 py-7 ring-1 ring-primary/10 md:px-8">
+              <div className="mb-5">
+                <h2 className="flex items-center gap-2 text-2xl font-extrabold tracking-normal text-primary">
+                  <SlidersHorizontal aria-hidden="true" className="size-6" />
+                  맞춤 공고
+                </h2>
+                <p className="mt-2 text-xs font-medium text-primary/80">
+                  교환님의 프로필을 바탕으로 추천드려요
+                </p>
+              </div>
+              <div className="-mx-5 flex gap-5 overflow-x-auto px-5 pb-2 md:-mx-8 md:px-8">
+                {recommendedJobs.map((job) => (
+                  <JobCard
+                    key={`recommended-${job.id}`}
+                    job={job}
+                    bookmarked={bookmarkedIds.has(job.id)}
+                    redirectTo={redirectTo}
+                    compact
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section>
+            <div className="mb-5 flex items-end gap-3">
+              <h2 className="text-2xl font-extrabold tracking-normal">전체 공고</h2>
+              <span className="text-2xl font-extrabold text-primary">
+                {total.toLocaleString("ko-KR")}
+              </span>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {items.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  bookmarked={bookmarkedIds.has(job.id)}
+                  redirectTo={redirectTo}
+                />
+              ))}
+            </div>
+          </section>
+        </>
       )}
 
       <Pagination
         basePath="/talents"
-        params={{ q, region, genre, sort, status: jobState }}
+        params={{
+          q,
+          region,
+          genre,
+          role: roleType,
+          target_gender: targetGender,
+          age_group: targetAgeGroup,
+          platform,
+          sort,
+          status: jobState,
+        }}
         page={page}
-        pageSize={PAGE_SIZE}
+        pageSize={JOB_PAGE_SIZE}
         total={total}
       />
     </PageContainer>
   );
 }
 
-function ActorJobCard({
-  job,
-  bookmarked,
-  redirectTo,
-}: {
-  job: OpenJobPreview;
-  bookmarked: boolean;
-  redirectTo: string;
-}) {
-  const accepting = isJobAccepting(job);
-  const deadlineSignal = formatDeadlineSignal(job.deadline);
-  const jobHref = `/jobs/${job.id}`;
-
+function ActorJobsHero({ savedJobCount }: { savedJobCount: number }) {
   return (
-    <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
-      <div className="relative isolate">
-        <Link
-          href={jobHref}
-          className="group block aspect-[4/3] bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <JobPostingPreview />
+    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white shadow-[0_28px_70px_rgba(15,23,42,0.18)] md:px-9 md:py-9">
+      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+        <div>
           <Badge
-            color={accepting ? "primary" : "secondary"}
-            className="absolute left-3 top-3 bg-background/85 text-foreground backdrop-blur"
+            color="primary"
+            variant="soft-outline"
           >
-            {deadlineSignal}
+            Casting Calls
           </Badge>
-        </Link>
-        <BookmarkButton
-          targetType="job"
-          targetId={job.id}
-          bookmarked={bookmarked}
-          redirectTo={redirectTo}
-          compact
-          className="absolute right-3 top-3 z-10 bg-background/85 backdrop-blur hover:bg-background"
-        />
-      </div>
-      <CardContent className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <Link
-            href={jobHref}
-            className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <CardTitle className="line-clamp-2 text-lg">{job.title}</CardTitle>
-          </Link>
-          <div className="shrink-0 whitespace-nowrap pt-0.5 text-right text-sm text-muted-foreground">
-            {getJobAvailabilityLabel(job)}
-          </div>
+          <h1 className="mt-5 text-3xl font-extrabold tracking-normal md:text-4xl">
+            공고 탐색
+          </h1>
+          <p className="mt-4 text-sm font-medium leading-7 text-secondary-foreground/75 md:text-base">
+            원하는 공고를 탐색하고,
+            <br />
+            저장한 작품은 오른쪽 후보 패널에서 바로 관리하세요.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge color="neutral" variant="outline">
-            {job.genre ?? "장르 미정"}
-          </Badge>
-          <Badge color="neutral" variant="outline">
-            {job.region ?? "지역 협의"}
-          </Badge>
-        </div>
-        <p className="mt-auto text-sm text-muted-foreground">
-          {formatDeadline(job.deadline)}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
 
-function JobPostingPreview() {
-  return (
-    <div className="h-full w-full overflow-hidden bg-muted transition-transform duration-200 group-hover:scale-[1.02]" />
+        <Link
+          href="/bookmarks"
+          className="group flex w-full max-w-[11rem] items-end justify-between rounded-[18px] border border-white/16 bg-white/10 px-5 py-4 text-left transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-white/40"
+        >
+          <span>
+            <span className="block text-xs font-bold text-slate-300">
+              저장한 공고 보러 가기
+            </span>
+            <span className="mt-2 block text-2xl font-bold">
+              {savedJobCount.toLocaleString("ko-KR")}
+            </span>
+          </span>
+          <ArrowDownRight
+            aria-hidden="true"
+            className="size-6 transition group-hover:translate-x-0.5 group-hover:translate-y-0.5"
+          />
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -463,7 +511,7 @@ function ActorPortraitPreview({
   avatarUrl: string | null;
 }) {
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-gray-50 text-gray-300 transition-transform duration-200 group-hover:scale-[1.02]">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-muted text-muted-foreground transition-transform duration-200 group-hover:scale-[1.02]">
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -491,6 +539,7 @@ function buildTalentsPath(
     if (!normalized) continue;
     if (key === "page" && normalized === "1") continue;
     if (key === "status" && normalized === "active") continue;
+    if (key === "sort" && normalized === "latest") continue;
     query.set(key, normalized);
   }
   const qs = query.toString();

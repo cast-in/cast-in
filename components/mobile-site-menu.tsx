@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Bookmark, ChevronRight, LogOut, Menu, Settings, X } from "lucide-react";
 import { signOutAction } from "@/app/(public)/login/actions";
 import { useState } from "react";
-import { APP_HOME_HREF, APP_TABS, getRoleModeLabel } from "@/lib/app-ia";
+import {
+  APP_HOME_HREF,
+  APP_TABS,
+  getRoleModeLabel,
+  isAppTabActive,
+} from "@/lib/app-ia";
 import type { UserRole } from "@/types/enums";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +43,7 @@ export function MobileSiteMenu({
 }: MobileSiteMenuProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const tabs = APP_TABS[activeRole];
   const profileSubtitle = getRoleModeLabel(activeRole);
 
@@ -113,7 +119,12 @@ export function MobileSiteMenu({
                     onClick={() => setOpen(false)}
                     className={cn(
                       "flex items-center justify-between rounded-2xl px-4 py-4 text-[1.1rem] font-medium transition-colors hover:bg-accent",
-                      pathname === tab.href || pathname.startsWith(tab.href + "/")
+                      isAppTabActive({
+                        href: tab.href,
+                        pathname,
+                        role: activeRole,
+                        source: searchParams.get("from"),
+                      })
                         ? "bg-primary/8 text-primary"
                         : "text-foreground",
                     )}

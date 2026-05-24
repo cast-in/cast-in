@@ -76,7 +76,7 @@ export function ActorProfileEditView({
   const primarySocial = socialLinks[0] ?? null;
 
   return (
-    <PageContainer size="wide" className="max-w-[1280px] space-y-5">
+    <PageContainer size="wide" className="space-y-5">
       <form action={saveActorProfileEditAction} className="space-y-5">
         <div className="sticky top-20 z-20 flex flex-col gap-3 rounded-lg bg-[linear-gradient(90deg,#052f35,#04543f)] px-5 py-3 text-white shadow-sm md:flex-row md:items-center md:justify-between">
           <p className="flex items-center gap-3 text-sm font-bold">
