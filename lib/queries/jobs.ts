@@ -74,6 +74,14 @@ export type ActorDetail = ActorPreview & {
   updated_at: string;
 };
 
+export type LandingActor = ActorPreview & {
+  bio: string | null;
+  height_cm: number | null;
+  portfolio_image_urls: string[];
+  skills: string[];
+  updated_at: string;
+};
+
 export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
   const supabase = await createClient();
 
@@ -105,6 +113,69 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
       avatar_url: profile?.avatar_url ?? null,
     };
   });
+}
+
+export async function listLandingActors(limit = 18): Promise<LandingActor[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("actor_profiles")
+    .select(
+      "user_id, bio, birth_date, gender, height_cm, region, genres, skills, updated_at, profiles!inner(name, avatar_url)",
+    )
+    .eq("visibility", "public")
+    .order("updated_at", { ascending: false })
+    .limit(limit * 3);
+
+  if (error) throw error;
+
+  const actors = (data ?? [])
+    .map((row) => {
+      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+
+      return {
+        id: row.user_id,
+        name: profile?.name ?? "이름 미등록",
+        region: row.region ?? null,
+        age: calculateAge(row.birth_date ?? null),
+        gender: row.gender ?? null,
+        genres: row.genres ?? [],
+        avatar_url: profile?.avatar_url ?? null,
+        bio: row.bio ?? null,
+        height_cm: row.height_cm ?? null,
+        portfolio_image_urls: [],
+        skills: row.skills ?? [],
+        updated_at: row.updated_at,
+      };
+    })
+    .filter((actor) => actor.avatar_url)
+    .slice(0, limit);
+
+  if (actors.length === 0) return [];
+
+  const actorIds = actors.map((actor) => actor.id);
+  const { data: portfolioItems, error: portfolioError } = await supabase
+    .from("portfolio_items")
+    .select("actor_id, url")
+    .in("actor_id", actorIds)
+    .eq("type", "image")
+    .order("created_at", { ascending: false });
+
+  if (portfolioError) throw portfolioError;
+
+  const imageUrlsByActorId = new Map<string, string[]>();
+  for (const item of portfolioItems ?? []) {
+    const urls = imageUrlsByActorId.get(item.actor_id) ?? [];
+    if (urls.length < 3) {
+      urls.push(item.url);
+      imageUrlsByActorId.set(item.actor_id, urls);
+    }
+  }
+
+  return actors.map((actor) => ({
+    ...actor,
+    portfolio_image_urls: imageUrlsByActorId.get(actor.id) ?? [],
+  }));
 }
 
 export type SearchActorsParams = {
