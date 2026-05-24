@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -75,27 +74,6 @@ const DIRECTOR_ITEMS = createPlaceholderItems("actor", 36, DIRECTOR_TONES);
 const ACTOR_ITEMS = createPlaceholderItems("work", 36, ACTOR_TONES);
 const VISIBLE_OFFSETS = Array.from({ length: 29 }, (_, index) => index - 14);
 const VISUAL_RETURN_DURATION = 1100;
-const COMPANY_LOGOS: CompanyLogo[] = [
-  { name: "Logo 01", src: "/director-logos/0kZyKYVlyFWFa6ahE0AIt_P7iXyIpl3Q053L3sYZDHUBwE4y65_QEkalwR8u_e6jfJZZeSaZwVgiQ8yy2vxuxA 1.png" },
-  { name: "Logo 02", src: "/director-logos/657e607bbf486997cb7307e11ed88b3a90c40a94b093adc50c389721a250e65a_600 1.png" },
-  { name: "Logo 03", src: "/director-logos/99453fde-4624-457f-8471-2393b96ccdbb 1.png" },
-  { name: "Logo 04", src: "/director-logos/BrandAssets_Logos_02-NSymbol 1.png" },
-  { name: "Logo 05", src: "/director-logos/Group 33.png" },
-  { name: "Logo 06", src: "/director-logos/Group 34.png" },
-  { name: "Logo 07", src: "/director-logos/Group 35.png" },
-  { name: "Logo 08", src: "/director-logos/channels4_profile 1.png" },
-  { name: "Logo 09", src: "/director-logos/ec912987dea0807692e15e5fe2af5883_icon 1.png" },
-  { name: "Logo 10", src: "/director-logos/f53e7ade66350de4afe25f574b1fdc45 1.png" },
-  { name: "Logo 11", src: "/director-logos/images (1) 1.png" },
-  { name: "Logo 12", src: "/director-logos/images 1.png" },
-  { name: "Logo 13", src: "/director-logos/images 2.png" },
-  { name: "Logo 14", src: "/director-logos/red-youtube-logo-social-media-logo_197792-1803 1.png" },
-  { name: "Logo 15", src: "/director-logos/tving-favicon-160@3x 1.png" },
-  { name: "Logo 16", src: "/director-logos/unnamed 1.png" },
-  { name: "Logo 17", src: "/director-logos/unnamed 2.png" },
-  { name: "Logo 18", src: "/director-logos/wavve-app-icon 1.png" },
-  { name: "Logo 19", src: "/director-logos/엠비엔로고_(2) 1.png" },
-];
 const MOCK_JOB_POSTINGS: JobPosting[] = [
   {
     title: "OTT 시리즈 〈와일드씽〉",
@@ -139,7 +117,13 @@ const MOCK_JOB_POSTINGS: JobPosting[] = [
   },
 ];
 
-export function LandingShowcase({ actors = [] }: { actors?: LandingActor[] }) {
+export function LandingShowcase({
+  actors = [],
+  companyLogos = [],
+}: {
+  actors?: LandingActor[];
+  companyLogos?: CompanyLogo[];
+}) {
   const [mode, setMode] = useState<LandingMode>("director");
   const [carouselPosition, setCarouselPositionState] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -481,6 +465,7 @@ export function LandingShowcase({ actors = [] }: { actors?: LandingActor[] }) {
                   isDragging={isDragging}
                   carouselActivity={carouselActivity}
                   actors={displayActors}
+                  companyLogos={companyLogos}
                   onActorPointerStart={handleActorPointerStart}
                   onActorSelect={handleActorSelect}
                   onCompanyPointerStart={handleCompanyPointerStart}
@@ -563,6 +548,7 @@ function PlaceholderCard({
   isDragging,
   carouselActivity,
   actors,
+  companyLogos,
   onActorPointerStart,
   onActorSelect,
   onCompanyPointerStart,
@@ -574,6 +560,7 @@ function PlaceholderCard({
   isDragging: boolean;
   carouselActivity: number;
   actors: LandingActor[];
+  companyLogos: CompanyLogo[];
   onActorPointerStart: (actor: LandingActor) => void;
   onActorSelect: (actor: LandingActor) => void;
   onCompanyPointerStart: (company: CompanyLogo) => void;
@@ -626,7 +613,16 @@ function PlaceholderCard({
         style={baseStyle}
       >
         {Array.from({ length: 3 }, (_, rowIndex) => {
-          const logo = getCompanyLogo(item, rowIndex);
+          const logo = getCompanyLogo(item, rowIndex, companyLogos);
+
+          if (!logo) {
+            return (
+              <div
+                key={`${item.id}-${rowIndex}`}
+                className="h-[76px] w-[76px] rounded-[24px] border border-border/60 bg-muted/60 sm:h-[92px] sm:w-[92px] md:h-[104px] md:w-[104px]"
+              />
+            );
+          }
 
           return (
             <button
@@ -650,13 +646,12 @@ function PlaceholderCard({
               }
               className="relative h-[76px] w-[76px] cursor-pointer overflow-hidden rounded-[24px] bg-white shadow-[0_10px_24px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-[filter,box-shadow,transform] duration-200 [filter:var(--company-logo-filter)] hover:scale-[1.04] hover:![filter:none] hover:shadow-[0_16px_34px_rgba(0,0,0,0.2)] focus-visible:![filter:none] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/35 sm:h-[92px] sm:w-[92px] md:h-[104px] md:w-[104px]"
             >
-              <Image
-                fill
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 draggable={false}
                 src={logo.src}
                 alt=""
-                sizes="(min-width: 768px) 104px, (min-width: 640px) 92px, 76px"
-                className="pointer-events-none select-none object-cover"
+                className="pointer-events-none h-full w-full select-none object-cover"
               />
             </button>
           );
@@ -749,12 +744,11 @@ function JobPostingDialog({
 
             <div className="grid min-h-0 grid-rows-[0.9fr_auto_auto] gap-3">
               <div className="relative min-h-0 overflow-hidden border border-border/60 bg-white">
-                <Image
-                  fill
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={job.company.src}
                   alt={job.company.name}
-                  sizes="(min-width: 768px) 520px, calc(100vw - 2rem)"
-                  className="object-contain p-12"
+                  className="h-full w-full object-contain p-12"
                   draggable={false}
                 />
               </div>
@@ -980,10 +974,16 @@ function createPlaceholderItems(
   }));
 }
 
-function getCompanyLogo(item: PlaceholderItem, rowIndex: number) {
+function getCompanyLogo(
+  item: PlaceholderItem,
+  rowIndex: number,
+  companyLogos: CompanyLogo[],
+) {
+  if (companyLogos.length === 0) return null;
+
   const logoIndex =
-    (getItemNumber(item.id) + rowIndex * 11) % COMPANY_LOGOS.length;
-  return COMPANY_LOGOS[logoIndex];
+    (getItemNumber(item.id) + rowIndex * 11) % companyLogos.length;
+  return companyLogos[logoIndex];
 }
 
 function getActorForItem(item: PlaceholderItem, actors: LandingActor[]) {
