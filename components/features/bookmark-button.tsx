@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { toggleBookmarkAction } from "@/app/(app)/bookmarks/actions";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,6 +14,7 @@ export function BookmarkButton({
   bookmarked,
   redirectTo,
   compact = false,
+  icon = "bookmark",
   className,
 }: {
   targetType: BookmarkTargetType;
@@ -21,11 +22,12 @@ export function BookmarkButton({
   bookmarked: boolean;
   redirectTo: string;
   compact?: boolean;
+  icon?: "bookmark" | "heart";
   className?: string;
 }) {
   const [optimistic, setOptimistic] = useState(bookmarked);
   const [pending, startTransition] = useTransition();
-  const Icon = optimistic ? BookmarkCheck : Bookmark;
+  const Icon = icon === "heart" ? Heart : optimistic ? BookmarkCheck : Bookmark;
 
   function handleClick() {
     const next = !optimistic;
@@ -61,7 +63,10 @@ export function BookmarkButton({
         className,
       )}
     >
-      <Icon aria-hidden="true" className="size-4" />
+      <Icon
+        aria-hidden="true"
+        className={cn("size-4", icon === "heart" && optimistic && "fill-current")}
+      />
       {compact ? null : optimistic ? "저장됨" : "저장"}
     </button>
   );

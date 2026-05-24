@@ -41,49 +41,179 @@ export type Database = {
     Tables: {
       actor_profiles: {
         Row: {
+          affiliation: string
           bio: string | null
           birth_date: string | null
           gender: string | null
           genres: string[]
           height_cm: number | null
+          image_tags: string[]
           region: string | null
           skills: string[]
           social_links: Json
           updated_at: string
           user_id: string
           visibility: string
+          weight_kg: number | null
         }
         Insert: {
+          affiliation?: string
           bio?: string | null
           birth_date?: string | null
           gender?: string | null
           genres?: string[]
           height_cm?: number | null
+          image_tags?: string[]
           region?: string | null
           skills?: string[]
           social_links?: Json
           updated_at?: string
           user_id: string
           visibility?: string
+          weight_kg?: number | null
         }
         Update: {
+          affiliation?: string
           bio?: string | null
           birth_date?: string | null
           gender?: string | null
           genres?: string[]
           height_cm?: number | null
+          image_tags?: string[]
           region?: string | null
           skills?: string[]
           social_links?: Json
           updated_at?: string
           user_id?: string
           visibility?: string
+          weight_kg?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "actor_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      actor_awards: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          organization: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id?: string
+          organization?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          organization?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actor_awards_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "actor_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      actor_credits: {
+        Row: {
+          actor_id: string
+          created_at: string
+          href: string | null
+          id: string
+          role: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          href?: string | null
+          id?: string
+          role?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          href?: string | null
+          id?: string
+          role?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actor_credits_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "actor_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      actor_profile_views: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          viewer_id: string | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id?: string
+          viewer_id?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actor_profile_views_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "actor_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "actor_profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -462,7 +592,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_actor_profile_metrics: {
+        Args: {
+          target_actor_id: string
+        }
+        Returns: {
+          offer_count: number
+          save_count: number
+          view_count: number
+        }[]
+      }
     }
     Enums: {
       application_status: "pending" | "reviewing" | "pass" | "hold" | "reject"

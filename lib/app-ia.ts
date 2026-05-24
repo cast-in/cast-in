@@ -17,14 +17,15 @@ export const APP_TABS: Record<
   actor: [
     { href: "/talents", label: "공고 탐색" },
     { href: "/jobs", label: "지원 관리" },
-    { href: "/profile", label: "프로필" },
     { href: "/messages", label: "메시지" },
+    { href: "/profile", label: "프로필" },
     { href: "/cds", label: "CDS" },
   ],
   casting: [
     { href: "/talents", label: "배우 탐색" },
     { href: "/jobs", label: "공고 관리" },
     { href: "/messages", label: "메시지" },
+    { href: "/profile", label: "프로필" },
     { href: "/cds", label: "CDS" },
   ],
 };

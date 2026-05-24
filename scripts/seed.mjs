@@ -46,6 +46,24 @@ const givenF = ["서연","유진","하늘","지아","예린","소희","유나","
 const regions = ["서울","서울 · 강남","서울 · 마포","서울 · 성수","서울 · 용산","경기 · 고양","경기 · 성남","경기 · 수원","인천","부산","대구","광주","대전","제주","전국"];
 const allGenres = ["드라마","영화","광고","뮤지컬","예능","웹드라마","뮤직비디오","다큐멘터리","연극","숏폼","시트콤"];
 const allSkills = ["보컬","댄스","승마","영어","일본어","중국어","펜싱","기타","피아노","발레","액션","방송 진행","MC","태권도","수영","서핑","스킨스쿠버","드럼","색소폰","바이올린","합기도","복싱"];
+const allImageTags = ["시크함","소년미","청량함","따뜻함","도시적","강렬함","자연스러움","고급스러움","반전 매력","차분함","밝은 에너지","신뢰감"];
+
+const creditTemplates = [
+  { title: "영화 〈D.P〉", role: "조연" },
+  { title: "OTT 드라마 〈서울 나이트〉", role: "단역" },
+  { title: "웹드라마 〈하우스 오브 19〉", role: "주연" },
+  { title: "뮤직비디오 〈오늘의 바다〉", role: "주연" },
+  { title: "연극 〈가벼운 거짓말〉", role: "앙상블" },
+  { title: "브랜드 필름 〈도시의 오후〉", role: "모델" },
+];
+
+const awardTemplates = [
+  { title: "남우주연상", organization: "서울독립영화제" },
+  { title: "여우주연상", organization: "단편영화제" },
+  { title: "신인연기상", organization: "청춘영화상" },
+  { title: "우수연기상", organization: "대학로 연극제" },
+  { title: "베스트 퍼포먼스", organization: "웹콘텐츠 어워즈" },
+];
 
 const actorBios = [
   "감정의 결을 섬세하게 담아내는 배우입니다.",
@@ -243,6 +261,11 @@ function randomHeightCm(gender) {
   if (gender === "female") return 155 + Math.floor(random() * 21);
   return 155 + Math.floor(random() * 34);
 }
+function randomWeightKg(gender) {
+  if (gender === "male") return 58 + Math.floor(random() * 25);
+  if (gender === "female") return 44 + Math.floor(random() * 18);
+  return 45 + Math.floor(random() * 30);
+}
 function randomFutureOrPastISO() {
   // 80%는 앞으로 1~60일, 20%는 지난 1~30일(마감된 공고)
   const offsetDays = random() < 0.8 ? 1 + Math.floor(random() * 60) : -(1 + Math.floor(random() * 30));
@@ -300,12 +323,43 @@ async function insertActorProfile(userId, opts) {
     gender: opts.gender,
     region: opts.region,
     height_cm: opts.height_cm,
+    weight_kg: opts.weight_kg,
+    affiliation: opts.affiliation,
     genres: opts.genres,
     skills: opts.skills,
+    image_tags: opts.image_tags,
     bio: opts.bio,
     visibility: "public",
   });
   if (error) throw new Error(`actor_profiles insert 실패: ${error.message}`);
+}
+
+async function insertActorShowcase(actorId) {
+  const creditCount = 2 + Math.floor(random() * 3);
+  const creditRows = pickMany(creditTemplates, creditCount, creditCount).map((item, index) => ({
+    actor_id: actorId,
+    year: 2021 + Math.floor(random() * 5),
+    title: item.title,
+    role: item.role,
+    sort_order: index,
+  }));
+
+  const { error: creditError } = await supabase.from("actor_credits").insert(creditRows);
+  if (creditError) throw new Error(`actor_credits insert 실패: ${creditError.message}`);
+
+  if (random() > 0.55) return;
+
+  const awardCount = 1 + Math.floor(random() * 2);
+  const awardRows = pickMany(awardTemplates, awardCount, awardCount).map((item, index) => ({
+    actor_id: actorId,
+    year: 2021 + Math.floor(random() * 5),
+    title: item.title,
+    organization: item.organization,
+    sort_order: index,
+  }));
+
+  const { error: awardError } = await supabase.from("actor_awards").insert(awardRows);
+  if (awardError) throw new Error(`actor_awards insert 실패: ${awardError.message}`);
 }
 
 async function insertCastingProfile(userId, opts) {
@@ -411,10 +465,14 @@ async function main() {
       gender,
       region: pick(regions),
       height_cm: actorSeed?.height_cm ?? randomHeightCm(gender),
+      weight_kg: actorSeed?.weight_kg ?? randomWeightKg(gender),
+      affiliation: random() < 0.72 ? "프리랜서" : pick(["에이전시 소속", "소속사 협의 중"]),
       genres: pickMany(allGenres, 1, 4),
       skills: pickMany(allSkills, 1, 5),
+      image_tags: pickMany(allImageTags, 1, 3),
       bio: pick(actorBios),
     });
+    await insertActorShowcase(id);
     actors.push({ id, name, email });
     process.stdout.write(".");
   }

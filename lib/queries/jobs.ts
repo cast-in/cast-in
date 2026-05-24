@@ -65,13 +65,17 @@ export type ActorPreview = {
 };
 
 export type ActorDetail = ActorPreview & {
+  affiliation: string | null;
   bio: string | null;
   birth_date: string | null;
+  email: string | null;
   gender: string | null;
   height_cm: number | null;
+  image_tags: string[];
   social_links: ActorSocialLink[];
   skills: string[];
   updated_at: string;
+  weight_kg: number | null;
 };
 
 export type LandingActor = ActorPreview & {
@@ -248,7 +252,7 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
   const { data, error } = await supabase
     .from("actor_profiles")
     .select(
-      "user_id, bio, birth_date, gender, height_cm, region, genres, skills, social_links, updated_at, profiles!inner(name, avatar_url)",
+      "user_id, affiliation, bio, birth_date, gender, height_cm, image_tags, region, genres, skills, social_links, updated_at, weight_kg, profiles!inner(name, avatar_url, email)",
     )
     .eq("user_id", actorId)
     .eq("visibility", "public")
@@ -262,17 +266,21 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
   return {
     id: data.user_id,
     name: profile?.name ?? "이름 미등록",
+    email: profile?.email ?? null,
     region: data.region ?? null,
     age: calculateAge(data.birth_date ?? null),
     genres: data.genres ?? [],
     avatar_url: profile?.avatar_url ?? null,
+    affiliation: data.affiliation ?? null,
     bio: data.bio ?? null,
     birth_date: data.birth_date ?? null,
     gender: data.gender ?? null,
     height_cm: data.height_cm ?? null,
+    image_tags: data.image_tags ?? [],
     social_links: parseSocialLinks(data.social_links),
     skills: data.skills ?? [],
     updated_at: data.updated_at,
+    weight_kg: data.weight_kg ?? null,
   };
 }
 

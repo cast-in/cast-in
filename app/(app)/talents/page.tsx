@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileImage } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
@@ -462,7 +463,7 @@ function ActorPortraitPreview({
   avatarUrl: string | null;
 }) {
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-muted text-5xl font-semibold text-muted-foreground transition-transform duration-200 group-hover:scale-[1.02]">
+    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-gray-50 text-gray-300 transition-transform duration-200 group-hover:scale-[1.02]">
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -472,15 +473,13 @@ function ActorPortraitPreview({
           loading="lazy"
         />
       ) : (
-        getAvatarFallback(name)
+        <>
+          <FileImage aria-hidden="true" className="size-12 stroke-[1.35]" />
+          <span className="sr-only">{name} 프로필 사진 없음</span>
+        </>
       )}
     </div>
   );
-}
-
-function getAvatarFallback(value: string) {
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, 1).toUpperCase() : "U";
 }
 
 function buildTalentsPath(

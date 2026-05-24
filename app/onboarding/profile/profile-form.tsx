@@ -18,9 +18,14 @@ export type ProfileFormDefaults = {
   // actor
   birth_date?: string | null;
   region?: string | null;
+  gender?: string | null;
+  height_cm?: number | null;
+  weight_kg?: number | null;
+  affiliation?: string | null;
   genres?: string[] | null;
   bio?: string | null;
   skills?: string[] | null;
+  image_tags?: string[] | null;
   social_links?: ActorSocialLink[] | null;
   visibility?: "public" | "connections" | "private" | null;
   // casting
@@ -105,6 +110,52 @@ export function ProfileForm({
               />
             </div>
           </div>
+          {extended && (
+            <div className="grid gap-3 md:grid-cols-4">
+              <div className="grid gap-2">
+                <Label htmlFor="gender">성별</Label>
+                <Select
+                  id="gender"
+                  name="gender"
+                  defaultValue={d.gender ?? ""}
+                >
+                  <option value="">선택 안 함</option>
+                  <option value="male">남성</option>
+                  <option value="female">여성</option>
+                  <option value="other">기타</option>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="height_cm">신장</Label>
+                <Input
+                  id="height_cm"
+                  name="height_cm"
+                  inputMode="numeric"
+                  defaultValue={d.height_cm ?? ""}
+                  placeholder="175"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="weight_kg">체중</Label>
+                <Input
+                  id="weight_kg"
+                  name="weight_kg"
+                  inputMode="numeric"
+                  defaultValue={d.weight_kg ?? ""}
+                  placeholder="65"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="affiliation">소속 여부</Label>
+                <Input
+                  id="affiliation"
+                  name="affiliation"
+                  defaultValue={d.affiliation ?? "프리랜서"}
+                  placeholder="프리랜서"
+                />
+              </div>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="genres">관심 장르 (쉼표로 구분)</Label>
             <Input
@@ -123,6 +174,15 @@ export function ProfileForm({
                   name="skills"
                   defaultValue={(d.skills ?? []).join(", ")}
                   placeholder="보컬, 승마, 영어"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="image_tags">이미지 키워드 (쉼표로 구분)</Label>
+                <Input
+                  id="image_tags"
+                  name="image_tags"
+                  defaultValue={(d.image_tags ?? []).join(", ")}
+                  placeholder="시크함, 소년미, 따뜻함"
                 />
               </div>
               <div className="grid gap-2">
