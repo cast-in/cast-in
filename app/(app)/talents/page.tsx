@@ -98,7 +98,11 @@ export default async function TalentsPage({
   const page = parsePage(sp.page);
 
   if (activeRole === "casting") {
-    const actorSort = asString(sp.sort) === "name" ? "name" : "latest";
+    const rawActorSort = asString(sp.sort);
+    const actorSort =
+      rawActorSort === "name" || rawActorSort === "latest"
+        ? rawActorSort
+        : "recommended";
     return (
       <CastingTalentsPage
         ageGroup={actorAgeGroup}
@@ -115,7 +119,11 @@ export default async function TalentsPage({
     );
   }
 
-  const sort = asString(sp.sort) === "deadline" ? "deadline" : "latest";
+  const rawJobSort = asString(sp.sort);
+  const sort =
+    rawJobSort === "deadline" || rawJobSort === "latest"
+      ? rawJobSort
+      : "recommended";
   const status = asString(sp.status);
   const jobState = status === "closed" || status === "all" ? status : "active";
   return (
@@ -155,7 +163,7 @@ async function CastingTalentsPage({
   nationality: string[];
   page: number;
   skill: string[];
-  sort: "latest" | "name";
+  sort: "recommended" | "latest" | "name";
 }) {
   const hasFilters = Boolean(
     q ||
@@ -223,7 +231,9 @@ async function CastingTalentsPage({
 
       <section>
         <div className="mb-5 flex items-end gap-3">
-          <h2 className="text-2xl font-extrabold tracking-normal">전체 배우</h2>
+          <h2 className="text-2xl font-extrabold tracking-normal">
+            {sort === "recommended" ? "추천 배우" : "전체 배우"}
+          </h2>
           <span className="text-2xl font-extrabold text-primary">
             {total.toLocaleString("ko-KR")}
           </span>
@@ -273,7 +283,7 @@ async function CastingTalentsPage({
           height: heightRange,
           nationality,
           skill,
-          sort: sort === "latest" ? undefined : sort,
+          sort: sort === "recommended" ? undefined : sort,
         }}
         page={page}
         pageSize={PAGE_SIZE}
@@ -302,7 +312,7 @@ async function ActorTalentsPage({
   targetGender: string[];
   targetAgeGroup: string[];
   platform: string[];
-  sort: "deadline" | "latest";
+  sort: "recommended" | "deadline" | "latest";
   jobState: "active" | "closed" | "all";
   page: number;
 }) {
@@ -348,7 +358,7 @@ async function ActorTalentsPage({
       platform.length ||
       jobState !== "active",
   );
-  const recommendedJobs = items.slice(0, 5);
+  const featuredJobs = items.slice(0, 5);
 
   return (
     <PageContainer size="wide" className="space-y-8">
@@ -358,6 +368,7 @@ async function ActorTalentsPage({
         action="/talents"
         resetHref="/talents"
         searchLabel="공고 검색"
+        showRecommendedSort
         values={{
           q,
           region,
@@ -384,7 +395,7 @@ async function ActorTalentsPage({
               : "새 공고가 올라오면 여기에서 볼 수 있어요."
           }
           action={
-            hasFilters || sort !== "latest" ? (
+            hasFilters || sort !== "recommended" ? (
               <Link
                 href="/talents"
                 className={buttonVariants({ color: "secondary", size: "sm" })}
@@ -396,21 +407,23 @@ async function ActorTalentsPage({
         />
       ) : (
         <>
-          {recommendedJobs.length > 0 ? (
+          {featuredJobs.length > 0 ? (
             <section className="rounded-xl bg-primary-soft px-5 py-7 ring-1 ring-primary/10 md:px-8">
               <div className="mb-5">
                 <h2 className="flex items-center gap-2 text-2xl font-extrabold tracking-normal text-primary">
                   <SlidersHorizontal aria-hidden="true" className="size-6" />
-                  맞춤 공고
+                  먼저 볼 공고
                 </h2>
                 <p className="mt-2 text-xs font-medium text-primary/80">
-                  교환님의 프로필을 바탕으로 추천드려요
+                  {sort === "recommended"
+                    ? "프로필과 가까운 공고를 먼저 보여줘요."
+                    : "검색 결과에서 먼저 확인할 공고예요."}
                 </p>
               </div>
               <div className="-mx-5 flex gap-5 overflow-x-auto px-5 pb-2 md:-mx-8 md:px-8">
-                {recommendedJobs.map((job) => (
+                {featuredJobs.map((job) => (
                   <JobCard
-                    key={`recommended-${job.id}`}
+                    key={`featured-${job.id}`}
                     job={job}
                     bookmarked={bookmarkedIds.has(job.id)}
                     redirectTo={redirectTo}
@@ -555,7 +568,7 @@ function buildTalentsPath(params: Record<string, QueryValue>) {
       if (!normalized) continue;
       if (key === "page" && normalized === "1") continue;
       if (key === "status" && normalized === "active") continue;
-      if (key === "sort" && normalized === "latest") continue;
+      if (key === "sort" && normalized === "recommended") continue;
       query.append(key, normalized);
     }
   }

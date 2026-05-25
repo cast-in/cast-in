@@ -235,7 +235,7 @@ export async function listMyBookmarkedJobs(
   const { data: jobs, error: jobsError } = await supabase
     .from("jobs")
     .select(
-      "id, title, description, genre, region, deadline, status, requirements, role_type, target_genders, target_age_groups, platforms, created_at",
+      "id, title, description, genre, region, deadline, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms, created_at",
     )
     .in("id", jobIds);
   if (jobsError) throw jobsError;
@@ -329,11 +329,15 @@ export async function listMyBookmarkedJobs(
       genre: job.genre,
       region: job.region,
       deadline: job.deadline,
+      created_at: job.created_at,
       status: job.status,
       requirements: job.requirements ?? [],
+      role_name: job.role_name,
       role_type: job.role_type,
       target_genders: job.target_genders ?? [],
       target_age_groups: job.target_age_groups ?? [],
+      target_age_min: job.target_age_min,
+      target_age_max: job.target_age_max,
       platforms: job.platforms ?? [],
     }),
   );

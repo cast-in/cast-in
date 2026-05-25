@@ -42,8 +42,13 @@ export async function signUpWithPassword(
     formData.get("privacy_consent") === "accepted";
   const marketingConsentAccepted =
     formData.get("marketing_consent") === "accepted";
-  if (!email || password.length < 6)
-    return { ok: false, error: "비밀번호는 6자 이상으로 만들어주세요." };
+  const passwordError = validatePassword(password);
+  if (!email || passwordError) {
+    return {
+      ok: false,
+      error: passwordError ?? "이메일과 비밀번호를 입력해주세요.",
+    };
+  }
   if (!privacyConsentAccepted) {
     return {
       ok: false,
@@ -100,8 +105,9 @@ export async function updatePasswordAction(
 ): Promise<AuthResult> {
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("password_confirm") ?? "");
-  if (password.length < 6) {
-    return { ok: false, error: "비밀번호는 6자 이상으로 만들어주세요." };
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return { ok: false, error: passwordError };
   }
   if (password !== passwordConfirm) {
     return { ok: false, error: "비밀번호가 서로 달라요." };
@@ -152,6 +158,16 @@ export async function signOutAction() {
 function getOrigin() {
   // Server action에서 window 접근 불가 — env 기반
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3333";
+}
+
+function validatePassword(password: string) {
+  if (password.length < 8) {
+    return "비밀번호는 8자 이상으로 만들어주세요.";
+  }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return "비밀번호에 영문과 숫자를 모두 포함해주세요.";
+  }
+  return null;
 }
 
 function translateAuthError(msg: string) {

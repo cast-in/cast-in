@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {
+  attachmentsToJson,
+  isAttachmentPathForOwner,
+  parseAttachmentFormValue,
+} from "@/lib/attachments";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { isJobAccepting } from "@/lib/job-status";
 import {
@@ -169,6 +174,25 @@ export async function applyToJobAction(
   }
 
   const memo = parsed.data.memo;
+  const parsedAttachments = parseAttachmentFormValue(formData.get("attachments"));
+  if (!parsedAttachments.ok) {
+    return { ok: false, error: parsedAttachments.error };
+  }
+  const attachments = parsedAttachments.attachments;
+  if (
+    attachments.some(
+      (attachment) =>
+        !isAttachmentPathForOwner({
+          path: attachment.path,
+          scope: "applications",
+          targetId: parsed.data.job_id,
+          userId: user.id,
+        }),
+    )
+  ) {
+    return { ok: false, error: "첨부 파일 경로를 확인할 수 없어요." };
+  }
+
   const { data: questions, error: questionsErr } = await supabase
     .from("job_application_questions")
     .select("id, label, required")
@@ -187,7 +211,13 @@ export async function applyToJobAction(
 
   const { data: application, error: appErr } = await supabase
     .from("applications")
-    .insert({ job_id: parsed.data.job_id, actor_id: user.id, memo, answers })
+    .insert({
+      job_id: parsed.data.job_id,
+      actor_id: user.id,
+      memo,
+      answers,
+      attachments: attachmentsToJson(attachments),
+    })
     .select("id")
     .maybeSingle();
   if (appErr) {
@@ -241,6 +271,19 @@ export async function startJobConversationAction(
     return { ok: false, error: "메시지를 보낼 배우를 찾을 수 없어요." };
   }
 
+  if (activeRole === "actor") {
+    const { data: application, error: applicationErr } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("job_id", parsed.data.job_id)
+      .eq("actor_id", actorId)
+      .maybeSingle();
+    if (applicationErr) return { ok: false, error: applicationErr.message };
+    if (!application) {
+      return { ok: false, error: "지원한 공고에서만 대화를 시작할 수 있어요." };
+    }
+  }
+
   if (activeRole === "casting") {
     if (job.casting_id !== user.id) {
       return { ok: false, error: "이 공고의 지원자에게만 메시지를 보낼 수 있어요." };
@@ -258,19 +301,45 @@ export async function startJobConversationAction(
     }
   }
 
+  const { data: existingRoom, error: existingRoomErr } = await supabase
+    .from("chat_rooms")
+    .select("id")
+    .eq("job_id", parsed.data.job_id)
+    .eq("actor_id", actorId)
+    .eq("casting_id", job.casting_id)
+    .maybeSingle();
+  if (existingRoomErr) return { ok: false, error: existingRoomErr.message };
+  if (existingRoom) {
+    revalidatePath("/messages");
+    return { ok: true, roomId: existingRoom.id };
+  }
+
   const { data: room, error: roomErr } = await supabase
     .from("chat_rooms")
-    .upsert(
-      {
-        job_id: parsed.data.job_id,
-        actor_id: actorId,
-        casting_id: job.casting_id,
-      },
-      { onConflict: "job_id,actor_id,casting_id" },
-    )
+    .insert({
+      job_id: parsed.data.job_id,
+      actor_id: actorId,
+      casting_id: job.casting_id,
+    })
     .select("id")
     .maybeSingle();
-  if (roomErr) return { ok: false, error: roomErr.message };
+  if (roomErr) {
+    if (roomErr.code === "23505") {
+      const { data: roomAfterConflict, error: refetchErr } = await supabase
+        .from("chat_rooms")
+        .select("id")
+        .eq("job_id", parsed.data.job_id)
+        .eq("actor_id", actorId)
+        .eq("casting_id", job.casting_id)
+        .maybeSingle();
+      if (refetchErr) return { ok: false, error: refetchErr.message };
+      if (roomAfterConflict) {
+        revalidatePath("/messages");
+        return { ok: true, roomId: roomAfterConflict.id };
+      }
+    }
+    return { ok: false, error: roomErr.message };
+  }
 
   if (!room) return { ok: false, error: "대화방을 열 수 없어요." };
 

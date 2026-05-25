@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getUserPublicStoragePath } from "@/lib/supabase/storage-url";
 import { createClient } from "@/lib/supabase/server";
 
 export type AddPortfolioResult =
@@ -22,7 +23,8 @@ export async function addPortfolioItemAction(input: {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "먼저 로그인해주세요." };
 
-  if (!input.url?.startsWith("http")) {
+  const storagePath = getUserPublicStoragePath(input.url, "portfolio", user.id);
+  if (!storagePath) {
     return { ok: false, error: "업로드된 파일 URL이 올바르지 않아요." };
   }
   if (input.type !== "image" && input.type !== "video") {
@@ -65,9 +67,7 @@ export async function deletePortfolioItemAction(
     return { ok: false, error: "이 항목을 지울 권한이 없어요." };
   }
 
-  // 공개 URL에서 스토리지 경로 추출: `.../portfolio/<actor>/<file>`
-  const match = item.url.match(/\/portfolio\/(.+)$/);
-  const storagePath = match?.[1];
+  const storagePath = getUserPublicStoragePath(item.url, "portfolio", user.id);
   if (storagePath) {
     await supabase.storage.from("portfolio").remove([storagePath]);
   }

@@ -106,7 +106,7 @@ export default async function DiscoverPage({
       platform.length ||
       jobState !== "active",
   );
-  const recommendedJobs = items.slice(0, 5);
+  const featuredJobs = items.slice(0, 5);
 
   return (
     <PageContainer size="wide" className="space-y-8">
@@ -154,20 +154,20 @@ export default async function DiscoverPage({
         />
       ) : (
         <>
-          {recommendedJobs.length > 0 ? (
+          {featuredJobs.length > 0 ? (
             <section className="rounded-xl bg-primary-soft px-5 py-7 ring-1 ring-primary/10 md:px-8">
               <div className="mb-5">
                 <h2 className="text-2xl font-extrabold tracking-normal text-primary">
-                  맞춤 공고
+                  먼저 볼 공고
                 </h2>
                 <p className="mt-2 text-xs font-medium text-primary/80">
-                  최근 공고 기준으로 먼저 보여드려요
+                  검색 결과에서 먼저 확인할 공고예요.
                 </p>
               </div>
               <div className="-mx-5 flex gap-5 overflow-x-auto px-5 pb-2 md:-mx-8 md:px-8">
-                {recommendedJobs.map((job) => (
+                {featuredJobs.map((job) => (
                   <JobCard
-                    key={`recommended-${job.id}`}
+                    key={`featured-${job.id}`}
                     job={job}
                     bookmarked={bookmarkedIds.has(job.id)}
                     redirectTo={redirectTo}

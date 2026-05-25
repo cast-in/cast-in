@@ -103,7 +103,7 @@ export function ModeSwitcher({
               onClick={() => setPendingRole(null)}
               disabled={isPending}
             >
-              취소
+              닫기
             </Button>
             <Button type="button" onClick={handleConfirm} disabled={isPending}>
               전환하기

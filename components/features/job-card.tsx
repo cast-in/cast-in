@@ -36,6 +36,8 @@ export function JobCard({
   const statusLabel = accepting ? "지원 가능" : "지원 마감";
   const posterSrc = getJobPosterSrc(job.id);
   const primaryPlatform = getPrimaryJobPlatform(job.platforms);
+  const matchScore = job.match_score ?? 0;
+  const matchReasons = job.match_reasons?.slice(0, compact ? 1 : 2) ?? [];
 
   return (
     <Card
@@ -53,14 +55,26 @@ export function JobCard({
           )}
         >
           <JobPostingPreview title={job.title} src={posterSrc} />
-          <Badge
-            color="neutral"
-            variant="outline"
-            size="md"
-            className="absolute left-3 top-3 bg-card/90 backdrop-blur"
-          >
-            {deadlineSignal}
-          </Badge>
+          <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1.5">
+            <Badge
+              color="neutral"
+              variant="outline"
+              size="md"
+              className="bg-card/90 backdrop-blur"
+            >
+              {deadlineSignal}
+            </Badge>
+            {matchScore > 0 ? (
+              <Badge
+                color="primary"
+                variant="soft-outline"
+                size="md"
+                className="bg-background/90 backdrop-blur"
+              >
+                매칭 {matchScore}
+              </Badge>
+            ) : null}
+          </div>
         </Link>
         <BookmarkButton
           targetType="job"
@@ -122,6 +136,20 @@ export function JobCard({
             })}
           </Badge>
         </div>
+        {matchReasons.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {matchReasons.map((reason) => (
+              <Badge
+                key={reason}
+                color="primary"
+                variant="soft-outline"
+                size="sm"
+              >
+                {reason}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
         <div
           className={cn(
             "mt-auto flex items-center justify-between text-muted-foreground",

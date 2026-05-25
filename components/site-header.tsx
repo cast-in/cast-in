@@ -23,18 +23,13 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
     viewer.user && viewer.profile && viewer.activeRole,
   );
   const needsOnboarding = Boolean(viewer.user && !showAuthenticatedHeader);
+  const logoHref = showAuthenticatedHeader ? "/talents" : "/";
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-background/95 backdrop-blur after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:z-0 after:h-px after:bg-border after:content-['']">
       <div className="relative z-10 mx-auto flex h-full max-w-[1280px] items-center justify-between gap-6 px-5">
         <div className="flex min-w-0 items-center gap-2">
-          {showAuthenticatedHeader ? (
-            <BrandLogo size={32} />
-          ) : (
-            <Link href="/" className="shrink-0">
-              <BrandLogo size={32} />
-            </Link>
-          )}
+          <BrandLogo href={logoHref} size={32} className="shrink-0" />
         </div>
 
         {showAuthenticatedHeader && viewer.activeRole ? (

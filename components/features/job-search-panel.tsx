@@ -75,7 +75,7 @@ export type JobSearchPanelValues = {
   targetGender: string[];
   targetAgeGroup: string[];
   platform: string[];
-  sort: "deadline" | "latest";
+  sort: "recommended" | "deadline" | "latest";
   jobState?: "active" | "closed" | "all";
 };
 
@@ -83,11 +83,13 @@ export function JobSearchPanel({
   action,
   resetHref,
   searchLabel,
+  showRecommendedSort = false,
   values,
 }: {
   action: string;
   resetHref: string;
   searchLabel: string;
+  showRecommendedSort?: boolean;
   values: JobSearchPanelValues;
 }) {
   const router = useRouter();
@@ -147,7 +149,8 @@ export function JobSearchPanel({
     const formData = new FormData(event.currentTarget);
     const query = new URLSearchParams();
     const q = String(formData.get("q") ?? "").trim();
-    const sort = String(formData.get("sort") ?? "latest").trim();
+    const defaultSort = showRecommendedSort ? "recommended" : "latest";
+    const sort = String(formData.get("sort") ?? defaultSort).trim();
     const status = String(formData.get("status") ?? "active").trim();
 
     if (q) query.set("q", q);
@@ -157,7 +160,7 @@ export function JobSearchPanel({
     appendQueryValues(query, "target_gender", selectedFilters.targetGender);
     appendQueryValues(query, "age_group", selectedFilters.targetAgeGroup);
     appendQueryValues(query, "platform", selectedFilters.platform);
-    if (sort && sort !== "latest") query.set("sort", sort);
+    if (sort && sort !== defaultSort) query.set("sort", sort);
     if (status && status !== "active") query.set("status", status);
 
     const qs = query.toString();
@@ -198,6 +201,9 @@ export function JobSearchPanel({
             정렬
           </label>
           <Select id={sortId} name="sort" defaultValue={values.sort}>
+            {showRecommendedSort ? (
+              <option value="recommended">추천순</option>
+            ) : null}
             <option value="latest">최신순</option>
             <option value="deadline">마감 임박순</option>
           </Select>

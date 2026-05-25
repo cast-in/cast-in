@@ -77,21 +77,50 @@ export async function startActorConversationAction(
   let roomId: string | null = null;
 
   if (jobId) {
-    const { data: room, error } = await supabase
+    const { data: existingRoom, error: existingRoomError } = await supabase
       .from("chat_rooms")
-      .upsert(
-        {
+      .select("id")
+      .eq("actor_id", parsed.data.actor_id)
+      .eq("casting_id", user.id)
+      .eq("job_id", jobId)
+      .maybeSingle();
+
+    if (existingRoomError) {
+      return { ok: false, error: existingRoomError.message };
+    }
+
+    if (existingRoom) {
+      roomId = existingRoom.id;
+    } else {
+      const { data: room, error } = await supabase
+        .from("chat_rooms")
+        .insert({
           actor_id: parsed.data.actor_id,
           casting_id: user.id,
           job_id: jobId,
-        },
-        { onConflict: "job_id,actor_id,casting_id" },
-      )
-      .select("id")
-      .maybeSingle();
+        })
+        .select("id")
+        .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
-    roomId = room?.id ?? null;
+      if (error) {
+        if (error.code === "23505") {
+          const { data: roomAfterConflict, error: refetchError } = await supabase
+            .from("chat_rooms")
+            .select("id")
+            .eq("actor_id", parsed.data.actor_id)
+            .eq("casting_id", user.id)
+            .eq("job_id", jobId)
+            .maybeSingle();
+
+          if (refetchError) return { ok: false, error: refetchError.message };
+          roomId = roomAfterConflict?.id ?? null;
+        } else {
+          return { ok: false, error: error.message };
+        }
+      } else {
+        roomId = room?.id ?? null;
+      }
+    }
   } else {
     const { data: existingRoom, error: existingRoomError } = await supabase
       .from("chat_rooms")

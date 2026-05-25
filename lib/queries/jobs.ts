@@ -1,12 +1,33 @@
 import { calculateAge } from "@/lib/format";
+import {
+  parseAttachmentList,
+  signAttachments,
+  type AttachmentMetadata,
+} from "@/lib/attachments";
 import { parseSocialLinks, type ActorSocialLink } from "@/lib/social-links";
+import {
+  rankActorsForCasting,
+  rankJobsForActor,
+  type ActorRecommendationProfile,
+  type RecommendationCredit,
+  type RecommendationDetails,
+  type RecommendableJob,
+} from "@/lib/recommendations";
 import { createClient } from "@/lib/supabase/server";
+import {
+  signPublicStorageUrl,
+  signPublicStorageUrls,
+} from "@/lib/supabase/storage-url";
 import type { Database } from "@/types/database";
 import type { ApplicationStatus } from "@/types/enums";
 
 export type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
 export type JobApplicationQuestion =
   Database["public"]["Tables"]["job_application_questions"]["Row"];
+
+const RECOMMENDATION_CANDIDATE_LIMIT = 200;
+
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
 export async function listMyJobs() {
   const supabase = await createClient();
@@ -32,7 +53,11 @@ export async function getJob(id: string) {
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  if (!data) return null;
+  return {
+    ...data,
+    media_urls: await signJobMediaUrls(supabase, data.media_urls ?? []),
+  };
 }
 
 export async function listJobApplicationQuestions(
@@ -52,7 +77,6 @@ export type JobDetailMeta = {
   applicant_count: number;
   casting_avatar_url: string | null;
   casting_company_name: string | null;
-  casting_contact: string | null;
   casting_intro: string | null;
   casting_job_count: number;
   casting_name: string;
@@ -75,7 +99,7 @@ export async function getJobDetailMeta(
       .maybeSingle(),
     supabase
       .from("casting_profiles")
-      .select("company_name, contact, intro")
+      .select("company_name, intro")
       .eq("user_id", job.casting_id)
       .maybeSingle(),
     supabase
@@ -95,11 +119,16 @@ export async function getJobDetailMeta(
     applicantCountError;
   if (error) throw error;
 
+  const avatarUrl = await signPublicStorageUrl(
+    supabase,
+    profile?.avatar_url,
+    "avatars",
+  );
+
   return {
     applicant_count: applicantCount ?? 0,
-    casting_avatar_url: profile?.avatar_url ?? null,
+    casting_avatar_url: avatarUrl,
     casting_company_name: castingProfile?.company_name ?? null,
-    casting_contact: castingProfile?.contact ?? null,
     casting_intro: castingProfile?.intro ?? null,
     casting_job_count: castingJobCount ?? 0,
     casting_name:
@@ -114,13 +143,18 @@ export type OpenJobPreview = Pick<
   | "genre"
   | "region"
   | "deadline"
+  | "created_at"
   | "status"
   | "requirements"
+  | "role_name"
   | "role_type"
   | "target_genders"
   | "target_age_groups"
+  | "target_age_min"
+  | "target_age_max"
   | "platforms"
->;
+> &
+  Partial<RecommendationDetails>;
 
 export async function listOpenJobsPreview(
   limit = 6,
@@ -130,7 +164,7 @@ export async function listOpenJobsPreview(
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, title, genre, region, deadline, status, requirements, role_type, target_genders, target_age_groups, platforms",
+      "id, title, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms",
     )
     .eq("status", "open")
     .or(`deadline.is.null,deadline.gte.${now}`)
@@ -153,6 +187,8 @@ export type ActorPreview = {
 export type CastingActorPreview = ActorPreview & {
   height_cm: number | null;
   image_tags: string[];
+  match_reasons?: string[];
+  match_score?: number;
   nationalities: string[];
   skills: string[];
   updated_at: string;
@@ -163,7 +199,6 @@ export type ActorDetail = ActorPreview & {
   affiliation: string | null;
   bio: string | null;
   birth_date: string | null;
-  email: string | null;
   gender: string | null;
   height_cm: number | null;
   image_tags: string[];
@@ -199,9 +234,17 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
     .in("id", actorIds);
 
   const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+  const signedAvatarUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    (profiles ?? [])
+      .map((profile) => profile.avatar_url)
+      .filter((url): url is string => Boolean(url)),
+    "avatars",
+  );
 
   return actorProfiles.map((actorProfile) => {
     const profile = profileById.get(actorProfile.user_id);
+    const avatarUrl = profile?.avatar_url ?? null;
     return {
       id: actorProfile.user_id,
       name: profile?.name ?? "이름 미등록",
@@ -209,7 +252,7 @@ export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
       age: calculateAge(actorProfile.birth_date ?? null),
       gender: actorProfile.gender ?? null,
       genres: actorProfile.genres ?? [],
-      avatar_url: profile?.avatar_url ?? null,
+      avatar_url: avatarUrl ? (signedAvatarUrlByUrl.get(avatarUrl) ?? avatarUrl) : null,
     };
   });
 }
@@ -262,17 +305,33 @@ export async function listLandingActors(limit = 18): Promise<LandingActor[]> {
 
   if (portfolioError) throw portfolioError;
 
+  const signedAvatarUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    actors
+      .map((actor) => actor.avatar_url)
+      .filter((url): url is string => Boolean(url)),
+    "avatars",
+  );
+  const signedPortfolioUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    (portfolioItems ?? []).map((item) => item.url),
+    "portfolio",
+  );
+
   const imageUrlsByActorId = new Map<string, string[]>();
   for (const item of portfolioItems ?? []) {
     const urls = imageUrlsByActorId.get(item.actor_id) ?? [];
     if (urls.length < 3) {
-      urls.push(item.url);
+      urls.push(signedPortfolioUrlByUrl.get(item.url) ?? item.url);
       imageUrlsByActorId.set(item.actor_id, urls);
     }
   }
 
   return actors.map((actor) => ({
     ...actor,
+    avatar_url: actor.avatar_url
+      ? (signedAvatarUrlByUrl.get(actor.avatar_url) ?? actor.avatar_url)
+      : null,
     portfolio_image_urls: imageUrlsByActorId.get(actor.id) ?? [],
   }));
 }
@@ -293,7 +352,7 @@ export type SearchCastingActorsParams = SearchActorsParams & {
   heightRange?: SearchFilterValue;
   nationality?: SearchFilterValue;
   skill?: SearchFilterValue;
-  sort?: "latest" | "name";
+  sort?: "recommended" | "latest" | "name";
 };
 
 export type PagedResult<T> = {
@@ -345,8 +404,22 @@ export async function searchActors(
   const { data, count, error } = await query;
   if (error) throw error;
 
+  const signedAvatarUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    (data ?? [])
+      .map((row) => {
+        const profile = Array.isArray(row.profiles)
+          ? row.profiles[0]
+          : row.profiles;
+        return profile?.avatar_url;
+      })
+      .filter((url): url is string => Boolean(url)),
+    "avatars",
+  );
+
   const items: ActorPreview[] = (data ?? []).map((row) => {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    const avatarUrl = profile?.avatar_url ?? null;
     return {
       id: row.user_id,
       name: profile?.name ?? "이름 미등록",
@@ -354,7 +427,9 @@ export async function searchActors(
       age: calculateAge(row.birth_date ?? null),
       gender: row.gender ?? null,
       genres: row.genres ?? [],
-      avatar_url: profile?.avatar_url ?? null,
+      avatar_url: avatarUrl
+        ? (signedAvatarUrlByUrl.get(avatarUrl) ?? avatarUrl)
+        : null,
     };
   });
 
@@ -418,33 +493,66 @@ export async function searchCastingActors(
 
   if (sort === "name") {
     query = query.order("profiles(name)", { ascending: true });
+  } else if (sort === "recommended") {
+    query = query.order("updated_at", { ascending: false });
   } else {
     query = query.order("updated_at", { ascending: false });
   }
-  query = query.range(from, to);
+  query =
+    sort === "recommended"
+      ? query.range(0, RECOMMENDATION_CANDIDATE_LIMIT - 1)
+      : query.range(from, to);
 
   const { data, count, error } = await query;
   if (error) throw error;
 
+  const signedAvatarUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    (data ?? [])
+      .map((row) => {
+        const profile = Array.isArray(row.profiles)
+          ? row.profiles[0]
+          : row.profiles;
+        return profile?.avatar_url;
+      })
+      .filter((url): url is string => Boolean(url)),
+    "avatars",
+  );
+
+  const items = (data ?? []).map((row): CastingActorPreview => {
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    const avatarUrl = profile?.avatar_url ?? null;
+    return {
+      id: row.user_id,
+      name: profile?.name ?? "이름 미등록",
+      region: row.region ?? null,
+      age: calculateAge(row.birth_date ?? null),
+      gender: row.gender ?? null,
+      genres: row.genres ?? [],
+      avatar_url: avatarUrl
+        ? (signedAvatarUrlByUrl.get(avatarUrl) ?? avatarUrl)
+        : null,
+      height_cm: row.height_cm ?? null,
+      weight_kg: row.weight_kg ?? null,
+      image_tags: row.image_tags ?? [],
+      nationalities: row.nationalities ?? [],
+      skills: row.skills ?? [],
+      updated_at: row.updated_at,
+    };
+  });
+
+  if (sort === "recommended") {
+    const rankedItems = await rankActorsForCurrentCasting(supabase, items);
+    return {
+      items: rankedItems.slice(from, to + 1),
+      total: count ?? 0,
+      page,
+      pageSize,
+    };
+  }
+
   return {
-    items: (data ?? []).map((row): CastingActorPreview => {
-      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-      return {
-        id: row.user_id,
-        name: profile?.name ?? "이름 미등록",
-        region: row.region ?? null,
-        age: calculateAge(row.birth_date ?? null),
-        gender: row.gender ?? null,
-        genres: row.genres ?? [],
-        avatar_url: profile?.avatar_url ?? null,
-        height_cm: row.height_cm ?? null,
-        weight_kg: row.weight_kg ?? null,
-        image_tags: row.image_tags ?? [],
-        nationalities: row.nationalities ?? [],
-        skills: row.skills ?? [],
-        updated_at: row.updated_at,
-      };
-    }),
+    items,
     total: count ?? 0,
     page,
     pageSize,
@@ -456,7 +564,7 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
   const { data, error } = await supabase
     .from("actor_profiles")
     .select(
-      "user_id, affiliation, bio, birth_date, gender, height_cm, image_tags, region, genres, skills, social_links, updated_at, weight_kg, profiles!inner(name, avatar_url, email)",
+      "user_id, affiliation, bio, birth_date, gender, height_cm, image_tags, region, genres, skills, social_links, updated_at, weight_kg, profiles!inner(name, avatar_url)",
     )
     .eq("user_id", actorId)
     .eq("visibility", "public")
@@ -466,15 +574,19 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
   if (!data) return null;
 
   const profile = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+  const avatarUrl = await signPublicStorageUrl(
+    supabase,
+    profile?.avatar_url,
+    "avatars",
+  );
 
   return {
     id: data.user_id,
     name: profile?.name ?? "이름 미등록",
-    email: profile?.email ?? null,
     region: data.region ?? null,
     age: calculateAge(data.birth_date ?? null),
     genres: data.genres ?? [],
-    avatar_url: profile?.avatar_url ?? null,
+    avatar_url: avatarUrl,
     affiliation: data.affiliation ?? null,
     bio: data.bio ?? null,
     birth_date: data.birth_date ?? null,
@@ -617,6 +729,19 @@ function normalizeSearchValues(value: SearchFilterValue | undefined) {
   return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
 }
 
+async function signJobMediaUrls(
+  supabase: ServerSupabaseClient,
+  urls: readonly string[],
+) {
+  const signedUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    urls,
+    "job-media",
+  );
+
+  return urls.map((url) => signedUrlByUrl.get(url) ?? url);
+}
+
 function dateYearsAgo(years: number) {
   const date = new Date();
   date.setFullYear(date.getFullYear() - years);
@@ -636,7 +761,7 @@ export type SearchJobsParams = {
   targetGender?: SearchFilterValue;
   targetAgeGroup?: SearchFilterValue;
   platform?: SearchFilterValue;
-  sort?: "deadline" | "latest";
+  sort?: "recommended" | "deadline" | "latest";
   jobState?: "active" | "closed" | "all";
   page?: number;
   pageSize?: number;
@@ -667,10 +792,9 @@ export async function searchOpenJobs(
   let query = supabase
     .from("jobs")
     .select(
-      "id, title, genre, region, deadline, status, requirements, role_type, target_genders, target_age_groups, platforms",
+      "id, title, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms",
       { count: "exact" },
-    )
-    .range(from, to);
+    );
 
   if (jobState === "active") {
     query = query.eq("status", "open").or(`deadline.is.null,deadline.gte.${now}`);
@@ -714,16 +838,159 @@ export async function searchOpenJobs(
     query = query.overlaps("platforms", platforms);
   }
 
-  if (sort === "latest") {
+  if (sort === "latest" || sort === "recommended") {
     query = query.order("created_at", { ascending: false });
   } else {
     query = query.order("deadline", { ascending: true, nullsFirst: false });
   }
+  query =
+    sort === "recommended"
+      ? query.range(0, RECOMMENDATION_CANDIDATE_LIMIT - 1)
+      : query.range(from, to);
 
   const { data, count, error } = await query;
   if (error) throw error;
 
+  if (sort === "recommended") {
+    const actorProfile = await getActorRecommendationProfile(supabase);
+    const rankedItems = actorProfile
+      ? rankJobsForActor(data ?? [], actorProfile)
+      : (data ?? []).map((job) => ({
+          ...job,
+          match_score: 0,
+          match_reasons: [],
+        }));
+
+    return {
+      items: rankedItems.slice(from, to + 1),
+      total: count ?? 0,
+      page,
+      pageSize,
+    };
+  }
+
   return { items: data ?? [], total: count ?? 0, page, pageSize };
+}
+
+async function getActorRecommendationProfile(
+  supabase: ServerSupabaseClient,
+): Promise<ActorRecommendationProfile | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: actorProfile, error: profileError } = await supabase
+    .from("actor_profiles")
+    .select("birth_date, gender, image_tags, region, genres, skills")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (!actorProfile) return null;
+
+  const { data: credits, error: creditError } = await supabase
+    .from("actor_credits")
+    .select("title, role, year")
+    .eq("actor_id", user.id)
+    .order("sort_order", { ascending: true })
+    .order("year", { ascending: false, nullsFirst: false })
+    .limit(20);
+  if (creditError) throw creditError;
+
+  return {
+    age: calculateAge(actorProfile.birth_date ?? null),
+    gender: actorProfile.gender ?? null,
+    genres: actorProfile.genres ?? [],
+    image_tags: actorProfile.image_tags ?? [],
+    region: actorProfile.region ?? null,
+    skills: actorProfile.skills ?? [],
+    credits: credits ?? [],
+  };
+}
+
+async function rankActorsForCurrentCasting(
+  supabase: ServerSupabaseClient,
+  actors: readonly CastingActorPreview[],
+) {
+  if (actors.length === 0) return [];
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return actors.map((actor) => ({
+      ...actor,
+      match_score: 0,
+      match_reasons: [],
+    }));
+  }
+
+  const [jobs, creditsByActorId] = await Promise.all([
+    listCastingJobsForRecommendation(supabase, user.id),
+    listCreditsByActorId(
+      supabase,
+      actors.map((actor) => actor.id),
+    ),
+  ]);
+
+  if (jobs.length === 0) {
+    return actors.map((actor) => ({
+      ...actor,
+      match_score: 0,
+      match_reasons: [],
+    }));
+  }
+
+  return rankActorsForCasting(actors, jobs, creditsByActorId);
+}
+
+async function listCastingJobsForRecommendation(
+  supabase: ServerSupabaseClient,
+  castingId: string,
+): Promise<RecommendableJob[]> {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(
+      "id, title, genre, region, deadline, created_at, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max",
+    )
+    .eq("casting_id", castingId)
+    .eq("status", "open")
+    .or(`deadline.is.null,deadline.gte.${now}`)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function listCreditsByActorId(
+  supabase: ServerSupabaseClient,
+  actorIds: readonly string[],
+) {
+  const uniqueActorIds = [...new Set(actorIds)];
+  const creditsByActorId = new Map<string, RecommendationCredit[]>();
+  if (uniqueActorIds.length === 0) return creditsByActorId;
+
+  const { data, error } = await supabase
+    .from("actor_credits")
+    .select("actor_id, title, role, year")
+    .in("actor_id", uniqueActorIds)
+    .order("sort_order", { ascending: true })
+    .order("year", { ascending: false, nullsFirst: false })
+    .limit(uniqueActorIds.length * 8);
+  if (error) throw error;
+
+  for (const credit of data ?? []) {
+    const current = creditsByActorId.get(credit.actor_id) ?? [];
+    current.push({
+      title: credit.title,
+      role: credit.role,
+      year: credit.year,
+    });
+    creditsByActorId.set(credit.actor_id, current);
+  }
+
+  return creditsByActorId;
 }
 
 export type Applicant = {
@@ -744,13 +1011,14 @@ export type Applicant = {
   actor_genres: string[];
   actor_skills: string[];
   actor_image_tags: string[];
+  attachments: AttachmentMetadata[];
 };
 
 export async function listApplicants(jobId: string): Promise<Applicant[]> {
   const supabase = await createClient();
   const { data: apps, error } = await supabase
     .from("applications")
-    .select("id, job_id, memo, casting_memo, status, created_at, actor_id")
+    .select("id, job_id, memo, casting_memo, status, created_at, actor_id, attachments")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -773,12 +1041,31 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
   const avatarById = new Map(
     (profiles ?? []).map((p) => [p.id, p.avatar_url ?? null]),
   );
+  const signedAvatarUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    (profiles ?? [])
+      .map((profile) => profile.avatar_url)
+      .filter((url): url is string => Boolean(url)),
+    "avatars",
+  );
   const actorProfileById = new Map(
     (actorProfiles ?? []).map((profile) => [profile.user_id, profile]),
+  );
+  const signedAttachmentsByApplicationId = new Map(
+    await Promise.all(
+      apps.map(async (application) => [
+        application.id,
+        await signAttachments(
+          supabase,
+          parseAttachmentList(application.attachments),
+        ),
+      ] as const),
+    ),
   );
 
   return apps.map((a) => {
     const actorProfile = actorProfileById.get(a.actor_id);
+    const avatarUrl = avatarById.get(a.actor_id) ?? null;
 
     return {
       id: a.id,
@@ -789,7 +1076,9 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
       created_at: a.created_at,
       actor_id: a.actor_id,
       actor_name: nameById.get(a.actor_id) ?? "이름 미등록",
-      actor_avatar_url: avatarById.get(a.actor_id) ?? null,
+      actor_avatar_url: avatarUrl
+        ? (signedAvatarUrlByUrl.get(avatarUrl) ?? avatarUrl)
+        : null,
       actor_age: calculateAge(actorProfile?.birth_date ?? null),
       actor_gender: actorProfile?.gender ?? null,
       actor_region: actorProfile?.region ?? null,
@@ -798,6 +1087,7 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
       actor_genres: actorProfile?.genres ?? [],
       actor_skills: actorProfile?.skills ?? [],
       actor_image_tags: actorProfile?.image_tags ?? [],
+      attachments: signedAttachmentsByApplicationId.get(a.id) ?? [],
     };
   });
 }
@@ -864,6 +1154,12 @@ export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
     if (a.status === "reject") agg.reject += 1;
   }
 
+  const signedMediaUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    jobs.flatMap((job) => job.media_urls ?? []),
+    "job-media",
+  );
+
   return jobs.map((j) => {
     const agg = byJob.get(j.id) ?? {
       total: 0,
@@ -875,6 +1171,9 @@ export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
     };
     return {
       ...j,
+      media_urls: (j.media_urls ?? []).map(
+        (url) => signedMediaUrlByUrl.get(url) ?? url,
+      ),
       applicant_count: agg.total,
       pending_count: agg.pending,
       reviewing_count: agg.reviewing,
@@ -947,6 +1246,11 @@ export async function listMyApplicationsWithJobs(
   ]);
 
   const jobById = new Map((jobs ?? []).map((job) => [job.id, job]));
+  const signedMediaUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    (jobs ?? []).flatMap((job) => job.media_urls ?? []),
+    "job-media",
+  );
   const roomsByJobId = new Map((rooms ?? []).map((room) => [room.job_id, room]));
   const lastMessageByJobId = new Map(
     (rooms ?? []).map((room) => [room.job_id, room.last_message_at]),
@@ -1004,7 +1308,9 @@ export async function listMyApplicationsWithJobs(
         job_role_type: job.role_type,
         job_target_age_groups: job.target_age_groups ?? [],
         job_target_genders: job.target_genders ?? [],
-        job_media_urls: job.media_urls ?? [],
+        job_media_urls: (job.media_urls ?? []).map(
+          (url) => signedMediaUrlByUrl.get(url) ?? url,
+        ),
         deadline: job.deadline,
         last_message_at: lastMessageByJobId.get(application.job_id) ?? null,
         last_message_body: room ? (latestBodyByRoomId.get(room.id) ?? null) : null,

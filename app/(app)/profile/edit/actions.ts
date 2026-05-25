@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { socialLinksToJson, type ActorSocialLink } from "@/lib/social-links";
-import type { Database } from "@/types/database";
+import { normalizeHttpUrl, normalizeSocialUrl } from "@/lib/url-validation";
+import type { Database, Json } from "@/types/database";
 
 type ActorProfileUpsert =
   Database["public"]["Tables"]["actor_profiles"]["Insert"];
@@ -33,22 +34,9 @@ function parseBirthDateFromAge(value: FormDataEntryValue | null) {
   return `${year}-01-01`;
 }
 
-function normalizeUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  if (trimmed.startsWith("@")) {
-    return `https://instagram.com/${trimmed.slice(1)}`;
-  }
-
-  return /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
-}
-
 function buildSocialLinks(formData: FormData) {
   const raw = String(formData.get("social_url") ?? "").trim();
-  const url = normalizeUrl(raw);
+  const url = normalizeSocialUrl(raw);
   if (!url) return [];
 
   const title = raw.startsWith("@")
@@ -75,7 +63,7 @@ function collectCredits(formData: FormData, actorId: string): ActorCreditInsert[
       year: parsePositiveInt(years[index] ?? null),
       title,
       role: String(roles[index] ?? "").trim() || null,
-      href: rawHref ? normalizeUrl(rawHref) : null,
+      href: rawHref ? normalizeHttpUrl(rawHref) : null,
       sort_order: index,
     });
   });
@@ -105,6 +93,25 @@ function collectAwards(formData: FormData, actorId: string): ActorAwardInsert[] 
   return rows;
 }
 
+function actorCreditsToJson(credits: ActorCreditInsert[]): Json {
+  return credits.map((credit) => ({
+    href: credit.href ?? null,
+    role: credit.role ?? null,
+    sort_order: credit.sort_order ?? 0,
+    title: credit.title,
+    year: credit.year ?? null,
+  }));
+}
+
+function actorAwardsToJson(awards: ActorAwardInsert[]): Json {
+  return awards.map((award) => ({
+    organization: award.organization ?? null,
+    sort_order: award.sort_order ?? 0,
+    title: award.title,
+    year: award.year ?? null,
+  }));
+}
+
 export async function saveActorProfileEditAction(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -113,15 +120,24 @@ export async function saveActorProfileEditAction(formData: FormData) {
   if (!user) redirect("/login");
 
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) return;
+  if (!name) throw new Error("이름을 입력해주세요.");
 
-  await supabase
+  const { data: currentActorProfile, error: currentActorProfileError } =
+    await supabase
+      .from("actor_profiles")
+      .select("visibility")
+      .eq("user_id", user.id)
+      .maybeSingle();
+  if (currentActorProfileError) throw new Error(currentActorProfileError.message);
+
+  const { error: profileError } = await supabase
     .from("profiles")
     .update({
       name,
       email: String(formData.get("email") ?? "").trim() || user.email || null,
     })
     .eq("id", user.id);
+  if (profileError) throw new Error(profileError.message);
 
   const actorPayload: ActorProfileUpsert = {
     user_id: user.id,
@@ -137,22 +153,21 @@ export async function saveActorProfileEditAction(formData: FormData) {
     image_tags: parseCsv(formData.get("image_tags")),
     social_links: socialLinksToJson(buildSocialLinks(formData)),
     bio: String(formData.get("bio") ?? "").trim() || null,
-    visibility: "public",
+    visibility: currentActorProfile?.visibility ?? "public",
   };
 
-  await supabase.from("actor_profiles").upsert(actorPayload);
+  const { error: actorProfileError } = await supabase
+    .from("actor_profiles")
+    .upsert(actorPayload);
+  if (actorProfileError) throw new Error(actorProfileError.message);
 
   const credits = collectCredits(formData, user.id);
-  await supabase.from("actor_credits").delete().eq("actor_id", user.id);
-  if (credits.length > 0) {
-    await supabase.from("actor_credits").insert(credits);
-  }
-
   const awards = collectAwards(formData, user.id);
-  await supabase.from("actor_awards").delete().eq("actor_id", user.id);
-  if (awards.length > 0) {
-    await supabase.from("actor_awards").insert(awards);
-  }
+  const { error: showcaseError } = await supabase.rpc("replace_my_actor_showcase", {
+    target_awards: actorAwardsToJson(awards),
+    target_credits: actorCreditsToJson(credits),
+  });
+  if (showcaseError) throw new Error(showcaseError.message);
 
   revalidatePath("/profile");
   revalidatePath("/profile/edit");

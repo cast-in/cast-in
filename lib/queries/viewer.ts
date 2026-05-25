@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { signPublicStorageUrl } from "@/lib/supabase/storage-url";
 import type { UserRole } from "@/types/enums";
 
 export const getViewerProfile = cache(async () => {
@@ -16,7 +17,7 @@ export const getViewerProfile = cache(async () => {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, name, role, email, avatar_url")
+        .select("id, name, role, avatar_url")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -33,6 +34,12 @@ export const getViewerProfile = cache(async () => {
 
   if (error) throw error;
 
+  const avatarUrl = await signPublicStorageUrl(
+    supabase,
+    profile?.avatar_url,
+    "avatars",
+  );
+
   const availableRoles: UserRole[] = [];
   if (actorProfile) availableRoles.push("actor");
   if (castingProfile) availableRoles.push("casting");
@@ -43,5 +50,9 @@ export const getViewerProfile = cache(async () => {
       ? preferredRole
       : availableRoles[0] ?? null;
 
-  return { user, profile, availableRoles, activeRole };
+  const viewerProfile = profile
+    ? { ...profile, avatar_url: avatarUrl, email: user.email ?? null }
+    : null;
+
+  return { user, profile: viewerProfile, availableRoles, activeRole };
 });

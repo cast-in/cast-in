@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import type { ApplicationStatus } from "@/types/enums";
 import { ApplicationStatusSelect } from "./application-status-select";
 import { ActorApplicationSort } from "./actor-application-sort";
+import { WithdrawApplicationDialog } from "./withdraw-application-dialog";
 import { JobConversationButton } from "./[id]/job-conversation-button";
 
 const CASTING_APPLICANT_PAGE_SIZE = 4;
@@ -891,6 +892,7 @@ function ApplicationCard({
   application: ApplicationWithJob;
 }) {
   const status = getActorApplicationStatus(application.status);
+  const canWithdraw = isWithdrawableApplicationStatus(application.status);
   const posterSrc = getApplicationPosterSrc(application);
   const detailItems = [
     application.job_genre ?? "장르 미정",
@@ -974,7 +976,7 @@ function ApplicationCard({
         ) : null}
       </div>
 
-      <div className="flex items-center justify-start lg:justify-end">
+      <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
         <Link
           href={`/messages?job=${application.job_id}`}
           className={cn(
@@ -988,6 +990,12 @@ function ApplicationCard({
         >
           메시지 보기
         </Link>
+        {canWithdraw ? (
+          <WithdrawApplicationDialog
+            applicationId={application.id}
+            jobTitle={application.job_title}
+          />
+        ) : null}
       </div>
     </article>
   );
@@ -1200,6 +1208,10 @@ function matchesActorApplicationFilter(
     return application.status === "reviewing" || application.status === "hold";
   }
   return application.status === filter;
+}
+
+function isWithdrawableApplicationStatus(status: ApplicationWithJob["status"]) {
+  return status === "pending" || status === "reviewing" || status === "hold";
 }
 
 function getActorApplicationStatus(status: ApplicationWithJob["status"]) {

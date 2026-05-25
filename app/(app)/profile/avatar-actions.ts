@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getUserPublicStoragePath } from "@/lib/supabase/storage-url";
 import { createClient } from "@/lib/supabase/server";
 
 export type UpdateAvatarResult =
@@ -16,7 +17,8 @@ export async function updateProfileAvatarAction(input: {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "먼저 로그인해주세요." };
 
-  if (!input.url?.startsWith("http")) {
+  const newPath = getUserPublicStoragePath(input.url, "avatars", user.id);
+  if (!newPath) {
     return { ok: false, error: "업로드된 파일 URL이 올바르지 않아요." };
   }
 
@@ -33,7 +35,9 @@ export async function updateProfileAvatarAction(input: {
     .eq("id", user.id);
   if (error) return { ok: false, error: error.message };
 
-  const oldPath = profile?.avatar_url ? extractAvatarPath(profile.avatar_url) : null;
+  const oldPath = profile?.avatar_url
+    ? getUserPublicStoragePath(profile.avatar_url, "avatars", user.id)
+    : null;
   if (oldPath?.startsWith(`${user.id}/`)) {
     await supabase.storage.from("avatars").remove([oldPath]);
   }
@@ -43,9 +47,4 @@ export async function updateProfileAvatarAction(input: {
   revalidatePath("/dashboard");
   revalidatePath("/talents");
   return { ok: true };
-}
-
-function extractAvatarPath(url: string) {
-  const match = url.match(/\/avatars\/(.+)$/);
-  return match?.[1] ? decodeURIComponent(match[1]) : null;
 }

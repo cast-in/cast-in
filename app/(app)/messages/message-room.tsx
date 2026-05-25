@@ -10,21 +10,39 @@ import {
   useRef,
   useState,
 } from "react";
-import { MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Paperclip, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import {
+  ATTACHMENT_ACCEPT,
+  ATTACHMENT_BUCKET,
+  ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+  MAX_ATTACHMENT_COUNT,
+  attachmentsToJson,
+  createAttachmentMetadata,
+  createAttachmentPath,
+  formatAttachmentSize,
+  parseAttachmentList,
+  signAttachments,
+  validateAttachmentFile,
+  type AttachmentMetadata,
+} from "@/lib/attachments";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 
-type Message = Pick<
+type MessageRow = Pick<
   Database["public"]["Tables"]["messages"]["Row"],
-  "id" | "body" | "sender_id" | "created_at" | "read_at"
+  "id" | "body" | "sender_id" | "created_at" | "read_at" | "attachments"
 >;
+
+type Message = Omit<MessageRow, "attachments"> & {
+  attachments: AttachmentMetadata[];
+};
 
 type MessageRoomPeer = {
   avatarUrl: string | null;
@@ -55,11 +73,17 @@ export function MessageRoom({
 }) {
   const router = useRouter();
   const inputId = useId();
+  const fileInputId = useId();
   const supabase = useMemo(() => createClient(), []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<
+    AttachmentMetadata[]
+  >([]);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesWithDateMarkers = useMemo(
     () =>
       messages.map((message, index) => {
@@ -99,18 +123,29 @@ export function MessageRoom({
     }
   }, [currentUserId, roomId, router, supabase]);
 
+  const hydrateMessage = useCallback(
+    async (row: MessageRow): Promise<Message> => ({
+      ...row,
+      attachments: await signAttachments(
+        supabase,
+        parseAttachmentList(row.attachments),
+      ),
+    }),
+    [supabase],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       const { data } = await supabase
         .from("messages")
-        .select("id, body, sender_id, created_at, read_at")
+        .select("id, body, sender_id, created_at, read_at, attachments")
         .eq("room_id", roomId)
         .order("created_at", { ascending: true })
         .limit(200);
       if (!cancelled && data) {
-        setMessages(data);
+        setMessages(await Promise.all(data.map(hydrateMessage)));
         void markRoomAsRead();
       }
     })();
@@ -126,13 +161,15 @@ export function MessageRoom({
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
-          const message = payload.new as Message;
-          setMessages((prev) =>
-            prev.some((current) => current.id === message.id)
-              ? prev
-              : [...prev, message],
-          );
-          if (message.sender_id !== currentUserId) void markRoomAsRead();
+          void (async () => {
+            const message = await hydrateMessage(payload.new as MessageRow);
+            setMessages((prev) =>
+              prev.some((current) => current.id === message.id)
+                ? prev
+                : [...prev, message],
+            );
+            if (message.sender_id !== currentUserId) void markRoomAsRead();
+          })();
         },
       )
       .on(
@@ -144,10 +181,12 @@ export function MessageRoom({
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
-          const next = payload.new as Message;
-          setMessages((prev) =>
-            prev.map((message) => (message.id === next.id ? next : message)),
-          );
+          void (async () => {
+            const next = await hydrateMessage(payload.new as MessageRow);
+            setMessages((prev) =>
+              prev.map((message) => (message.id === next.id ? next : message)),
+            );
+          })();
         },
       )
       .subscribe();
@@ -156,7 +195,7 @@ export function MessageRoom({
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, markRoomAsRead, roomId, supabase]);
+  }, [currentUserId, hydrateMessage, markRoomAsRead, roomId, supabase]);
 
   useEffect(() => {
     scrollerRef.current?.scrollTo({
@@ -168,16 +207,83 @@ export function MessageRoom({
   async function handleSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const text = body.trim();
-    if (!text) return;
+    if (!text && pendingAttachments.length === 0) return;
     setSending(true);
     const { error } = await supabase.from("messages").insert({
+      attachments: attachmentsToJson(pendingAttachments),
       body: text,
       room_id: roomId,
       sender_id: currentUserId,
     });
     setSending(false);
     if (error) toast.error("메시지를 보낼 수 없어요. 잠시 후 다시 보내주세요.");
-    else setBody("");
+    else {
+      setBody("");
+      setPendingAttachments([]);
+    }
+  }
+
+  async function handleAttachmentChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (files.length === 0) return;
+
+    let nextCount = pendingAttachments.length;
+    setUploading(true);
+    try {
+      for (const file of files) {
+        if (nextCount >= MAX_ATTACHMENT_COUNT) {
+          toast.error("첨부 파일은 최대 5개까지 보낼 수 있어요.");
+          break;
+        }
+
+        const validationError = validateAttachmentFile(file);
+        if (validationError) {
+          toast.error(validationError);
+          continue;
+        }
+
+        const path = createAttachmentPath({
+          file,
+          scope: "messages",
+          targetId: roomId,
+          userId: currentUserId,
+        });
+        const { error } = await supabase.storage
+          .from(ATTACHMENT_BUCKET)
+          .upload(path, file, {
+            cacheControl: "3600",
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (error) {
+          toast.error(error.message);
+          continue;
+        }
+
+        const { data: signed } = await supabase.storage
+          .from(ATTACHMENT_BUCKET)
+          .createSignedUrl(path, ATTACHMENT_SIGNED_URL_TTL_SECONDS);
+        const attachment = {
+          ...createAttachmentMetadata({ file, path }),
+          signedUrl: signed?.signedUrl ?? null,
+        };
+        setPendingAttachments((current) => [...current, attachment]);
+        nextCount += 1;
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removePendingAttachment(attachment: AttachmentMetadata) {
+    setPendingAttachments((current) =>
+      current.filter((item) => item.id !== attachment.id),
+    );
+    await supabase.storage.from(ATTACHMENT_BUCKET).remove([attachment.path]);
   }
 
   return (
@@ -188,15 +294,6 @@ export function MessageRoom({
           <p className="mt-2 truncate text-base text-muted-foreground">
             {peer.jobTitle ?? "공고 없이 시작한 대화"}
           </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <button
-            type="button"
-            aria-label="대화 옵션"
-            className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <MoreVertical aria-hidden="true" className="size-5" />
-          </button>
         </div>
       </header>
 
@@ -236,23 +333,91 @@ export function MessageRoom({
         </div>
       </div>
 
-      <form onSubmit={handleSend} className="flex gap-3 px-8 pb-8 pt-4">
-        <label htmlFor={inputId} className="sr-only">
-          메시지 입력
-        </label>
-        <Input
-          id={inputId}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          placeholder="메시지 입력"
-          className="flex-1"
-        />
-        <Button
-          type="submit"
-          disabled={sending || !body.trim()}
-        >
-          전송
-        </Button>
+      <form onSubmit={handleSend} className="space-y-3 px-8 pb-8 pt-4">
+        {pendingAttachments.length > 0 ? (
+          <ul className="grid gap-2" aria-label="보낼 첨부 파일">
+            {pendingAttachments.map((attachment) => (
+              <li
+                key={attachment.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{attachment.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatAttachmentSize(attachment.size)}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  color="neutral"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`${attachment.name} 첨부 제거`}
+                  disabled={sending || uploading}
+                  onClick={() => void removePendingAttachment(attachment)}
+                >
+                  <X aria-hidden="true" className="size-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <div className="flex gap-3">
+          <label htmlFor={inputId} className="sr-only">
+            메시지 입력
+          </label>
+          <label htmlFor={fileInputId} className="sr-only">
+            첨부 파일 선택
+          </label>
+          <input
+            ref={fileInputRef}
+            id={fileInputId}
+            type="file"
+            multiple
+            accept={ATTACHMENT_ACCEPT}
+            disabled={
+              sending ||
+              uploading ||
+              pendingAttachments.length >= MAX_ATTACHMENT_COUNT
+            }
+            onChange={handleAttachmentChange}
+            className="sr-only"
+          />
+          <Button
+            type="button"
+            color="neutral"
+            variant="outline"
+            size="icon"
+            title="파일 첨부"
+            aria-label="파일 첨부"
+            loading={uploading}
+            loadingLabel="파일을 올리고 있어요"
+            disabled={
+              sending ||
+              pendingAttachments.length >= MAX_ATTACHMENT_COUNT
+            }
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip aria-hidden="true" className="size-4" />
+          </Button>
+          <Input
+            id={inputId}
+            value={body}
+            onChange={(event) => setBody(event.target.value)}
+            placeholder="메시지 입력"
+            className="flex-1"
+          />
+          <Button
+            type="submit"
+            disabled={
+              sending ||
+              uploading ||
+              (!body.trim() && pendingAttachments.length === 0)
+            }
+          >
+            전송
+          </Button>
+        </div>
       </form>
     </SurfaceCard>
   );
@@ -288,13 +453,23 @@ function MessageBubble({
         <div className={cn("min-w-0", mine && "text-right")}>
           <div
             className={cn(
-              "inline-flex rounded-xl px-5 py-3 text-base leading-relaxed",
+              "inline-flex max-w-full flex-col gap-3 rounded-xl px-5 py-3 text-base leading-relaxed",
               mine
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted text-foreground",
             )}
           >
-            {message.body}
+            {message.body.trim() ? (
+              <p className="whitespace-pre-wrap break-words text-left">
+                {message.body}
+              </p>
+            ) : null}
+            {message.attachments.length > 0 ? (
+              <MessageAttachmentLinks
+                attachments={message.attachments}
+                mine={mine}
+              />
+            ) : null}
           </div>
           <div className="mt-2 text-sm text-muted-foreground">
             <time dateTime={message.created_at}>
@@ -307,6 +482,57 @@ function MessageBubble({
         </div>
       </div>
     </div>
+  );
+}
+
+function MessageAttachmentLinks({
+  attachments,
+  mine,
+}: {
+  attachments: AttachmentMetadata[];
+  mine: boolean;
+}) {
+  return (
+    <ul className="grid gap-2">
+      {attachments.map((attachment) => (
+        <li key={attachment.id}>
+          {attachment.signedUrl ? (
+            <a
+              href={attachment.signedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(
+                "flex max-w-[280px] items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+                mine
+                  ? "bg-white/15 text-primary-foreground hover:bg-white/20"
+                  : "bg-background text-foreground hover:bg-background/80",
+              )}
+            >
+              <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{attachment.name}</span>
+              <span
+                className={cn(
+                  "shrink-0 text-xs",
+                  mine ? "text-primary-foreground/75" : "text-muted-foreground",
+                )}
+              >
+                {formatAttachmentSize(attachment.size)}
+              </span>
+            </a>
+          ) : (
+            <span
+              className={cn(
+                "flex max-w-[280px] items-center gap-2 text-sm",
+                mine ? "text-primary-foreground/75" : "text-muted-foreground",
+              )}
+            >
+              <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{attachment.name}</span>
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

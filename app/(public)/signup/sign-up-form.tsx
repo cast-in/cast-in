@@ -43,14 +43,17 @@ export function SignUpForm() {
 
         <div className="grid gap-2">
           <Label htmlFor="password">
-            비밀번호 <span className="text-muted-foreground">(6자 이상)</span>
+            비밀번호{" "}
+            <span className="text-muted-foreground">
+              (8자 이상, 영문과 숫자 포함)
+            </span>
           </Label>
           <Input
             id="password"
             name="password"
             type="password"
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
             placeholder="비밀번호"
           />

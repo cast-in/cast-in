@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { signPublicStorageUrls } from "@/lib/supabase/storage-url";
 import type { Database } from "@/types/database";
 
 export type PortfolioItem =
@@ -17,7 +18,7 @@ export async function listMyPortfolio(): Promise<PortfolioItem[]> {
     .eq("actor_id", user.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return signPortfolioItemUrls(supabase, data ?? []);
 }
 
 export async function listPortfolioFor(
@@ -30,5 +31,21 @@ export async function listPortfolioFor(
     .eq("actor_id", actorId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return signPortfolioItemUrls(supabase, data ?? []);
+}
+
+async function signPortfolioItemUrls(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  items: PortfolioItem[],
+) {
+  const signedUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    items.map((item) => item.url),
+    "portfolio",
+  );
+
+  return items.map((item) => ({
+    ...item,
+    url: signedUrlByUrl.get(item.url) ?? item.url,
+  }));
 }

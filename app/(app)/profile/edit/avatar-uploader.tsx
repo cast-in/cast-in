@@ -59,6 +59,9 @@ export function AvatarUploader({
       const { data: publicUrl } = supabase.storage
         .from("avatars")
         .getPublicUrl(path);
+      const { data: signedUrl } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(path, 60 * 60);
 
       const result = await updateProfileAvatarAction({
         url: publicUrl.publicUrl,
@@ -70,7 +73,7 @@ export function AvatarUploader({
         return;
       }
 
-      setAvatarUrl(publicUrl.publicUrl);
+      setAvatarUrl(signedUrl?.signedUrl ?? publicUrl.publicUrl);
       toast.success("프로필 사진을 업데이트했어요.");
       router.refresh();
     } finally {

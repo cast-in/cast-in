@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { updateProfileAvatarAction } from "../avatar-actions";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_SIZE = 10 * 1024 * 1024;
+const MAX_SIZE = 5 * 1024 * 1024;
 
 export function HeroAvatarUploader({
   userId,
@@ -38,7 +38,7 @@ export function HeroAvatarUploader({
     }
 
     if (file.size > MAX_SIZE) {
-      setError("10MB 이하 이미지만 올릴 수 있어요.");
+      setError("5MB 이하 이미지만 올릴 수 있어요.");
       return;
     }
 
@@ -62,6 +62,9 @@ export function HeroAvatarUploader({
       const { data: publicUrl } = supabase.storage
         .from("avatars")
         .getPublicUrl(path);
+      const { data: signedUrl } = await supabase.storage
+        .from("avatars")
+        .createSignedUrl(path, 60 * 60);
 
       const result = await updateProfileAvatarAction({ url: publicUrl.publicUrl });
       if (!result.ok) {
@@ -71,7 +74,7 @@ export function HeroAvatarUploader({
         return;
       }
 
-      setAvatarUrl(publicUrl.publicUrl);
+      setAvatarUrl(signedUrl?.signedUrl ?? publicUrl.publicUrl);
       toast.success("프로필 사진을 업데이트했어요.");
       router.refresh();
     } finally {
@@ -112,7 +115,7 @@ export function HeroAvatarUploader({
             <span>
               프로필 사진 변경
               <span className="mt-2 block text-xs text-muted-foreground">
-                JPG / PNG · 최대 10MB
+                JPG / PNG · 최대 5MB
               </span>
             </span>
           </span>

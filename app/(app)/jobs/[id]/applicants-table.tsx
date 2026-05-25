@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Pencil } from "lucide-react";
+import { ExternalLink, Paperclip, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   APPLICATION_STATUS_META,
 } from "@/lib/application-status";
+import { formatAttachmentSize, type AttachmentMetadata } from "@/lib/attachments";
 import { cn } from "@/lib/utils";
 import type { Applicant } from "@/lib/queries/jobs";
 import { updateApplicationAction } from "./actions";
@@ -40,6 +41,7 @@ export function ApplicantsTable({ applicants }: { applicants: Applicant[] }) {
         <TableRow>
           <TableHead>이름</TableHead>
           <TableHead>지원 사유</TableHead>
+          <TableHead>첨부</TableHead>
           <TableHead>상태</TableHead>
           <TableHead>내부 메모</TableHead>
           <TableHead>액션</TableHead>
@@ -64,6 +66,9 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
       <TableCell className="font-medium">{applicant.actor_name}</TableCell>
       <TableCell className="text-muted-foreground">
         {applicant.memo ?? "—"}
+      </TableCell>
+      <TableCell className="min-w-[180px]">
+        <AttachmentLinks attachments={applicant.attachments} />
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
@@ -186,7 +191,7 @@ function CastingMemoCell({
             onClick={() => setOpen(false)}
             disabled={pending}
           >
-            취소
+            닫기
           </Button>
           <Button onClick={handleSave} disabled={pending}>
             {pending ? "저장하는 중이에요" : "저장"}
@@ -194,5 +199,44 @@ function CastingMemoCell({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AttachmentLinks({
+  attachments,
+}: {
+  attachments: AttachmentMetadata[];
+}) {
+  if (attachments.length === 0) {
+    return <span className="text-sm text-muted-foreground">없음</span>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {attachments.map((attachment) => (
+        <li key={attachment.id}>
+          {attachment.signedUrl ? (
+            <a
+              href={attachment.signedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex max-w-[220px] items-center gap-2 rounded-md text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{attachment.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {formatAttachmentSize(attachment.size)}
+              </span>
+              <ExternalLink aria-hidden="true" className="size-3 shrink-0" />
+            </a>
+          ) : (
+            <span className="inline-flex max-w-[220px] items-center gap-2 text-sm text-muted-foreground">
+              <Paperclip aria-hidden="true" className="size-4 shrink-0" />
+              <span className="truncate">{attachment.name}</span>
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }

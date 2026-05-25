@@ -108,6 +108,19 @@ export async function listMyNotifications(
       };
     }
 
+    if (notification.type === "application_withdrawn") {
+      const actorName = actorId ? nameByProfileId.get(actorId) : null;
+      return {
+        id: notification.id,
+        type: notification.type,
+        created_at: notification.created_at,
+        read_at: notification.read_at,
+        title: "지원자가 철회했어요",
+        description: `${actorName ?? "지원자"}님이 ${jobTitle ?? "공고"} 지원을 철회했어요.`,
+        href: jobId ? `/jobs/${jobId}` : "/jobs",
+      };
+    }
+
     if (notification.type === "application_status_updated") {
       const status = asString(payload.status) as ApplicationStatus | "";
       return {

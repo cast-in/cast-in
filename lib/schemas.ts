@@ -246,6 +246,10 @@ export const UpdateApplicationSchema = z
     { message: "변경할 내용이 없어요." },
   );
 
+export const WithdrawApplicationSchema = z.object({
+  application_id: z.string().uuid("지원 정보를 찾을 수 없어요."),
+});
+
 export function formatZodError(error: z.ZodError): string {
   return error.issues[0]?.message ?? "입력값을 확인해주세요.";
 }

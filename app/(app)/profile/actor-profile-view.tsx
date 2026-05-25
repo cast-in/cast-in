@@ -52,7 +52,7 @@ type ActorProfileViewProps = {
     avatar_url?: string | null;
   };
   actorProfile: ActorProfileRecord | null;
-  email: string;
+  email?: string | null;
   socialLinks: ActorSocialLink[];
   portfolioItems: PortfolioItem[];
   credits: ActorCredit[];
@@ -187,7 +187,7 @@ function ActorHero({
   roleLabel: string;
   subtitle: string;
   summary: string;
-  email: string;
+  email?: string | null;
   socialLinks: ActorSocialLink[];
   metrics: ActorProfileMetrics;
   editHref?: string;
@@ -241,7 +241,7 @@ function ActorHero({
           </p>
 
           <div className="mt-4 space-y-2 text-sm text-foreground/65">
-            <ContactLine icon={Mail} label={email} />
+            {email ? <ContactLine icon={Mail} label={email} /> : null}
             {primarySocial ? (
               <ContactLine icon={AtSign} label={primarySocial.title} />
             ) : null}

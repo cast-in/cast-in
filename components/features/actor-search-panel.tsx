@@ -96,7 +96,7 @@ export type ActorSearchPanelValues = {
   q: string;
   region: string[];
   skill: string[];
-  sort: "latest" | "name";
+  sort: "recommended" | "latest" | "name";
 };
 
 export function ActorSearchPanel({
@@ -167,7 +167,7 @@ export function ActorSearchPanel({
     const formData = new FormData(event.currentTarget);
     const query = new URLSearchParams();
     const q = String(formData.get("q") ?? "").trim();
-    const sort = String(formData.get("sort") ?? "latest").trim();
+    const sort = String(formData.get("sort") ?? "recommended").trim();
 
     if (q) query.set("q", q);
     appendQueryValues(query, "nationality", selectedFilters.nationality);
@@ -177,7 +177,7 @@ export function ActorSearchPanel({
     appendQueryValues(query, "gender", selectedFilters.gender);
     appendQueryValues(query, "age_group", selectedFilters.ageGroup);
     appendQueryValues(query, "height", selectedFilters.heightRange);
-    if (sort && sort !== "latest") query.set("sort", sort);
+    if (sort && sort !== "recommended") query.set("sort", sort);
 
     const qs = query.toString();
     setFiltersOpen(false);
@@ -214,6 +214,7 @@ export function ActorSearchPanel({
             정렬
           </label>
           <Select id={sortId} name="sort" defaultValue={values.sort}>
+            <option value="recommended">추천순</option>
             <option value="latest">최신순</option>
             <option value="name">이름순</option>
           </Select>

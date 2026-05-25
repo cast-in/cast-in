@@ -9,6 +9,7 @@ import {
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { CreateJobSchema, formatZodError } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPublicStoragePath } from "@/lib/supabase/storage-url";
 
 export type CreateJobResult =
   | { ok: true }
@@ -84,6 +85,13 @@ export async function createJobAction(
     target_age_groups.length > 0
       ? target_age_groups
       : getAgeGroupsFromRange(target_age_min, target_age_max);
+  const validMediaUrls = media_urls.every((url) =>
+    getUserPublicStoragePath(url, "job-media", user.id),
+  );
+
+  if (!validMediaUrls) {
+    return { ok: false, error: "업로드한 공고 이미지를 다시 확인해주세요." };
+  }
 
   const { data: job, error } = await supabase
     .from("jobs")

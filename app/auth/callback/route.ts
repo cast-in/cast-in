@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = getSafeNextPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
@@ -35,4 +35,17 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth`);
+}
+
+function getSafeNextPath(value: string | null) {
+  if (!value) return "/dashboard";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+
+  try {
+    const parsed = new URL(value, "http://localhost");
+    if (parsed.origin !== "http://localhost") return "/dashboard";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return "/dashboard";
+  }
 }

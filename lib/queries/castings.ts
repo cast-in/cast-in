@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  signPublicStorageUrl,
+  signPublicStorageUrls,
+} from "@/lib/supabase/storage-url";
 
 export type CastingProfileJob = {
   id: string;
@@ -17,15 +21,30 @@ export type CastingProfileJob = {
 export type CastingProfileDetail = {
   id: string;
   name: string;
-  email: string | null;
   avatar_url: string | null;
   company_name: string;
-  contact: string | null;
   intro: string | null;
   updated_at: string;
   job_count: number;
   jobs: CastingProfileJob[];
 };
+
+export type MyCastingProfilePrivate = {
+  company_name: string;
+  contact: string | null;
+  intro: string | null;
+  updated_at: string;
+};
+
+export async function getMyCastingProfilePrivate(): Promise<MyCastingProfilePrivate | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .rpc("get_my_casting_profile_private")
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
 
 export async function getCastingProfileDetail(
   castingId: string,
@@ -39,12 +58,12 @@ export async function getCastingProfileDetail(
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, name, email, avatar_url")
+      .select("id, name, avatar_url")
       .eq("id", castingId)
       .maybeSingle(),
     supabase
       .from("casting_profiles")
-      .select("company_name, contact, intro, updated_at")
+      .select("company_name, intro, updated_at")
       .eq("user_id", castingId)
       .maybeSingle(),
     supabase
@@ -66,16 +85,25 @@ export async function getCastingProfileDetail(
   if (error) throw error;
   if (!profile || !castingProfile) return null;
 
+  const allMediaUrls = (jobs ?? []).flatMap((job) => job.media_urls ?? []);
+  const [avatarUrl, signedMediaUrlByUrl] = await Promise.all([
+    signPublicStorageUrl(supabase, profile.avatar_url, "avatars"),
+    signPublicStorageUrls(supabase, allMediaUrls, "job-media"),
+  ]);
+
   return {
     id: profile.id,
     name: profile.name ?? "담당자 미등록",
-    email: profile.email ?? null,
-    avatar_url: profile.avatar_url ?? null,
+    avatar_url: avatarUrl,
     company_name: castingProfile.company_name,
-    contact: castingProfile.contact ?? null,
     intro: castingProfile.intro ?? null,
     updated_at: castingProfile.updated_at,
     job_count: jobCount ?? 0,
-    jobs: jobs ?? [],
+    jobs: (jobs ?? []).map((job) => ({
+      ...job,
+      media_urls: (job.media_urls ?? []).map(
+        (url) => signedMediaUrlByUrl.get(url) ?? url,
+      ),
+    })),
   };
 }

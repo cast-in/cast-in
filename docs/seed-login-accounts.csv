@@ -1,0 +1,76 @@
+번호,역할,이름,특징,이메일,비밀번호
+1,배우,박예원,여성 · 27세 · 광주 · 광고 · MC · 167cm,seed-actor-01@cast-in.dev,seedPass123!
+2,배우,정하윤,여성 · 35세 · 인천 · 다큐멘터리/시트콤 · 수영/스킨스쿠버 · 157cm,seed-actor-02@cast-in.dev,seedPass123!
+3,배우,구도현,남성 · 23세 · 경기 · 성남 · 예능/시트콤 · 승마/태권도 · 176cm,seed-actor-03@cast-in.dev,seedPass123!
+4,배우,임해린,여성 · 26세 · 경기 · 성남 · 시트콤/웹드라마 · 드럼/MC · 164cm,seed-actor-04@cast-in.dev,seedPass123!
+5,배우,배서준,남성 · 31세 · 서울 · 웹드라마/뮤지컬 · 피아노/액션 · 180cm,seed-actor-05@cast-in.dev,seedPass123!
+6,배우,도소민,여성 · 34세 · 부산 · 뮤직비디오/예능 · 방송 진행/복싱 · 174cm,seed-actor-06@cast-in.dev,seedPass123!
+7,배우,김하늘,여성 · 36세 · 서울 · 마포 · 다큐멘터리/뮤지컬 · 액션/방송 진행 · 170cm,seed-actor-07@cast-in.dev,seedPass123!
+8,배우,배채원,여성 · 28세 · 전국 · 시트콤 · 피아노/중국어 · 166cm,seed-actor-08@cast-in.dev,seedPass123!
+9,배우,김도현,남성 · 39세 · 경기 · 수원 · 숏폼/예능 · 서핑/수영 · 178cm,seed-actor-09@cast-in.dev,seedPass123!
+10,배우,박민서,여성 · 39세 · 제주 · 예능/연극 · 합기도/승마 · 166cm,seed-actor-10@cast-in.dev,seedPass123!
+11,배우,안지원,여성 · 19세 · 경기 · 수원 · 드라마/뮤지컬 · 보컬 · 164cm,seed-actor-11@cast-in.dev,seedPass123!
+12,배우,맹지연,여성 · 18세 · 서울 · 용산 · 시트콤/숏폼 · 보컬/색소폰 · 169cm,seed-actor-12@cast-in.dev,seedPass123!
+13,배우,원수아,여성 · 40세 · 서울 · 용산 · 광고/뮤직비디오 · 일본어/기타 · 162cm,seed-actor-13@cast-in.dev,seedPass123!
+14,배우,정유진,여성 · 24세 · 경기 · 성남 · 시트콤/광고 · 보컬/영어 · 168cm,seed-actor-14@cast-in.dev,seedPass123!
+15,배우,현주아,여성 · 22세 · 경기 · 수원 · 영화 · 태권도 · 170cm,seed-actor-15@cast-in.dev,seedPass123!
+16,배우,문지후,남성 · 21세 · 대전 · 웹드라마/영화 · 영어/스킨스쿠버 · 177cm,seed-actor-16@cast-in.dev,seedPass123!
+17,배우,정민서,여성 · 18세 · 전국 · 웹드라마 · 펜싱/액션 · 156cm,seed-actor-17@cast-in.dev,seedPass123!
+18,배우,현하늘,여성 · 37세 · 대전 · 웹드라마/뮤지컬 · 발레/방송 진행 · 170cm,seed-actor-18@cast-in.dev,seedPass123!
+19,배우,송현우,남성 · 18세 · 대전 · 예능 · 스킨스쿠버/액션 · 178cm,seed-actor-19@cast-in.dev,seedPass123!
+20,배우,한아린,여성 · 39세 · 서울 · 용산 · 웹드라마/광고 · 색소폰 · 167cm,seed-actor-20@cast-in.dev,seedPass123!
+21,배우,임지훈,남성 · 16세 · 서울 · 영화/숏폼 · 기타/보컬 · 177cm,seed-actor-21@cast-in.dev,seedPass123!
+22,배우,배주아,여성 · 19세 · 서울 · 용산 · 뮤지컬 · 방송 진행/합기도 · 158cm,seed-actor-22@cast-in.dev,seedPass123!
+23,배우,염은서,여성 · 21세 · 부산 · 예능/뮤지컬 · 스킨스쿠버/피아노 · 165cm,seed-actor-23@cast-in.dev,seedPass123!
+24,배우,홍태준,남성 · 18세 · 서울 · 숏폼 · 발레 · 181cm,seed-actor-24@cast-in.dev,seedPass123!
+25,배우,홍유진,여성 · 17세 · 경기 · 수원 · 뮤지컬 · 영어 · 167cm,seed-actor-25@cast-in.dev,seedPass123!
+26,배우,곽건우,남성 · 34세 · 광주 · 웹드라마/광고 · 합기도/일본어 · 188cm,seed-actor-26@cast-in.dev,seedPass123!
+27,배우,문도윤,남성 · 17세 · 대구 · 광고/다큐멘터리 · 승마/방송 진행 · 174cm,seed-actor-27@cast-in.dev,seedPass123!
+28,배우,양승민,남성 · 33세 · 인천 · 시트콤/예능 · 승마/바이올린 · 179cm,seed-actor-28@cast-in.dev,seedPass123!
+29,배우,유시윤,여성 · 29세 · 전국 · 연극/뮤직비디오 · 중국어/서핑 · 168cm,seed-actor-29@cast-in.dev,seedPass123!
+30,배우,표예린,여성 · 22세 · 광주 · 시트콤/드라마 · 합기도 · 170cm,seed-actor-30@cast-in.dev,seedPass123!
+31,배우,현태호,남성 · 30세 · 제주 · 시트콤/예능 · 승마/피아노 · 178cm,seed-actor-31@cast-in.dev,seedPass123!
+32,배우,표시호,남성 · 26세 · 서울 · 강남 · 시트콤/다큐멘터리 · 발레/태권도 · 174cm,seed-actor-32@cast-in.dev,seedPass123!
+33,배우,송지후,남성 · 17세 · 인천 · 시트콤/예능 · 바이올린/수영 · 176cm,seed-actor-33@cast-in.dev,seedPass123!
+34,배우,우하린,여성 · 38세 · 서울 · 예능/드라마 · 펜싱/색소폰 · 159cm,seed-actor-34@cast-in.dev,seedPass123!
+35,배우,배하늘,여성 · 38세 · 광주 · 웹드라마/숏폼 · 중국어/복싱 · 164cm,seed-actor-35@cast-in.dev,seedPass123!
+36,배우,백지연,여성 · 33세 · 서울 · 마포 · 광고/예능 · 복싱/방송 진행 · 159cm,seed-actor-36@cast-in.dev,seedPass123!
+37,배우,표준혁,남성 · 27세 · 경기 · 고양 · 숏폼/시트콤 · 태권도/수영 · 177cm,seed-actor-37@cast-in.dev,seedPass123!
+38,배우,김도윤,남성 · 24세 · 제주 · 다큐멘터리 · 수영/합기도 · 179cm,seed-actor-38@cast-in.dev,seedPass123!
+39,배우,송태준,남성 · 32세 · 부산 · 시트콤/숏폼 · 서핑 · 181cm,seed-actor-39@cast-in.dev,seedPass123!
+40,배우,홍다은,여성 · 40세 · 대전 · 영화 · 바이올린 · 168cm,seed-actor-40@cast-in.dev,seedPass123!
+41,배우,이도훈,남성 · 38세 · 경기 · 수원 · 웹드라마/뮤직비디오 · 수영/피아노 · 176cm,seed-actor-41@cast-in.dev,seedPass123!
+42,배우,맹재호,남성 · 16세 · 경기 · 고양 · 시트콤/다큐멘터리 · 드럼/합기도 · 188cm,seed-actor-42@cast-in.dev,seedPass123!
+43,배우,문은서,여성 · 19세 · 서울 · 용산 · 예능/다큐멘터리 · 합기도/스킨스쿠버 · 168cm,seed-actor-43@cast-in.dev,seedPass123!
+44,배우,이지완,남성 · 23세 · 서울 · 성수 · 드라마 · 색소폰/수영 · 174cm,seed-actor-44@cast-in.dev,seedPass123!
+45,배우,전예빈,여성 · 40세 · 경기 · 고양 · 드라마/시트콤 · 보컬/댄스 · 162cm,seed-actor-45@cast-in.dev,seedPass123!
+46,배우,우다인,여성 · 17세 · 서울 · 강남 · 숏폼/시트콤 · 합기도 · 167cm,seed-actor-46@cast-in.dev,seedPass123!
+47,배우,노예원,여성 · 28세 · 광주 · 숏폼/뮤직비디오 · MC/펜싱 · 166cm,seed-actor-47@cast-in.dev,seedPass123!
+48,배우,차정우,남성 · 19세 · 경기 · 고양 · 광고/숏폼 · 방송 진행/드럼 · 183cm,seed-actor-48@cast-in.dev,seedPass123!
+49,배우,남지아,여성 · 39세 · 대구 · 시트콤 · 서핑/발레 · 167cm,seed-actor-49@cast-in.dev,seedPass123!
+50,배우,손재호,남성 · 38세 · 경기 · 성남 · 숏폼/다큐멘터리 · 보컬/MC · 178cm,seed-actor-50@cast-in.dev,seedPass123!
+51,배우,정민석,남성 · 20세 · 대구 · 드라마 · 발레/방송 진행 · 172cm,seed-actor-51@cast-in.dev,seedPass123!
+52,배우,문시우,남성 · 20세 · 제주 · 다큐멘터리/뮤지컬 · 펜싱/일본어 · 178cm,seed-actor-52@cast-in.dev,seedPass123!
+53,배우,조주아,여성 · 17세 · 광주 · 시트콤 · 방송 진행/댄스 · 159cm,seed-actor-53@cast-in.dev,seedPass123!
+54,배우,신예빈,여성 · 25세 · 대전 · 다큐멘터리/시트콤 · 피아노 · 157cm,seed-actor-54@cast-in.dev,seedPass123!
+55,배우,안하린,여성 · 20세 · 인천 · 예능/뮤지컬 · 일본어 · 155cm,seed-actor-55@cast-in.dev,seedPass123!
+56,배우,배가은,여성 · 31세 · 광주 · 영화/뮤지컬 · 복싱/승마 · 166cm,seed-actor-56@cast-in.dev,seedPass123!
+57,배우,손시우,남성 · 38세 · 전국 · 웹드라마/뮤지컬 · 일본어/영어 · 176cm,seed-actor-57@cast-in.dev,seedPass123!
+58,배우,안은비,여성 · 36세 · 경기 · 고양 · 광고 · 보컬/일본어 · 170cm,seed-actor-58@cast-in.dev,seedPass123!
+59,배우,차도영,남성 · 19세 · 대전 · 시트콤/영화 · 스킨스쿠버/일본어 · 175cm,seed-actor-59@cast-in.dev,seedPass123!
+60,배우,안서윤,여성 · 34세 · 부산 · 숏폼/다큐멘터리 · 드럼 · 167cm,seed-actor-60@cast-in.dev,seedPass123!
+61,캐스팅,김다은,스튜디오드래곤캐스팅 · 공고 2개 · 뮤지컬·연극 중심 캐스팅. 매체 콜라보도 늘려가는 중.,seed-casting-01@cast-in.dev,seedPass123!
+62,캐스팅,이유미,넥서스 캐스팅 · 공고 4개 · CF·프로모션 영상 중심. 빠른 진행이 필요한 촬영이 많아요.,seed-casting-02@cast-in.dev,seedPass123!
+63,캐스팅,박주원,아우라 엔터테인먼트 · 공고 4개 · 넷플릭스·티빙 등 OTT 오리지널 중심으로 일합니다.,seed-casting-03@cast-in.dev,seedPass123!
+64,캐스팅,최도현,에이프릴 픽쳐스 · 공고 4개 · 한류 콘텐츠 수출을 염두에 둔 기획 캐스팅이 많아요.,seed-casting-04@cast-in.dev,seedPass123!
+65,캐스팅,정하늘,캐스트인 스튜디오 · 공고 2개 · 한류 콘텐츠 수출을 염두에 둔 기획 캐스팅이 많아요.,seed-casting-05@cast-in.dev,seedPass123!
+66,캐스팅,강서연,리얼타임 크리에이티브 · 공고 1개 · 넷플릭스·티빙 등 OTT 오리지널 중심으로 일합니다.,seed-casting-06@cast-in.dev,seedPass123!
+67,캐스팅,조지호,블루프린트 미디어 · 공고 4개 · OTT 드라마와 극장 영화를 중심으로 캐스팅을 진행하고 있어요,seed-casting-07@cast-in.dev,seedPass123!
+68,캐스팅,윤세아,세븐엑스 캐스팅 · 공고 2개 · 한류 콘텐츠 수출을 염두에 둔 기획 캐스팅이 많아요.,seed-casting-08@cast-in.dev,seedPass123!
+69,캐스팅,장민재,플레이그라운드 엔터 · 공고 3개 · CF·프로모션 영상 중심. 빠른 진행이 필요한 촬영이 많아요.,seed-casting-09@cast-in.dev,seedPass123!
+70,캐스팅,임예린,어센틱 픽쳐스 · 공고 3개 · 뮤지컬·연극 중심 캐스팅. 매체 콜라보도 늘려가는 중.,seed-casting-10@cast-in.dev,seedPass123!
+71,캐스팅,한도윤,메이드 미디어 · 공고 3개 · CF·프로모션 영상 중심. 빠른 진행이 필요한 촬영이 많아요.,seed-casting-11@cast-in.dev,seedPass123!
+72,캐스팅,오채원,카니발 캐스팅 · 공고 3개 · CF·프로모션 영상 중심. 빠른 진행이 필요한 촬영이 많아요.,seed-casting-12@cast-in.dev,seedPass123!
+73,캐스팅,신유나,라이브 프로덕션 · 공고 3개 · 한류 콘텐츠 수출을 염두에 둔 기획 캐스팅이 많아요.,seed-casting-13@cast-in.dev,seedPass123!
+74,캐스팅,서재현,네이처 엔터 · 공고 4개 · CF·프로모션 영상 중심. 빠른 진행이 필요한 촬영이 많아요.,seed-casting-14@cast-in.dev,seedPass123!
+75,캐스팅,배은서,시그널 스튜디오 · 공고 3개 · 신인 발굴에 진심인 캐스팅 팀입니다. 첫 오디션 환영.,seed-casting-15@cast-in.dev,seedPass123!

@@ -16,6 +16,8 @@ export function ActorCard({
 }) {
   const actorHref = `/talents/${actor.id}`;
   const tags = getActorTags(actor);
+  const matchScore = actor.match_score ?? 0;
+  const matchReasons = actor.match_reasons?.slice(0, 2) ?? [];
 
   return (
     <Card className="h-full gap-0 overflow-hidden rounded-xl py-0">
@@ -26,6 +28,16 @@ export function ActorCard({
         >
           <ActorPortraitPreview name={actor.name} avatarUrl={actor.avatar_url} />
         </Link>
+        {matchScore > 0 ? (
+          <Badge
+            color="primary"
+            variant="soft-outline"
+            size="md"
+            className="absolute left-3 top-3 z-10 bg-background/90 backdrop-blur"
+          >
+            매칭 {matchScore}
+          </Badge>
+        ) : null}
         <BookmarkButton
           targetType="actor"
           targetId={actor.id}
@@ -59,6 +71,20 @@ export function ActorCard({
                 className="bg-muted/70"
               >
                 {tag}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+        {matchReasons.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {matchReasons.map((reason) => (
+              <Badge
+                key={reason}
+                color="primary"
+                variant="soft-outline"
+                size="sm"
+              >
+                {reason}
               </Badge>
             ))}
           </div>

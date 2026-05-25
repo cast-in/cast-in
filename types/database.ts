@@ -226,6 +226,7 @@ export type Database = {
         Row: {
           actor_id: string
           answers: Json
+          attachments: Json
           casting_memo: string | null
           created_at: string
           id: string
@@ -237,6 +238,7 @@ export type Database = {
         Insert: {
           actor_id: string
           answers?: Json
+          attachments?: Json
           casting_memo?: string | null
           created_at?: string
           id?: string
@@ -248,6 +250,7 @@ export type Database = {
         Update: {
           actor_id?: string
           answers?: Json
+          attachments?: Json
           casting_memo?: string | null
           created_at?: string
           id?: string
@@ -596,6 +599,38 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          application_notifications_enabled: boolean
+          created_at: string
+          message_notifications_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_notifications_enabled?: boolean
+          created_at?: string
+          message_notifications_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_notifications_enabled?: boolean
+          created_at?: string
+          message_notifications_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portfolio_items: {
         Row: {
           actor_id: string
@@ -672,6 +707,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_casting_profile_private: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_name: string
+          contact: string | null
+          intro: string | null
+          updated_at: string
+        }[]
+      }
+      replace_my_actor_showcase: {
+        Args: {
+          target_awards: Json
+          target_credits: Json
+        }
+        Returns: undefined
+      }
       get_actor_profile_metrics: {
         Args: {
           target_actor_id: string

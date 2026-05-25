@@ -85,7 +85,6 @@ export default async function ActorDetailPage({
         updated_at: actor.updated_at,
         weight_kg: actor.weight_kg,
       }}
-      email={actor.email ?? "이메일 미등록"}
       socialLinks={actor.social_links}
       portfolioItems={portfolioItems}
       credits={credits}

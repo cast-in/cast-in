@@ -17,6 +17,7 @@ import {
   listActorAwards,
   listActorCredits,
 } from "@/lib/queries/actor-profile-showcase";
+import { getMyCastingProfilePrivate } from "@/lib/queries/castings";
 import { listMyPortfolio } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { parseSocialLinks } from "@/lib/social-links";
@@ -30,11 +31,7 @@ export default async function ProfilePage() {
   const email = profile.email ?? user?.email ?? "이메일 미등록";
 
   if (activeRole === "casting") {
-    const { data: castingProfile } = await supabase
-      .from("casting_profiles")
-      .select("company_name, contact, intro")
-      .eq("user_id", profile.id)
-      .maybeSingle();
+    const castingProfile = await getMyCastingProfilePrivate();
 
     const companyName = castingProfile?.company_name ?? profile.name;
     const intro =

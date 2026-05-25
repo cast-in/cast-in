@@ -268,10 +268,10 @@ function ActorExplorePanel() {
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
             <h2 id="actor-explore-title" className="text-xl font-semibold tracking-tight">
-              추천 배우
+              배우 탐색
             </h2>
             <p className="text-sm text-muted-foreground">
-              조건에 맞는 배우 후보는 배우 탐색에서 확인해요.
+              조건에 맞는 배우는 탐색 화면에서 확인해요.
             </p>
           </div>
           <Link

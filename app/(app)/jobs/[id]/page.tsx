@@ -109,6 +109,7 @@ export default async function JobDetailPage({
             canApply={!application && applicationLoaded && isJobAccepting(job)}
             applied={Boolean(application)}
             applicationQuestions={applicationQuestions}
+            currentUserId={user?.id ?? ""}
           />
         ) : null}
       </PageContainer>
@@ -175,6 +176,7 @@ function JobDetailView({
   applied,
   actionSlot,
   applicationQuestions = [],
+  currentUserId,
 }: {
   job: Job;
   detailMeta: JobDetailMeta;
@@ -183,6 +185,7 @@ function JobDetailView({
   canApply?: boolean;
   applied?: boolean;
   applicationQuestions?: Awaited<ReturnType<typeof listJobApplicationQuestions>>;
+  currentUserId?: string;
   actionSlot?: ReactNode;
 }) {
   const resolvedActionSlot =
@@ -192,6 +195,7 @@ function JobDetailView({
           canApply: Boolean(canApply),
           applied: Boolean(applied),
           applicationQuestions,
+          currentUserId: currentUserId ?? "",
         })
       : actionSlot;
 
@@ -361,14 +365,17 @@ function getActorActionSlot({
   canApply,
   applied,
   applicationQuestions,
+  currentUserId,
 }: {
   job: Job;
   canApply: boolean;
   applied: boolean;
   applicationQuestions: Awaited<ReturnType<typeof listJobApplicationQuestions>>;
+  currentUserId: string;
 }) {
   return canApply ? (
     <ApplyForm
+      actorId={currentUserId}
       jobId={job.id}
       questions={applicationQuestions}
       className="h-11 rounded-xl px-7 text-base font-bold sm:w-auto"
@@ -617,7 +624,6 @@ function getFallbackDetailMeta(): JobDetailMeta {
     applicant_count: 0,
     casting_avatar_url: null,
     casting_company_name: null,
-    casting_contact: null,
     casting_intro: null,
     casting_job_count: 0,
     casting_name: "캐스팅 담당자",

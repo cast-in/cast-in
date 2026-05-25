@@ -1,14 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 
-import type { ComponentType } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ChevronDown,
   ExternalLink,
   FileImage,
-  Mail,
-  Phone,
   Play,
   Send,
 } from "lucide-react";
@@ -128,14 +125,6 @@ function CastingHero({
             {casting.job_count.toLocaleString("ko-KR")}건
           </p>
 
-          <div className="mt-4 space-y-2 text-sm text-foreground/65">
-            <ContactLine icon={Mail} label={casting.email ?? "이메일 미등록"} />
-            <ContactLine
-              icon={Phone}
-              label={casting.contact ?? "연락처 미등록"}
-            />
-          </div>
-
           <p className="mt-8 max-w-[46rem] text-sm font-medium leading-8 text-foreground/70 md:text-base">
             {intro}
           </p>
@@ -209,8 +198,6 @@ function BasicInfoCard({
         <InfoCell label="회사명" value={casting.company_name} />
         <InfoCell label="담당자" value={casting.name} />
         <InfoCell label="활동지역" value={activityRegion} />
-        <InfoCell label="연락처" value={casting.contact ?? "연락처 미등록"} />
-        <InfoCell label="이메일" value={casting.email ?? "이메일 미등록"} />
         <InfoCell
           label="등록 공고"
           value={`${casting.job_count.toLocaleString("ko-KR")}건`}
@@ -437,21 +424,6 @@ function InfoCell({ label, value }: { label: string; value: string }) {
         {value}
       </dd>
     </div>
-  );
-}
-
-function ContactLine({
-  icon: Icon,
-  label,
-}: {
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  label: string;
-}) {
-  return (
-    <p className="flex min-w-0 items-center gap-2">
-      <Icon aria-hidden={true} className="size-4 shrink-0 text-foreground/45" />
-      <span className="truncate">{label}</span>
-    </p>
   );
 }
 
