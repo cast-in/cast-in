@@ -11,7 +11,7 @@ export function Pagination({
   total,
 }: {
   basePath: string;
-  params: Record<string, string | undefined>;
+  params: Record<string, string | readonly string[] | undefined>;
   page: number;
   pageSize: number;
   total: number;
@@ -25,7 +25,12 @@ export function Pagination({
   const buildHref = (nextPage: number) => {
     const search = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
-      if (value && key !== "page") search.set(key, value);
+      if (key === "page") continue;
+      const values = Array.isArray(value) ? value : [value];
+      for (const item of values) {
+        const normalized = item?.trim();
+        if (normalized) search.append(key, normalized);
+      }
     }
     if (nextPage > 1) search.set("page", String(nextPage));
     const qs = search.toString();

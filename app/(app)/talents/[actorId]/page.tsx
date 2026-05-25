@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
-import { Send } from "lucide-react";
 import { ActorProfileView } from "@/app/(app)/profile/actor-profile-view";
-import { buttonVariants } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { BackButton } from "@/components/features/back-button";
 import { BookmarkButton } from "@/components/features/bookmark-button";
 import { PageContainer } from "@/components/page-container";
-import { cn } from "@/lib/utils";
+import { isJobAccepting } from "@/lib/job-status";
 import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
 import {
   getActorProfileMetrics,
@@ -14,10 +12,10 @@ import {
   listActorCredits,
   recordActorProfileView,
 } from "@/lib/queries/actor-profile-showcase";
-import { getActorDetail, type ActorDetail } from "@/lib/queries/jobs";
+import { getActorDetail, listMyJobs, type ActorDetail } from "@/lib/queries/jobs";
 import { listPortfolioFor } from "@/lib/queries/portfolio";
 import { getViewerProfile } from "@/lib/queries/viewer";
-import { startActorConversationAction } from "./actions";
+import { ActorMessageDialog, type ActorMessageJob } from "./actor-message-dialog";
 
 export default async function ActorDetailPage({
   params,
@@ -51,14 +49,21 @@ export default async function ActorDetailPage({
 
   await recordActorProfileView(actor.id).catch(() => null);
 
-  const [bookmarkedActorIds, portfolioItems, credits, awards, metrics] =
+  const [bookmarkedActorIds, portfolioItems, credits, awards, metrics, myJobs] =
     await Promise.all([
       listBookmarkedTargetIds("actor", [actor.id]),
       listPortfolioFor(actor.id),
       listActorCredits(actor.id).catch(() => []),
       listActorAwards(actor.id).catch(() => []),
       getActorProfileMetrics(actor.id),
+      activeRole === "casting" ? listMyJobs().catch(() => []) : Promise.resolve([]),
     ]);
+  const messageJobs: ActorMessageJob[] = myJobs
+    .filter((job) => isJobAccepting(job))
+    .map((job) => ({
+      id: job.id,
+      title: job.title,
+    }));
 
   return (
     <ActorProfileView
@@ -91,7 +96,9 @@ export default async function ActorDetailPage({
         activeRole === "casting" ? (
           <ActorProfileActions
             actorId={actor.id}
+            actorName={actor.name}
             bookmarked={bookmarkedActorIds.has(actor.id)}
+            jobs={messageJobs}
           />
         ) : null
       }
@@ -101,10 +108,14 @@ export default async function ActorDetailPage({
 
 function ActorProfileActions({
   actorId,
+  actorName,
   bookmarked,
+  jobs,
 }: {
   actorId: string;
+  actorName: string;
   bookmarked: boolean;
+  jobs: ActorMessageJob[];
 }) {
   const iconButtonClassName =
     "!border-white/35 !bg-white/20 !text-white shadow-sm backdrop-blur hover:!bg-white/30 hover:!text-white";
@@ -121,19 +132,12 @@ function ActorProfileActions({
         className={iconButtonClassName}
       />
 
-      <form action={startActorConversationAction}>
-        <input type="hidden" name="actor_id" value={actorId} />
-        <button
-          type="submit"
-          aria-label="메시지 보내기"
-          className={cn(
-            buttonVariants({ color: "neutral", variant: "ghost", size: "icon-lg" }),
-            "rounded-full border-white/35 bg-white/20 text-white shadow-sm backdrop-blur hover:bg-white/30 hover:text-white",
-          )}
-        >
-          <Send aria-hidden="true" className="size-4" />
-        </button>
-      </form>
+      <ActorMessageDialog
+        actorId={actorId}
+        actorName={actorName}
+        jobs={jobs}
+        className={iconButtonClassName}
+      />
     </div>
   );
 }

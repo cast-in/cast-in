@@ -262,20 +262,22 @@ export async function listLandingActors(limit = 18): Promise<LandingActor[]> {
   }));
 }
 
+type SearchFilterValue = string | readonly string[];
+
 export type SearchActorsParams = {
   q?: string;
-  region?: string;
-  genre?: string;
-  gender?: "male" | "female";
+  region?: SearchFilterValue;
+  genre?: SearchFilterValue;
+  gender?: "male" | "female" | readonly string[];
   page?: number;
   pageSize?: number;
 };
 
 export type SearchCastingActorsParams = SearchActorsParams & {
-  ageGroup?: string;
-  heightRange?: string;
-  nationality?: string;
-  skill?: string;
+  ageGroup?: SearchFilterValue;
+  heightRange?: SearchFilterValue;
+  nationality?: SearchFilterValue;
+  skill?: SearchFilterValue;
   sort?: "latest" | "name";
 };
 
@@ -289,7 +291,10 @@ export type PagedResult<T> = {
 export async function searchActors(
   params: SearchActorsParams = {},
 ): Promise<PagedResult<ActorPreview>> {
-  const { q, region, genre, gender, page = 1, pageSize = 12 } = params;
+  const { q, page = 1, pageSize = 12 } = params;
+  const regions = normalizeSearchValues(params.region);
+  const genres = normalizeSearchValues(params.genre);
+  const genders = normalizeSearchValues(params.gender);
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -306,14 +311,20 @@ export async function searchActors(
   if (q?.trim()) {
     query = query.ilike("profiles.name", `%${q.trim()}%`);
   }
-  if (region?.trim()) {
-    query = query.ilike("region", `%${region.trim()}%`);
+  if (regions.length === 1) {
+    query = query.ilike("region", `%${regions[0]}%`);
+  } else if (regions.length > 1) {
+    query = query.or(
+      regions.map((region) => `region.ilike.%${region}%`).join(","),
+    );
   }
-  if (genre?.trim()) {
-    query = query.contains("genres", [genre.trim()]);
+  if (genres.length > 0) {
+    query = query.overlaps("genres", genres);
   }
-  if (gender === "male" || gender === "female") {
-    query = query.eq("gender", gender);
+  if (genders.length === 1) {
+    query = query.eq("gender", genders[0]);
+  } else if (genders.length > 1) {
+    query = query.in("gender", genders);
   }
 
   const { data, count, error } = await query;
@@ -340,17 +351,17 @@ export async function searchCastingActors(
 ): Promise<PagedResult<CastingActorPreview>> {
   const {
     q,
-    region,
-    genre,
-    gender,
-    ageGroup,
-    heightRange,
-    nationality,
-    skill,
     sort = "latest",
     page = 1,
     pageSize = 12,
   } = params;
+  const regions = normalizeSearchValues(params.region);
+  const genres = normalizeSearchValues(params.genre);
+  const genders = normalizeSearchValues(params.gender);
+  const ageGroups = normalizeSearchValues(params.ageGroup);
+  const heightRanges = normalizeSearchValues(params.heightRange);
+  const nationalities = normalizeSearchValues(params.nationality);
+  const skills = normalizeSearchValues(params.skill);
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -366,41 +377,29 @@ export async function searchCastingActors(
   if (q?.trim()) {
     query = query.ilike("profiles.name", `%${q.trim()}%`);
   }
-  if (region?.trim()) {
-    query = query.ilike("region", `%${region.trim()}%`);
+  if (regions.length === 1) {
+    query = query.ilike("region", `%${regions[0]}%`);
+  } else if (regions.length > 1) {
+    query = query.or(
+      regions.map((region) => `region.ilike.%${region}%`).join(","),
+    );
   }
-  if (genre?.trim()) {
-    query = query.contains("genres", [genre.trim()]);
+  if (genres.length > 0) {
+    query = query.overlaps("genres", genres);
   }
-  if (gender === "male" || gender === "female") {
-    query = query.eq("gender", gender);
+  if (genders.length === 1) {
+    query = query.eq("gender", genders[0]);
+  } else if (genders.length > 1) {
+    query = query.in("gender", genders);
   }
-  if (nationality?.trim()) {
-    query = query.contains("nationalities", [nationality.trim()]);
+  if (nationalities.length > 0) {
+    query = query.overlaps("nationalities", nationalities);
   }
-  if (skill?.trim()) {
-    query = query.contains("skills", [skill.trim()]);
+  if (skills.length > 0) {
+    query = query.overlaps("skills", skills);
   }
-  const birthDateRange = getBirthDateRangeForAgeGroup(ageGroup);
-  if (birthDateRange?.after) {
-    query = query.gt("birth_date", birthDateRange.after);
-  }
-  if (birthDateRange?.onOrBefore) {
-    query = query.lte("birth_date", birthDateRange.onOrBefore);
-  }
-  const heightCmRange = getHeightCmRange(heightRange);
-  if (heightCmRange?.gt !== undefined) {
-    query = query.gt("height_cm", heightCmRange.gt);
-  }
-  if (heightCmRange?.gte !== undefined) {
-    query = query.gte("height_cm", heightCmRange.gte);
-  }
-  if (heightCmRange?.lt !== undefined) {
-    query = query.lt("height_cm", heightCmRange.lt);
-  }
-  if (heightCmRange?.lte !== undefined) {
-    query = query.lte("height_cm", heightCmRange.lte);
-  }
+  query = applyBirthDateFilters(query, ageGroups);
+  query = applyHeightFilters(query, heightRanges);
 
   if (sort === "name") {
     query = query.order("profiles(name)", { ascending: true });
@@ -512,6 +511,97 @@ function getHeightCmRange(range: string | undefined) {
   return null;
 }
 
+type RangeFilterQuery<T> = {
+  gt(column: string, value: string | number): T;
+  gte(column: string, value: string | number): T;
+  lt(column: string, value: string | number): T;
+  lte(column: string, value: string | number): T;
+  or(filters: string): T;
+};
+
+function applyBirthDateFilters<T extends RangeFilterQuery<T>>(
+  query: T,
+  ageGroups: readonly string[],
+) {
+  if (ageGroups.length === 0) return query;
+  if (ageGroups.length === 1) {
+    const birthDateRange = getBirthDateRangeForAgeGroup(ageGroups[0]);
+    if (birthDateRange?.after) {
+      query = query.gt("birth_date", birthDateRange.after);
+    }
+    if (birthDateRange?.onOrBefore) {
+      query = query.lte("birth_date", birthDateRange.onOrBefore);
+    }
+    return query;
+  }
+
+  const clauses = ageGroups
+    .map((ageGroup) => {
+      const range = getBirthDateRangeForAgeGroup(ageGroup);
+      if (!range) return "";
+
+      const rangeClauses = [
+        range.after ? `birth_date.gt.${range.after}` : "",
+        range.onOrBefore ? `birth_date.lte.${range.onOrBefore}` : "",
+      ].filter(Boolean);
+
+      return rangeClauses.length > 1
+        ? `and(${rangeClauses.join(",")})`
+        : rangeClauses[0];
+    })
+    .filter(Boolean);
+
+  return clauses.length > 0 ? query.or(clauses.join(",")) : query;
+}
+
+function applyHeightFilters<T extends RangeFilterQuery<T>>(
+  query: T,
+  heightRanges: readonly string[],
+) {
+  if (heightRanges.length === 0) return query;
+  if (heightRanges.length === 1) {
+    const heightCmRange = getHeightCmRange(heightRanges[0]);
+    if (heightCmRange?.gt !== undefined) {
+      query = query.gt("height_cm", heightCmRange.gt);
+    }
+    if (heightCmRange?.gte !== undefined) {
+      query = query.gte("height_cm", heightCmRange.gte);
+    }
+    if (heightCmRange?.lt !== undefined) {
+      query = query.lt("height_cm", heightCmRange.lt);
+    }
+    if (heightCmRange?.lte !== undefined) {
+      query = query.lte("height_cm", heightCmRange.lte);
+    }
+    return query;
+  }
+
+  const clauses = heightRanges
+    .map((heightRange) => {
+      const range = getHeightCmRange(heightRange);
+      if (!range) return "";
+
+      const rangeClauses = [
+        range.gt !== undefined ? `height_cm.gt.${range.gt}` : "",
+        range.gte !== undefined ? `height_cm.gte.${range.gte}` : "",
+        range.lt !== undefined ? `height_cm.lt.${range.lt}` : "",
+        range.lte !== undefined ? `height_cm.lte.${range.lte}` : "",
+      ].filter(Boolean);
+
+      return rangeClauses.length > 1
+        ? `and(${rangeClauses.join(",")})`
+        : rangeClauses[0];
+    })
+    .filter(Boolean);
+
+  return clauses.length > 0 ? query.or(clauses.join(",")) : query;
+}
+
+function normalizeSearchValues(value: SearchFilterValue | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
+}
+
 function dateYearsAgo(years: number) {
   const date = new Date();
   date.setFullYear(date.getFullYear() - years);
@@ -524,13 +614,13 @@ function dateYearsAgo(years: number) {
 
 export type SearchJobsParams = {
   q?: string;
-  region?: string;
-  genre?: string;
+  region?: SearchFilterValue;
+  genre?: SearchFilterValue;
   requirement?: string;
-  roleType?: string;
-  targetGender?: string;
-  targetAgeGroup?: string;
-  platform?: string;
+  roleType?: SearchFilterValue;
+  targetGender?: SearchFilterValue;
+  targetAgeGroup?: SearchFilterValue;
+  platform?: SearchFilterValue;
   sort?: "deadline" | "latest";
   jobState?: "active" | "closed" | "all";
   page?: number;
@@ -542,18 +632,18 @@ export async function searchOpenJobs(
 ): Promise<PagedResult<OpenJobPreview>> {
   const {
     q,
-    region,
-    genre,
     requirement,
-    roleType,
-    targetGender,
-    targetAgeGroup,
-    platform,
     sort = "deadline",
     jobState = "active",
     page = 1,
     pageSize = 12,
   } = params;
+  const regions = normalizeSearchValues(params.region);
+  const genres = normalizeSearchValues(params.genre);
+  const roleTypes = normalizeSearchValues(params.roleType);
+  const targetGenders = normalizeSearchValues(params.targetGender);
+  const targetAgeGroups = normalizeSearchValues(params.targetAgeGroup);
+  const platforms = normalizeSearchValues(params.platform);
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
@@ -579,26 +669,34 @@ export async function searchOpenJobs(
       `title.ilike.${pattern},description.ilike.${pattern},role_type.ilike.${pattern}`,
     );
   }
-  if (region?.trim()) {
-    query = query.ilike("region", `%${region.trim()}%`);
+  if (regions.length === 1) {
+    query = query.ilike("region", `%${regions[0]}%`);
+  } else if (regions.length > 1) {
+    query = query.or(
+      regions.map((region) => `region.ilike.%${region}%`).join(","),
+    );
   }
-  if (genre?.trim()) {
-    query = query.ilike("genre", `%${genre.trim()}%`);
+  if (genres.length === 1) {
+    query = query.ilike("genre", `%${genres[0]}%`);
+  } else if (genres.length > 1) {
+    query = query.or(genres.map((genre) => `genre.ilike.%${genre}%`).join(","));
   }
   if (requirement?.trim()) {
     query = query.contains("requirements", [requirement.trim()]);
   }
-  if (roleType?.trim()) {
-    query = query.eq("role_type", roleType.trim());
+  if (roleTypes.length === 1) {
+    query = query.eq("role_type", roleTypes[0]);
+  } else if (roleTypes.length > 1) {
+    query = query.in("role_type", roleTypes);
   }
-  if (targetGender?.trim()) {
-    query = query.contains("target_genders", [targetGender.trim()]);
+  if (targetGenders.length > 0) {
+    query = query.overlaps("target_genders", targetGenders);
   }
-  if (targetAgeGroup?.trim()) {
-    query = query.contains("target_age_groups", [targetAgeGroup.trim()]);
+  if (targetAgeGroups.length > 0) {
+    query = query.overlaps("target_age_groups", targetAgeGroups);
   }
-  if (platform?.trim()) {
-    query = query.contains("platforms", [platform.trim()]);
+  if (platforms.length > 0) {
+    query = query.overlaps("platforms", platforms);
   }
 
   if (sort === "latest") {

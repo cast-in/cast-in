@@ -30,9 +30,13 @@ function asString(raw: string | string[] | undefined) {
   return value?.trim() ?? "";
 }
 
-function asOption(raw: string | string[] | undefined, options: readonly string[]) {
-  const value = asString(raw);
-  return options.includes(value) ? value : "";
+function asStrings(raw: string | string[] | undefined) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function asOptions(raw: string | string[] | undefined, options: readonly string[]) {
+  return asStrings(raw).filter((value) => options.includes(value));
 }
 
 export default async function DiscoverPage({
@@ -46,18 +50,18 @@ export default async function DiscoverPage({
 
   const sp = await searchParams;
   const q = asString(sp.q);
-  const region = asString(sp.region);
-  const genre = asString(sp.genre);
-  const roleType = asOption(sp.role, JOB_ROLE_TYPE_OPTIONS);
-  const targetGender = asOption(
+  const region = asStrings(sp.region);
+  const genre = asStrings(sp.genre);
+  const roleType = asOptions(sp.role, JOB_ROLE_TYPE_OPTIONS);
+  const targetGender = asOptions(
     sp.target_gender,
     JOB_TARGET_GENDER_OPTIONS.map((option) => option.value),
   );
-  const targetAgeGroup = asOption(
+  const targetAgeGroup = asOptions(
     sp.age_group,
     JOB_AGE_GROUP_OPTIONS.map((option) => option.value),
   );
-  const platform = asOption(sp.platform, JOB_PLATFORM_OPTIONS);
+  const platform = asOptions(sp.platform, JOB_PLATFORM_OPTIONS);
   const sort = asString(sp.sort) === "deadline" ? "deadline" : "latest";
   const status = asString(sp.status);
   const jobState = status === "closed" || status === "all" ? status : "active";
@@ -94,12 +98,12 @@ export default async function DiscoverPage({
   });
   const hasFilters = Boolean(
     q ||
-      region ||
-      genre ||
-      roleType ||
-      targetGender ||
-      targetAgeGroup ||
-      platform ||
+      region.length ||
+      genre.length ||
+      roleType.length ||
+      targetGender.length ||
+      targetAgeGroup.length ||
+      platform.length ||
       jobState !== "active",
   );
   const recommendedJobs = items.slice(0, 5);
@@ -234,17 +238,20 @@ function CastingJobsHero() {
   );
 }
 
-function buildDiscoverPath(
-  params: Record<string, string | number | undefined>,
-) {
+type QueryValue = string | number | readonly string[] | undefined;
+
+function buildDiscoverPath(params: Record<string, QueryValue>) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    const normalized = String(value ?? "").trim();
-    if (!normalized) continue;
-    if (key === "page" && normalized === "1") continue;
-    if (key === "status" && normalized === "active") continue;
-    if (key === "sort" && normalized === "latest") continue;
-    query.set(key, normalized);
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      const normalized = String(item ?? "").trim();
+      if (!normalized) continue;
+      if (key === "page" && normalized === "1") continue;
+      if (key === "status" && normalized === "active") continue;
+      if (key === "sort" && normalized === "latest") continue;
+      query.append(key, normalized);
+    }
   }
   const qs = query.toString();
   return qs ? `/discover?${qs}` : "/discover";

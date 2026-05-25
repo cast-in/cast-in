@@ -102,6 +102,16 @@ export const StartJobConversationSchema = z.object({
   actor_id: z.string().uuid("배우 정보를 찾을 수 없어요.").optional(),
 });
 
+export const StartActorConversationSchema = z.object({
+  actor_id: z.string().uuid("배우 정보를 찾을 수 없어요."),
+  job_id: z.string().uuid("공고 정보를 찾을 수 없어요.").optional(),
+  message: z
+    .string()
+    .trim()
+    .min(1, "메시지를 입력해주세요.")
+    .max(1000, "메시지는 1,000자 이내로 입력해주세요."),
+});
+
 export const UpdateApplicationSchema = z
   .object({
     application_id: z.string().uuid("지원 정보를 찾을 수 없어요."),

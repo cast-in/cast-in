@@ -132,7 +132,7 @@ export function MobileSiteMenu({
                       <span>{tab.label}</span>
                     <span className="flex items-center gap-2">
                       {getTabCount(tab.href, counts) > 0 ? (
-                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs leading-5 text-primary-foreground">
+                        <span className="inline-flex min-w-5 items-center justify-center rounded-full border border-primary bg-primary-soft px-1.5 text-xs leading-5 text-primary">
                           {getTabCount(tab.href, counts) > 99
                             ? "99+"
                             : getTabCount(tab.href, counts)}

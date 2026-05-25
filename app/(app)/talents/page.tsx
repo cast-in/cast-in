@@ -7,15 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActorCard } from "@/components/features/actor-card";
-import {
-  ACTOR_HEIGHT_RANGE_OPTIONS,
-  ACTOR_NATIONALITY_OPTIONS,
-  ActorSearchPanel,
-} from "@/components/features/actor-search-panel";
+import { ActorSearchPanel } from "@/components/features/actor-search-panel";
 import { JobCard } from "@/components/features/job-card";
 import { JobSearchPanel } from "@/components/features/job-search-panel";
 import { PageContainer } from "@/components/page-container";
 import { Pagination } from "@/components/features/pagination";
+import {
+  ACTOR_HEIGHT_RANGE_OPTIONS,
+  ACTOR_NATIONALITY_OPTIONS,
+} from "@/lib/actor-filter-options";
 import {
   JOB_AGE_GROUP_OPTIONS,
   JOB_PLATFORM_OPTIONS,
@@ -43,14 +43,23 @@ function asString(raw: string | string[] | undefined) {
   return value?.trim() ?? "";
 }
 
-function asGender(raw: string | string[] | undefined) {
-  const value = asString(raw);
-  return value === "male" || value === "female" ? value : "";
+function asStrings(raw: string | string[] | undefined) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return uniqueNonEmpty(values);
 }
 
-function asOption(raw: string | string[] | undefined, options: readonly string[]) {
-  const value = asString(raw);
-  return options.includes(value) ? value : "";
+function asGenderOptions(raw: string | string[] | undefined) {
+  return asOptions(raw, ["male", "female"]);
+}
+
+function asOptions(raw: string | string[] | undefined, options: readonly string[]) {
+  return uniqueNonEmpty(Array.isArray(raw) ? raw : raw ? [raw] : []).filter((value) =>
+    options.includes(value),
+  );
+}
+
+function uniqueNonEmpty(values: readonly string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
 
 export default async function TalentsPage({
@@ -63,29 +72,29 @@ export default async function TalentsPage({
 
   const sp = await searchParams;
   const q = asString(sp.q);
-  const region = asString(sp.region);
-  const genre = asString(sp.genre);
-  const gender = asGender(sp.gender);
-  const skill = asString(sp.skill);
-  const actorAgeGroup = asOption(
+  const region = asStrings(sp.region);
+  const genre = asStrings(sp.genre);
+  const gender = asGenderOptions(sp.gender);
+  const skill = asStrings(sp.skill);
+  const actorAgeGroup = asOptions(
     sp.age_group,
     JOB_AGE_GROUP_OPTIONS.map((option) => option.value),
   );
-  const heightRange = asOption(
+  const heightRange = asOptions(
     sp.height,
     ACTOR_HEIGHT_RANGE_OPTIONS.map((option) => option.value),
   );
-  const nationality = asOption(sp.nationality, ACTOR_NATIONALITY_OPTIONS);
-  const roleType = asOption(sp.role, JOB_ROLE_TYPE_OPTIONS);
-  const targetGender = asOption(
+  const nationality = asOptions(sp.nationality, ACTOR_NATIONALITY_OPTIONS);
+  const roleType = asOptions(sp.role, JOB_ROLE_TYPE_OPTIONS);
+  const targetGender = asOptions(
     sp.target_gender,
     JOB_TARGET_GENDER_OPTIONS.map((option) => option.value),
   );
-  const targetAgeGroup = asOption(
+  const targetAgeGroup = asOptions(
     sp.age_group,
     JOB_AGE_GROUP_OPTIONS.map((option) => option.value),
   );
-  const platform = asOption(sp.platform, JOB_PLATFORM_OPTIONS);
+  const platform = asOptions(sp.platform, JOB_PLATFORM_OPTIONS);
   const page = parsePage(sp.page);
 
   if (activeRole === "casting") {
@@ -137,33 +146,33 @@ async function CastingTalentsPage({
   skill,
   sort,
 }: {
-  ageGroup: string;
+  ageGroup: string[];
   q: string;
-  region: string;
-  genre: string;
-  gender: "" | "male" | "female";
-  heightRange: string;
-  nationality: string;
+  region: string[];
+  genre: string[];
+  gender: string[];
+  heightRange: string[];
+  nationality: string[];
   page: number;
-  skill: string;
+  skill: string[];
   sort: "latest" | "name";
 }) {
   const hasFilters = Boolean(
     q ||
-      region ||
-      genre ||
-      gender ||
-      ageGroup ||
-      heightRange ||
-      nationality ||
-      skill,
+      region.length ||
+      genre.length ||
+      gender.length ||
+      ageGroup.length ||
+      heightRange.length ||
+      nationality.length ||
+      skill.length,
   );
   const { items, total } = await searchCastingActors({
     ageGroup,
     q,
     region,
     genre,
-    gender: gender || undefined,
+    gender,
     heightRange,
     nationality,
     skill,
@@ -287,12 +296,12 @@ async function ActorTalentsPage({
   page,
 }: {
   q: string;
-  region: string;
-  genre: string;
-  roleType: string;
-  targetGender: string;
-  targetAgeGroup: string;
-  platform: string;
+  region: string[];
+  genre: string[];
+  roleType: string[];
+  targetGender: string[];
+  targetAgeGroup: string[];
+  platform: string[];
   sort: "deadline" | "latest";
   jobState: "active" | "closed" | "all";
   page: number;
@@ -331,12 +340,12 @@ async function ActorTalentsPage({
   });
   const hasFilters = Boolean(
     q ||
-      region ||
-      genre ||
-      roleType ||
-      targetGender ||
-      targetAgeGroup ||
-      platform ||
+      region.length ||
+      genre.length ||
+      roleType.length ||
+      targetGender.length ||
+      targetAgeGroup.length ||
+      platform.length ||
       jobState !== "active",
   );
   const recommendedJobs = items.slice(0, 5);
@@ -535,17 +544,20 @@ function ActorJobsHero({ savedJobCount }: { savedJobCount: number }) {
   );
 }
 
-function buildTalentsPath(
-  params: Record<string, string | number | undefined>,
-) {
+type QueryValue = string | number | readonly string[] | undefined;
+
+function buildTalentsPath(params: Record<string, QueryValue>) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    const normalized = String(value ?? "").trim();
-    if (!normalized) continue;
-    if (key === "page" && normalized === "1") continue;
-    if (key === "status" && normalized === "active") continue;
-    if (key === "sort" && normalized === "latest") continue;
-    query.set(key, normalized);
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      const normalized = String(item ?? "").trim();
+      if (!normalized) continue;
+      if (key === "page" && normalized === "1") continue;
+      if (key === "status" && normalized === "active") continue;
+      if (key === "sort" && normalized === "latest") continue;
+      query.append(key, normalized);
+    }
   }
   const qs = query.toString();
   return qs ? `/talents?${qs}` : "/talents";

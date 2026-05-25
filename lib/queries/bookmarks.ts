@@ -23,15 +23,16 @@ export type BookmarkItem = {
 };
 
 type BookmarkRow = Database["public"]["Tables"]["bookmarks"]["Row"];
+type SavedFilterValue = string | readonly string[];
 
 export type SavedJobsParams = {
   q?: string;
-  region?: string;
-  genre?: string;
-  roleType?: string;
-  targetGender?: string;
-  targetAgeGroup?: string;
-  platform?: string;
+  region?: SavedFilterValue;
+  genre?: SavedFilterValue;
+  roleType?: SavedFilterValue;
+  targetGender?: SavedFilterValue;
+  targetAgeGroup?: SavedFilterValue;
+  platform?: SavedFilterValue;
   sort?: "deadline" | "latest";
   jobState?: "active" | "closed" | "all";
   page?: number;
@@ -39,14 +40,14 @@ export type SavedJobsParams = {
 };
 
 export type SavedActorsParams = {
-  ageGroup?: string;
-  gender?: "male" | "female";
-  genre?: string;
-  heightRange?: string;
-  nationality?: string;
+  ageGroup?: SavedFilterValue;
+  gender?: "male" | "female" | readonly string[];
+  genre?: SavedFilterValue;
+  heightRange?: SavedFilterValue;
+  nationality?: SavedFilterValue;
   q?: string;
-  region?: string;
-  skill?: string;
+  region?: SavedFilterValue;
+  skill?: SavedFilterValue;
   sort?: "latest" | "name";
   page?: number;
   pageSize?: number;
@@ -201,17 +202,17 @@ export async function listMyBookmarkedJobs(
 ): Promise<PagedResult<OpenJobPreview>> {
   const {
     q,
-    region,
-    genre,
-    roleType,
-    targetGender,
-    targetAgeGroup,
-    platform,
     sort = "latest",
     jobState = "all",
     page = 1,
     pageSize = 12,
   } = params;
+  const regions = normalizeSavedValues(params.region);
+  const genres = normalizeSavedValues(params.genre);
+  const roleTypes = normalizeSavedValues(params.roleType);
+  const targetGenders = normalizeSavedValues(params.targetGender);
+  const targetAgeGroups = normalizeSavedValues(params.targetAgeGroup);
+  const platforms = normalizeSavedValues(params.platform);
   const supabase = await createClient();
   const {
     data: { user },
@@ -262,22 +263,44 @@ export async function listMyBookmarkedJobs(
           .toLowerCase();
         if (!haystack.includes(searchText)) return false;
       }
-      if (region?.trim() && !job.region?.includes(region.trim())) return false;
-      if (genre?.trim() && !job.genre?.includes(genre.trim())) return false;
-      if (roleType?.trim() && job.role_type !== roleType.trim()) return false;
       if (
-        targetGender?.trim() &&
-        !(job.target_genders ?? []).includes(targetGender.trim())
+        regions.length > 0 &&
+        !regions.some((region) => job.region?.includes(region))
       ) {
         return false;
       }
       if (
-        targetAgeGroup?.trim() &&
-        !(job.target_age_groups ?? []).includes(targetAgeGroup.trim())
+        genres.length > 0 &&
+        !genres.some((genre) => job.genre?.includes(genre))
       ) {
         return false;
       }
-      if (platform?.trim() && !(job.platforms ?? []).includes(platform.trim())) {
+      if (
+        roleTypes.length > 0 &&
+        !roleTypes.some((roleType) => job.role_type === roleType)
+      ) {
+        return false;
+      }
+      if (
+        targetGenders.length > 0 &&
+        !targetGenders.some((targetGender) =>
+          (job.target_genders ?? []).includes(targetGender),
+        )
+      ) {
+        return false;
+      }
+      if (
+        targetAgeGroups.length > 0 &&
+        !targetAgeGroups.some((targetAgeGroup) =>
+          (job.target_age_groups ?? []).includes(targetAgeGroup),
+        )
+      ) {
+        return false;
+      }
+      if (
+        platforms.length > 0 &&
+        !platforms.some((platform) => (job.platforms ?? []).includes(platform))
+      ) {
         return false;
       }
 
@@ -322,18 +345,18 @@ export async function listMyBookmarkedActors(
   params: SavedActorsParams = {},
 ): Promise<PagedResult<CastingActorPreview>> {
   const {
-    ageGroup,
-    gender,
-    genre,
-    heightRange,
-    nationality,
     q,
-    region,
-    skill,
     sort = "latest",
     page = 1,
     pageSize = 12,
   } = params;
+  const ageGroups = normalizeSavedValues(params.ageGroup);
+  const genders = normalizeSavedValues(params.gender);
+  const genres = normalizeSavedValues(params.genre);
+  const heightRanges = normalizeSavedValues(params.heightRange);
+  const nationalities = normalizeSavedValues(params.nationality);
+  const regions = normalizeSavedValues(params.region);
+  const skills = normalizeSavedValues(params.skill);
   const supabase = await createClient();
   const {
     data: { user },
@@ -390,22 +413,49 @@ export async function listMyBookmarkedActors(
       if (searchText && !actor.name.toLowerCase().includes(searchText)) {
         return false;
       }
-      if (region?.trim() && !actor.region?.includes(region.trim())) return false;
-      if (genre?.trim() && !actor.genres.includes(genre.trim())) return false;
-      if (gender && actor.gender !== gender) return false;
       if (
-        nationality?.trim() &&
-        !actor.nationalities.includes(nationality.trim())
+        regions.length > 0 &&
+        !regions.some((region) => actor.region?.includes(region))
       ) {
         return false;
       }
-      if (skill?.trim() && !actor.skills.includes(skill.trim())) return false;
-      if (ageGroup?.trim() && !isAgeInGroup(actor.age, ageGroup.trim())) {
+      if (
+        genres.length > 0 &&
+        !genres.some((genre) => actor.genres.includes(genre))
+      ) {
         return false;
       }
       if (
-        heightRange?.trim() &&
-        !isHeightInRange(actor.height_cm, heightRange.trim())
+        genders.length > 0 &&
+        !genders.some((gender) => actor.gender === gender)
+      ) {
+        return false;
+      }
+      if (
+        nationalities.length > 0 &&
+        !nationalities.some((nationality) =>
+          actor.nationalities.includes(nationality),
+        )
+      ) {
+        return false;
+      }
+      if (
+        skills.length > 0 &&
+        !skills.some((skill) => actor.skills.includes(skill))
+      ) {
+        return false;
+      }
+      if (
+        ageGroups.length > 0 &&
+        !ageGroups.some((ageGroup) => isAgeInGroup(actor.age, ageGroup))
+      ) {
+        return false;
+      }
+      if (
+        heightRanges.length > 0 &&
+        !heightRanges.some((heightRange) =>
+          isHeightInRange(actor.height_cm, heightRange),
+        )
       ) {
         return false;
       }
@@ -440,6 +490,11 @@ function uniqueTargetIds(
         .map((bookmark) => bookmark.target_id),
     ),
   );
+}
+
+function normalizeSavedValues(value: SavedFilterValue | undefined) {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+  return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
 }
 
 function isAgeInGroup(age: number | null, group: string) {
