@@ -1,8 +1,8 @@
 import {
-  Calendar,
   Check,
   ChevronDown,
   Clapperboard,
+  Globe2,
   MapPin,
   Plus,
   RotateCcw,
@@ -14,14 +14,19 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { surfaceCardClassName } from "@/components/ui/surface-card";
 import {
   JOB_AGE_GROUP_OPTIONS,
-  JOB_PLATFORM_OPTIONS,
-  JOB_ROLE_TYPE_OPTIONS,
   JOB_TARGET_GENDER_OPTIONS,
 } from "@/lib/job-filter-options";
 import { cn } from "@/lib/utils";
+
+export const ACTOR_NATIONALITY_OPTIONS = [
+  "Republic of Korea",
+  "United States",
+  "Japan",
+  "China",
+  "Canada",
+] as const;
 
 const regionOptions = [
   "서울",
@@ -47,25 +52,55 @@ const genreOptions = [
   "숏폼",
   "시트콤",
 ] as const;
+const skillOptions = [
+  "액션",
+  "보컬",
+  "댄스",
+  "영어",
+  "일본어",
+  "중국어",
+  "승마",
+  "펜싱",
+  "기타",
+  "피아노",
+  "발레",
+  "방송 진행",
+  "MC",
+  "태권도",
+  "수영",
+  "복싱",
+] as const;
 
 const resetButtonClassName = cn(
   buttonVariants({ color: "neutral", variant: "outline", size: "sm" }),
   "w-32",
 );
 
-export type JobSearchPanelValues = {
+export const ACTOR_HEIGHT_RANGE_OPTIONS = [
+  { label: "120cm 미만", value: "under_120" },
+  { label: "120~130cm", value: "120_130" },
+  { label: "131~140cm", value: "131_140" },
+  { label: "141~150cm", value: "141_150" },
+  { label: "151~160cm", value: "151_160" },
+  { label: "161~170cm", value: "161_170" },
+  { label: "171~180cm", value: "171_180" },
+  { label: "181~190cm", value: "181_190" },
+  { label: "191cm 초과", value: "over_191" },
+] as const;
+
+export type ActorSearchPanelValues = {
+  ageGroup: string;
+  gender: "" | "female" | "male";
+  genre: string;
+  heightRange: string;
+  nationality: string;
   q: string;
   region: string;
-  genre: string;
-  roleType: string;
-  targetGender: string;
-  targetAgeGroup: string;
-  platform: string;
-  sort: "deadline" | "latest";
-  jobState?: "active" | "closed" | "all";
+  skill: string;
+  sort: "latest" | "name";
 };
 
-export function JobSearchPanel({
+export function ActorSearchPanel({
   action,
   resetHref,
   searchLabel,
@@ -74,21 +109,18 @@ export function JobSearchPanel({
   action: string;
   resetHref: string;
   searchLabel: string;
-  values: JobSearchPanelValues;
+  values: ActorSearchPanelValues;
 }) {
   const formId = action.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-  const searchId = `${formId || "job"}-search`;
-  const sortId = `${formId || "job"}-sort`;
+  const searchId = `${formId || "actor"}-search`;
+  const sortId = `${formId || "actor"}-sort`;
 
   return (
     <form
       action={action}
       method="get"
-      className={cn(surfaceCardClassName, "px-5 py-6 shadow-none md:px-6")}
+      className="rounded-xl bg-card px-5 py-6 ring-1 ring-border/70 md:px-6"
     >
-      {values.jobState && values.jobState !== "active" ? (
-        <input type="hidden" name="status" value={values.jobState} />
-      ) : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_11rem]">
         <div className="relative">
           <label htmlFor={searchId} className="sr-only">
@@ -103,7 +135,7 @@ export function JobSearchPanel({
             type="search"
             name="q"
             defaultValue={values.q}
-            placeholder="작품명, 역할, 키워드로 검색해보세요"
+            placeholder="작품과 배역에 어울리는 배우를 조건별로 찾아보세요."
             className="pl-10"
           />
         </div>
@@ -113,22 +145,28 @@ export function JobSearchPanel({
           </label>
           <Select id={sortId} name="sort" defaultValue={values.sort}>
             <option value="latest">최신순</option>
-            <option value="deadline">마감 임박순</option>
+            <option value="name">이름순</option>
           </Select>
         </div>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
+        <FilterSummaryButton label="국적" icon={Globe2} />
         <FilterSummaryButton label="지역" icon={MapPin} />
         <FilterSummaryButton label="장르" icon={Clapperboard} />
         <FilterSummaryButton label="역할" icon={UserRound} />
         <FilterSummaryButton label="성별 / 나이" icon={UserRound} />
-        <FilterSummaryButton label="플랫폼" icon={Calendar} />
         <FilterSummaryButton label="필터" icon={SlidersHorizontal} tone="primary" />
       </div>
 
       <div className="mt-5 rounded-lg border bg-background p-5">
-        <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-7 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))]">
+          <FilterColumn
+            title="국적"
+            name="nationality"
+            selectedValue={values.nationality}
+            options={ACTOR_NATIONALITY_OPTIONS}
+          />
           <FilterColumn
             title="지역"
             name="region"
@@ -142,21 +180,16 @@ export function JobSearchPanel({
             options={genreOptions}
           />
           <FilterColumn
-            title="역할"
-            name="role"
-            selectedValue={values.roleType}
-            options={JOB_ROLE_TYPE_OPTIONS}
+            title="특기"
+            name="skill"
+            selectedValue={values.skill}
+            options={skillOptions}
           />
           <GenderAgeFilterColumn
-            targetGender={values.targetGender}
-            targetAgeGroup={values.targetAgeGroup}
+            gender={values.gender}
+            ageGroup={values.ageGroup}
           />
-          <FilterColumn
-            title="플랫폼 / 채널"
-            name="platform"
-            selectedValue={values.platform}
-            options={JOB_PLATFORM_OPTIONS}
-          />
+          <HeightFilterColumn selectedValue={values.heightRange} />
         </div>
 
         <div className="mt-7 flex justify-end gap-3">
@@ -181,7 +214,7 @@ function FilterSummaryButton({
   label,
   tone = "neutral",
 }: {
-  icon: typeof MapPin;
+  icon: typeof Globe2;
   label: string;
   tone?: "neutral" | "primary";
 }) {
@@ -219,13 +252,11 @@ function FilterColumn({
   name,
   selectedValue,
   options,
-  showAllOption = true,
 }: {
   title: string;
   name: string;
   selectedValue: string;
   options: readonly FilterOption[];
-  showAllOption?: boolean;
 }) {
   const normalizedOptions = normalizeFilterOptions(options);
 
@@ -233,14 +264,12 @@ function FilterColumn({
     <fieldset className={filterColumnClassName}>
       <legend className="text-base font-bold">{title}</legend>
       <div className="mt-3 space-y-2">
-        {showAllOption ? (
-          <FilterRadio
-            name={name}
-            label="전체"
-            value=""
-            checked={!selectedValue || selectedValue === "all"}
-          />
-        ) : null}
+        <FilterRadio
+          name={name}
+          label="전체"
+          value=""
+          checked={!selectedValue}
+        />
         {normalizedOptions.map((option) => (
           <FilterRadio
             key={option.value}
@@ -256,11 +285,11 @@ function FilterColumn({
 }
 
 function GenderAgeFilterColumn({
-  targetGender,
-  targetAgeGroup,
+  gender,
+  ageGroup,
 }: {
-  targetGender: string;
-  targetAgeGroup: string;
+  gender: "" | "female" | "male";
+  ageGroup: string;
 }) {
   return (
     <div className={filterColumnClassName}>
@@ -268,20 +297,14 @@ function GenderAgeFilterColumn({
       <fieldset className="mt-3">
         <legend className="text-xs font-bold">성별</legend>
         <div className="mt-2 flex flex-wrap gap-2">
-          <FilterRadio
-            name="target_gender"
-            label="전체"
-            value=""
-            checked={!targetGender}
-            compact
-          />
+          <FilterRadio name="gender" label="전체" value="" checked={!gender} compact />
           {JOB_TARGET_GENDER_OPTIONS.map((option) => (
             <FilterRadio
               key={option.value}
-              name="target_gender"
+              name="gender"
               label={option.label}
               value={option.value}
-              checked={targetGender === option.value}
+              checked={gender === option.value}
               compact
             />
           ))}
@@ -294,7 +317,7 @@ function GenderAgeFilterColumn({
             name="age_group"
             label="전체"
             value=""
-            checked={!targetAgeGroup}
+            checked={!ageGroup}
             compact
           />
           {JOB_AGE_GROUP_OPTIONS.map((option) => (
@@ -303,13 +326,40 @@ function GenderAgeFilterColumn({
               name="age_group"
               label={option.label}
               value={option.value}
-              checked={targetAgeGroup === option.value}
+              checked={ageGroup === option.value}
               compact
             />
           ))}
         </div>
       </fieldset>
     </div>
+  );
+}
+
+function HeightFilterColumn({ selectedValue }: { selectedValue: string }) {
+  return (
+    <fieldset className={filterColumnClassName}>
+      <legend className="text-base font-bold">신장</legend>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <FilterRadio
+          name="height"
+          label="전체"
+          value=""
+          checked={!selectedValue}
+          compact
+        />
+        {ACTOR_HEIGHT_RANGE_OPTIONS.map((option) => (
+          <FilterRadio
+            key={option.value}
+            name="height"
+            label={option.label}
+            value={option.value}
+            checked={selectedValue === option.value}
+            compact
+          />
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

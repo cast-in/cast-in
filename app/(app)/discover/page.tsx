@@ -220,7 +220,7 @@ export default async function DiscoverPage({
 
 function CastingJobsHero() {
   return (
-    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white shadow-[0_28px_70px_rgba(15,23,42,0.18)] md:px-9 md:py-9">
+    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white ring-1 ring-foreground/10 md:px-9 md:py-9">
       <Badge color="primary" variant="soft-outline">
         Casting Calls
       </Badge>

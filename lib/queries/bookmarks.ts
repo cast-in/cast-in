@@ -2,7 +2,11 @@ import { calculateAge, formatDeadline } from "@/lib/format";
 import { isJobAccepting } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
-import type { OpenJobPreview, PagedResult } from "@/lib/queries/jobs";
+import type {
+  CastingActorPreview,
+  OpenJobPreview,
+  PagedResult,
+} from "@/lib/queries/jobs";
 
 export type BookmarkTargetType = "actor" | "job";
 
@@ -30,6 +34,20 @@ export type SavedJobsParams = {
   platform?: string;
   sort?: "deadline" | "latest";
   jobState?: "active" | "closed" | "all";
+  page?: number;
+  pageSize?: number;
+};
+
+export type SavedActorsParams = {
+  ageGroup?: string;
+  gender?: "male" | "female";
+  genre?: string;
+  heightRange?: string;
+  nationality?: string;
+  q?: string;
+  region?: string;
+  skill?: string;
+  sort?: "latest" | "name";
   page?: number;
   pageSize?: number;
 };
@@ -300,6 +318,117 @@ export async function listMyBookmarkedJobs(
   return { items, total: filtered.length, page, pageSize };
 }
 
+export async function listMyBookmarkedActors(
+  params: SavedActorsParams = {},
+): Promise<PagedResult<CastingActorPreview>> {
+  const {
+    ageGroup,
+    gender,
+    genre,
+    heightRange,
+    nationality,
+    q,
+    region,
+    skill,
+    sort = "latest",
+    page = 1,
+    pageSize = 12,
+  } = params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { items: [], total: 0, page, pageSize };
+
+  const { data: bookmarks, error } = await supabase
+    .from("bookmarks")
+    .select("id, target_id, created_at")
+    .eq("user_id", user.id)
+    .eq("target_type", "actor")
+    .eq("list_name", "기본")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  if (!bookmarks || bookmarks.length === 0) {
+    return { items: [], total: 0, page, pageSize };
+  }
+
+  const actorIds = bookmarks.map((bookmark) => bookmark.target_id);
+  const { data, error: actorsError } = await supabase
+    .from("actor_profiles")
+    .select(
+      "user_id, region, birth_date, gender, genres, height_cm, weight_kg, image_tags, nationalities, skills, updated_at, profiles!inner(name, avatar_url)",
+    )
+    .eq("visibility", "public")
+    .in("user_id", actorIds);
+  if (actorsError) throw actorsError;
+
+  const bookmarkIndexByActorId = new Map(
+    bookmarks.map((bookmark, index) => [bookmark.target_id, index]),
+  );
+  const searchText = q?.trim().toLowerCase();
+
+  const filtered = (data ?? [])
+    .map((row): CastingActorPreview => {
+      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+      return {
+        id: row.user_id,
+        name: profile?.name ?? "이름 미등록",
+        region: row.region ?? null,
+        age: calculateAge(row.birth_date ?? null),
+        gender: row.gender ?? null,
+        genres: row.genres ?? [],
+        avatar_url: profile?.avatar_url ?? null,
+        height_cm: row.height_cm ?? null,
+        weight_kg: row.weight_kg ?? null,
+        image_tags: row.image_tags ?? [],
+        nationalities: row.nationalities ?? [],
+        skills: row.skills ?? [],
+        updated_at: row.updated_at,
+      };
+    })
+    .filter((actor) => {
+      if (searchText && !actor.name.toLowerCase().includes(searchText)) {
+        return false;
+      }
+      if (region?.trim() && !actor.region?.includes(region.trim())) return false;
+      if (genre?.trim() && !actor.genres.includes(genre.trim())) return false;
+      if (gender && actor.gender !== gender) return false;
+      if (
+        nationality?.trim() &&
+        !actor.nationalities.includes(nationality.trim())
+      ) {
+        return false;
+      }
+      if (skill?.trim() && !actor.skills.includes(skill.trim())) return false;
+      if (ageGroup?.trim() && !isAgeInGroup(actor.age, ageGroup.trim())) {
+        return false;
+      }
+      if (
+        heightRange?.trim() &&
+        !isHeightInRange(actor.height_cm, heightRange.trim())
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name, "ko-KR");
+      return (
+        (bookmarkIndexByActorId.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+        (bookmarkIndexByActorId.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+      );
+    });
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize;
+  return {
+    items: filtered.slice(from, to),
+    total: filtered.length,
+    page,
+    pageSize,
+  };
+}
+
 function uniqueTargetIds(
   bookmarks: BookmarkRow[],
   targetType: BookmarkTargetType,
@@ -311,4 +440,28 @@ function uniqueTargetIds(
         .map((bookmark) => bookmark.target_id),
     ),
   );
+}
+
+function isAgeInGroup(age: number | null, group: string) {
+  if (age === null) return false;
+  if (group === "10s") return age >= 10 && age < 20;
+  if (group === "20s") return age >= 20 && age < 30;
+  if (group === "30s") return age >= 30 && age < 40;
+  if (group === "40s") return age >= 40 && age < 50;
+  if (group === "50s_plus") return age >= 50;
+  return true;
+}
+
+function isHeightInRange(heightCm: number | null, range: string) {
+  if (heightCm === null) return false;
+  if (range === "under_120") return heightCm < 120;
+  if (range === "120_130") return heightCm >= 120 && heightCm <= 130;
+  if (range === "131_140") return heightCm >= 131 && heightCm <= 140;
+  if (range === "141_150") return heightCm >= 141 && heightCm <= 150;
+  if (range === "151_160") return heightCm >= 151 && heightCm <= 160;
+  if (range === "161_170") return heightCm >= 161 && heightCm <= 170;
+  if (range === "171_180") return heightCm >= 171 && heightCm <= 180;
+  if (range === "181_190") return heightCm >= 181 && heightCm <= 190;
+  if (range === "over_191") return heightCm > 191;
+  return true;
 }

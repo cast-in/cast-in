@@ -1,20 +1,21 @@
 import Link from "next/link";
 import {
   ArrowDownRight,
-  FileImage,
   SlidersHorizontal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Select } from "@/components/ui/select";
-import { BookmarkButton } from "@/components/features/bookmark-button";
+import { ActorCard } from "@/components/features/actor-card";
+import {
+  ACTOR_HEIGHT_RANGE_OPTIONS,
+  ACTOR_NATIONALITY_OPTIONS,
+  ActorSearchPanel,
+} from "@/components/features/actor-search-panel";
 import { JobCard } from "@/components/features/job-card";
 import { JobSearchPanel } from "@/components/features/job-search-panel";
 import { PageContainer } from "@/components/page-container";
 import { Pagination } from "@/components/features/pagination";
-import { SearchFilterBar } from "@/components/features/search-filter-bar";
 import {
   JOB_AGE_GROUP_OPTIONS,
   JOB_PLATFORM_OPTIONS,
@@ -25,8 +26,7 @@ import {
   countBookmarkedTargets,
   listBookmarkedTargetIds,
 } from "@/lib/queries/bookmarks";
-import type { ActorPreview } from "@/lib/queries/jobs";
-import { searchActors, searchOpenJobs } from "@/lib/queries/jobs";
+import { searchCastingActors, searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 
 const PAGE_SIZE = 12;
@@ -66,6 +66,16 @@ export default async function TalentsPage({
   const region = asString(sp.region);
   const genre = asString(sp.genre);
   const gender = asGender(sp.gender);
+  const skill = asString(sp.skill);
+  const actorAgeGroup = asOption(
+    sp.age_group,
+    JOB_AGE_GROUP_OPTIONS.map((option) => option.value),
+  );
+  const heightRange = asOption(
+    sp.height,
+    ACTOR_HEIGHT_RANGE_OPTIONS.map((option) => option.value),
+  );
+  const nationality = asOption(sp.nationality, ACTOR_NATIONALITY_OPTIONS);
   const roleType = asOption(sp.role, JOB_ROLE_TYPE_OPTIONS);
   const targetGender = asOption(
     sp.target_gender,
@@ -79,13 +89,19 @@ export default async function TalentsPage({
   const page = parsePage(sp.page);
 
   if (activeRole === "casting") {
+    const actorSort = asString(sp.sort) === "name" ? "name" : "latest";
     return (
       <CastingTalentsPage
+        ageGroup={actorAgeGroup}
         q={q}
         region={region}
         genre={genre}
         gender={gender}
+        heightRange={heightRange}
+        nationality={nationality}
         page={page}
+        skill={skill}
+        sort={actorSort}
       />
     );
   }
@@ -110,174 +126,152 @@ export default async function TalentsPage({
 }
 
 async function CastingTalentsPage({
+  ageGroup,
   q,
   region,
   genre,
   gender,
+  heightRange,
+  nationality,
   page,
+  skill,
+  sort,
 }: {
+  ageGroup: string;
   q: string;
   region: string;
   genre: string;
   gender: "" | "male" | "female";
+  heightRange: string;
+  nationality: string;
   page: number;
+  skill: string;
+  sort: "latest" | "name";
 }) {
-  const hasFilters = Boolean(q || region || genre || gender);
-  const { items, total } = await searchActors({
+  const hasFilters = Boolean(
+    q ||
+      region ||
+      genre ||
+      gender ||
+      ageGroup ||
+      heightRange ||
+      nationality ||
+      skill,
+  );
+  const { items, total } = await searchCastingActors({
+    ageGroup,
     q,
     region,
     genre,
     gender: gender || undefined,
+    heightRange,
+    nationality,
+    skill,
+    sort,
     page,
     pageSize: PAGE_SIZE,
   });
-  const bookmarkedIds = await listBookmarkedTargetIds(
-    "actor",
-    items.map((actor) => actor.id),
-  );
-  const redirectTo = buildTalentsPath({ q, region, genre, gender, page });
+  const [bookmarkedIds, savedActorCount] = await Promise.all([
+    listBookmarkedTargetIds(
+      "actor",
+      items.map((actor) => actor.id),
+    ),
+    countBookmarkedTargets("actor").catch(() => 0),
+  ]);
+  const redirectTo = buildTalentsPath({
+    age_group: ageGroup,
+    q,
+    region,
+    genre,
+    gender,
+    height: heightRange,
+    nationality,
+    page,
+    skill,
+    sort,
+  });
 
   return (
-    <PageContainer pageTitle="배우 탐색">
-      <SearchFilterBar
+    <PageContainer size="wide" className="space-y-8">
+      <CastingActorsHero savedActorCount={savedActorCount} />
+
+      <ActorSearchPanel
         action="/talents"
-        searchField={{
-          name: "q",
-          label: "이름 검색",
-          placeholder: "이름으로 검색",
-          defaultValue: q,
+        resetHref="/talents"
+        searchLabel="배우 검색"
+        values={{
+          ageGroup,
+          gender,
+          genre,
+          heightRange,
+          nationality,
+          q,
+          region,
+          skill,
+          sort,
         }}
-        filters={[
-          {
-            name: "region",
-            label: "활동 지역",
-            placeholder: "지역 (예: 서울)",
-            defaultValue: region,
-          },
-          {
-            name: "genre",
-            label: "장르",
-            placeholder: "장르 (예: 드라마)",
-            defaultValue: genre,
-          },
-        ]}
-        extras={
-          <div>
-            <label htmlFor="talents-gender" className="sr-only">
-              성별
-            </label>
-            <Select id="talents-gender" name="gender" defaultValue={gender}>
-              <option value="">성별 전체</option>
-              <option value="female">여성</option>
-              <option value="male">남성</option>
-            </Select>
-          </div>
-        }
       />
 
-      {items.length === 0 ? (
-        <EmptyState
-          title={
-            hasFilters
-              ? "조건에 맞는 배우가 없어요"
-              : "아직 탐색할 배우가 없어요"
-          }
-          description={hasFilters ? "검색어나 필터를 바꿔보세요." : undefined}
-        />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {items.map((actor) => (
-            <ActorTalentCard
-              key={actor.id}
-              actor={actor}
-              bookmarked={bookmarkedIds.has(actor.id)}
-              redirectTo={redirectTo}
-            />
-          ))}
+      <section>
+        <div className="mb-5 flex items-end gap-3">
+          <h2 className="text-2xl font-extrabold tracking-normal">전체 배우</h2>
+          <span className="text-2xl font-extrabold text-primary">
+            {total.toLocaleString("ko-KR")}
+          </span>
         </div>
-      )}
+
+        {items.length === 0 ? (
+          <EmptyState
+            title={
+              hasFilters
+                ? "조건에 맞는 배우가 없어요"
+                : "아직 탐색할 배우가 없어요"
+            }
+            description={hasFilters ? "검색어나 필터를 바꿔보세요." : undefined}
+            action={
+              hasFilters ? (
+                <Link
+                  href="/talents"
+                  className={buttonVariants({ color: "secondary", size: "sm" })}
+                >
+                  필터 초기화
+                </Link>
+              ) : null
+            }
+          />
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {items.map((actor) => (
+              <ActorCard
+                key={actor.id}
+                actor={actor}
+                bookmarked={bookmarkedIds.has(actor.id)}
+                redirectTo={redirectTo}
+              />
+            ))}
+          </div>
+        )}
+      </section>
 
       <Pagination
         basePath="/talents"
-        params={{ q, region, genre, gender }}
+        params={{
+          age_group: ageGroup,
+          q,
+          region,
+          genre,
+          gender,
+          height: heightRange,
+          nationality,
+          skill,
+          sort: sort === "latest" ? undefined : sort,
+        }}
         page={page}
         pageSize={PAGE_SIZE}
         total={total}
       />
     </PageContainer>
   );
-}
-
-function ActorTalentCard({
-  actor,
-  bookmarked,
-  redirectTo,
-}: {
-  actor: ActorPreview;
-  bookmarked: boolean;
-  redirectTo: string;
-}) {
-  const actorHref = `/talents/${actor.id}`;
-  const actorMeta = getActorCardMeta(actor);
-
-  return (
-    <Card className="h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
-      <div className="relative isolate">
-        <Link
-          href={actorHref}
-          className="group block aspect-[4/5] bg-muted outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <ActorPortraitPreview name={actor.name} avatarUrl={actor.avatar_url} />
-          <Badge
-            color="secondary"
-            variant="soft-outline"
-            className="absolute left-3 top-3"
-          >
-            배우
-          </Badge>
-        </Link>
-        <BookmarkButton
-          targetType="actor"
-          targetId={actor.id}
-          bookmarked={bookmarked}
-          redirectTo={redirectTo}
-          compact
-          className="absolute right-3 top-3 z-10 bg-background/85 backdrop-blur hover:bg-background"
-        />
-      </div>
-      <CardContent className="flex flex-1 flex-col gap-4 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <Link
-            href={actorHref}
-            className="min-w-0 flex-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <CardTitle className="truncate text-lg">{actor.name}</CardTitle>
-          </Link>
-          <div className="shrink-0 whitespace-nowrap pt-0.5 text-right text-sm text-muted-foreground">
-            {actorMeta}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(actor.genres.length > 0 ? actor.genres : ["장르 준비 중"]).map((g) => (
-            <Badge key={g} color="neutral" variant="outline">
-              {g}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function getActorCardMeta(actor: ActorPreview) {
-  const age = actor.age !== null ? `${actor.age}세` : "나이 미등록";
-  return `${age} · ${getGenderLabel(actor.gender)}`;
-}
-
-function getGenderLabel(value: string | null) {
-  if (value === "male") return "남성";
-  if (value === "female") return "여성";
-  return value?.trim() || "성별 미등록";
 }
 
 async function ActorTalentsPage({
@@ -460,9 +454,47 @@ async function ActorTalentsPage({
   );
 }
 
+function CastingActorsHero({ savedActorCount }: { savedActorCount: number }) {
+  return (
+    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white ring-1 ring-foreground/10 md:px-9 md:py-9">
+      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+        <div>
+          <Badge color="primary" variant="soft-outline">
+            Talent Search
+          </Badge>
+          <h1 className="mt-5 text-3xl font-extrabold tracking-normal md:text-4xl">
+            배우 탐색
+          </h1>
+          <p className="mt-4 text-sm font-medium leading-7 text-secondary-foreground/75 md:text-base">
+            작품과 배역에 어울리는 배우를 조건별로 찾아보세요.
+          </p>
+        </div>
+
+        <Link
+          href="/bookmarks"
+          className="group flex w-full max-w-[11rem] items-end justify-between rounded-[18px] border border-white/16 bg-white/10 px-5 py-4 text-left transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-white/40"
+        >
+          <span>
+            <span className="block text-xs font-bold text-slate-300">
+              저장한 배우
+            </span>
+            <span className="mt-2 block text-2xl font-bold">
+              {savedActorCount.toLocaleString("ko-KR")}
+            </span>
+          </span>
+          <ArrowDownRight
+            aria-hidden="true"
+            className="size-6 transition group-hover:translate-x-0.5 group-hover:translate-y-0.5"
+          />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function ActorJobsHero({ savedJobCount }: { savedJobCount: number }) {
   return (
-    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white shadow-[0_28px_70px_rgba(15,23,42,0.18)] md:px-9 md:py-9">
+    <section className="rounded-[28px] bg-[linear-gradient(110deg,#071832,#0f5f4b)] px-7 py-8 text-white ring-1 ring-foreground/10 md:px-9 md:py-9">
       <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
         <div>
           <Badge
@@ -500,33 +532,6 @@ function ActorJobsHero({ savedJobCount }: { savedJobCount: number }) {
         </Link>
       </div>
     </section>
-  );
-}
-
-function ActorPortraitPreview({
-  name,
-  avatarUrl,
-}: {
-  name: string;
-  avatarUrl: string | null;
-}) {
-  return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden bg-muted text-muted-foreground transition-transform duration-200 group-hover:scale-[1.02]">
-      {avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={avatarUrl}
-          alt={`${name} 프로필 사진`}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <>
-          <FileImage aria-hidden="true" className="size-12 stroke-[1.35]" />
-          <span className="sr-only">{name} 프로필 사진 없음</span>
-        </>
-      )}
-    </div>
   );
 }
 

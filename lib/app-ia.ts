@@ -54,6 +54,9 @@ export function isAppTabActive({
   if (role === "actor" && pathname.startsWith("/jobs/")) {
     return href === "/talents";
   }
+  if (pathname.startsWith("/bookmarks")) {
+    return href === "/talents";
+  }
   if (
     role === "casting" &&
     pathname.startsWith("/jobs/") &&

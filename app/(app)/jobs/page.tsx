@@ -639,7 +639,7 @@ function ActorApplicationsPagination({
             href={buildActorApplicationsHref({ filter, page: item, sort })}
             aria-current={page === item ? "page" : undefined}
             className={cn(
-              "grid size-9 place-items-center rounded-md border text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              "grid size-9 place-items-center rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               page === item
                 ? "border-primary bg-primary text-white"
                 : "border-border bg-card text-foreground hover:bg-muted",

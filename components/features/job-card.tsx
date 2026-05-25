@@ -40,7 +40,7 @@ export function JobCard({
   return (
     <Card
       className={cn(
-        "h-full gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md",
+        "h-full gap-0 overflow-hidden py-0",
         compact ? "w-[222px] shrink-0" : "min-w-0",
       )}
     >

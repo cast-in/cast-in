@@ -1,6 +1,6 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Pagination({
@@ -17,7 +17,10 @@ export function Pagination({
   total: number;
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (totalPages <= 1) return null;
+  if (total === 0) return null;
+
+  const currentPage = Math.min(Math.max(page, 1), totalPages);
+  const items = getPaginationItems(currentPage, totalPages);
 
   const buildHref = (nextPage: number) => {
     const search = new URLSearchParams();
@@ -29,67 +32,94 @@ export function Pagination({
     return qs ? `${basePath}?${qs}` : basePath;
   };
 
-  const prevDisabled = page <= 1;
-  const nextDisabled = page >= totalPages;
-
   return (
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-muted-foreground">
-        {page} / {totalPages} 페이지 · 총 {total}건
-      </p>
-      <div className="flex items-center gap-2">
-        <PageLink
-          href={buildHref(page - 1)}
-          disabled={prevDisabled}
-          label="이전"
-          icon="prev"
-        />
-        <PageLink
-          href={buildHref(page + 1)}
-          disabled={nextDisabled}
-          label="다음"
-          icon="next"
-        />
-      </div>
-    </div>
+    <nav
+      aria-label={`페이지 탐색, 총 ${total}건`}
+      className="flex items-center justify-center gap-2 pt-10"
+    >
+      <PageArrow
+        href={buildHref(Math.max(1, currentPage - 1))}
+        disabled={currentPage <= 1}
+        label="이전 페이지"
+      >
+        <ChevronLeft aria-hidden="true" className="size-4" />
+      </PageArrow>
+
+      {items.map((item, index) =>
+        item === "ellipsis" ? (
+          <span
+            key={`ellipsis-${index}`}
+            aria-hidden="true"
+            className="grid size-9 place-items-center text-sm font-medium text-muted-foreground"
+          >
+            ...
+          </span>
+        ) : (
+          <Link
+            key={item}
+            href={buildHref(item)}
+            aria-current={currentPage === item ? "page" : undefined}
+            className={cn(
+              "grid size-9 place-items-center rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              currentPage === item
+                ? "border-primary bg-primary text-white"
+                : "border-border bg-card text-foreground hover:bg-muted",
+            )}
+          >
+            {item}
+          </Link>
+        ),
+      )}
+
+      <PageArrow
+        href={buildHref(Math.min(totalPages, currentPage + 1))}
+        disabled={currentPage >= totalPages}
+        label="다음 페이지"
+      >
+        <ChevronRight aria-hidden="true" className="size-4" />
+      </PageArrow>
+    </nav>
   );
 }
 
-function PageLink({
+function PageArrow({
+  children,
   href,
   disabled,
   label,
-  icon,
 }: {
+  children: ReactNode;
   href: string;
   disabled: boolean;
   label: string;
-  icon: "prev" | "next";
 }) {
   const className = cn(
-    buttonVariants({ color: "neutral", variant: "outline", size: "sm" }),
+    "grid size-9 place-items-center rounded-md border border-border bg-card text-foreground transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 hover:bg-muted",
     disabled && "pointer-events-none opacity-50",
-  );
-  const Icon = icon === "prev" ? ChevronLeft : ChevronRight;
-  const content = (
-    <>
-      {icon === "prev" && <Icon aria-hidden="true" className="size-4" />}
-      {label}
-      {icon === "next" && <Icon aria-hidden="true" className="size-4" />}
-    </>
   );
 
   if (disabled) {
     return (
-      <span className={className} aria-disabled="true">
-        {content}
+      <span className={className} aria-disabled="true" aria-label={label}>
+        {children}
       </span>
     );
   }
 
   return (
-    <Link href={href} className={className}>
-      {content}
+    <Link href={href} aria-label={label} className={className}>
+      {children}
     </Link>
   );
+}
+
+function getPaginationItems(page: number, totalPages: number) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+  if (page <= 3) return [1, 2, 3, "ellipsis", totalPages] as const;
+  if (page >= totalPages - 2) {
+    return [1, "ellipsis", totalPages - 2, totalPages - 1, totalPages] as const;
+  }
+  return [1, "ellipsis", page, "ellipsis", totalPages] as const;
 }

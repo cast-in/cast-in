@@ -135,6 +135,15 @@ export type ActorPreview = {
   avatar_url: string | null;
 };
 
+export type CastingActorPreview = ActorPreview & {
+  height_cm: number | null;
+  image_tags: string[];
+  nationalities: string[];
+  skills: string[];
+  updated_at: string;
+  weight_kg: number | null;
+};
+
 export type ActorDetail = ActorPreview & {
   affiliation: string | null;
   bio: string | null;
@@ -262,6 +271,14 @@ export type SearchActorsParams = {
   pageSize?: number;
 };
 
+export type SearchCastingActorsParams = SearchActorsParams & {
+  ageGroup?: string;
+  heightRange?: string;
+  nationality?: string;
+  skill?: string;
+  sort?: "latest" | "name";
+};
+
 export type PagedResult<T> = {
   items: T[];
   total: number;
@@ -318,6 +335,108 @@ export async function searchActors(
   return { items, total: count ?? 0, page, pageSize };
 }
 
+export async function searchCastingActors(
+  params: SearchCastingActorsParams = {},
+): Promise<PagedResult<CastingActorPreview>> {
+  const {
+    q,
+    region,
+    genre,
+    gender,
+    ageGroup,
+    heightRange,
+    nationality,
+    skill,
+    sort = "latest",
+    page = 1,
+    pageSize = 12,
+  } = params;
+  const supabase = await createClient();
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("actor_profiles")
+    .select(
+      "user_id, region, birth_date, gender, genres, height_cm, weight_kg, image_tags, nationalities, skills, updated_at, profiles!inner(name, avatar_url)",
+      { count: "exact" },
+    )
+    .eq("visibility", "public");
+
+  if (q?.trim()) {
+    query = query.ilike("profiles.name", `%${q.trim()}%`);
+  }
+  if (region?.trim()) {
+    query = query.ilike("region", `%${region.trim()}%`);
+  }
+  if (genre?.trim()) {
+    query = query.contains("genres", [genre.trim()]);
+  }
+  if (gender === "male" || gender === "female") {
+    query = query.eq("gender", gender);
+  }
+  if (nationality?.trim()) {
+    query = query.contains("nationalities", [nationality.trim()]);
+  }
+  if (skill?.trim()) {
+    query = query.contains("skills", [skill.trim()]);
+  }
+  const birthDateRange = getBirthDateRangeForAgeGroup(ageGroup);
+  if (birthDateRange?.after) {
+    query = query.gt("birth_date", birthDateRange.after);
+  }
+  if (birthDateRange?.onOrBefore) {
+    query = query.lte("birth_date", birthDateRange.onOrBefore);
+  }
+  const heightCmRange = getHeightCmRange(heightRange);
+  if (heightCmRange?.gt !== undefined) {
+    query = query.gt("height_cm", heightCmRange.gt);
+  }
+  if (heightCmRange?.gte !== undefined) {
+    query = query.gte("height_cm", heightCmRange.gte);
+  }
+  if (heightCmRange?.lt !== undefined) {
+    query = query.lt("height_cm", heightCmRange.lt);
+  }
+  if (heightCmRange?.lte !== undefined) {
+    query = query.lte("height_cm", heightCmRange.lte);
+  }
+
+  if (sort === "name") {
+    query = query.order("profiles(name)", { ascending: true });
+  } else {
+    query = query.order("updated_at", { ascending: false });
+  }
+  query = query.range(from, to);
+
+  const { data, count, error } = await query;
+  if (error) throw error;
+
+  return {
+    items: (data ?? []).map((row): CastingActorPreview => {
+      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+      return {
+        id: row.user_id,
+        name: profile?.name ?? "이름 미등록",
+        region: row.region ?? null,
+        age: calculateAge(row.birth_date ?? null),
+        gender: row.gender ?? null,
+        genres: row.genres ?? [],
+        avatar_url: profile?.avatar_url ?? null,
+        height_cm: row.height_cm ?? null,
+        weight_kg: row.weight_kg ?? null,
+        image_tags: row.image_tags ?? [],
+        nationalities: row.nationalities ?? [],
+        skills: row.skills ?? [],
+        updated_at: row.updated_at,
+      };
+    }),
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
+}
+
 export async function getActorDetail(actorId: string): Promise<ActorDetail | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -353,6 +472,54 @@ export async function getActorDetail(actorId: string): Promise<ActorDetail | nul
     updated_at: data.updated_at,
     weight_kg: data.weight_kg ?? null,
   };
+}
+
+function getBirthDateRangeForAgeGroup(group: string | undefined) {
+  if (!group?.trim()) return null;
+
+  if (group === "10s") {
+    return { after: dateYearsAgo(20), onOrBefore: dateYearsAgo(10) };
+  }
+  if (group === "20s") {
+    return { after: dateYearsAgo(30), onOrBefore: dateYearsAgo(20) };
+  }
+  if (group === "30s") {
+    return { after: dateYearsAgo(40), onOrBefore: dateYearsAgo(30) };
+  }
+  if (group === "40s") {
+    return { after: dateYearsAgo(50), onOrBefore: dateYearsAgo(40) };
+  }
+  if (group === "50s_plus") {
+    return { onOrBefore: dateYearsAgo(50) };
+  }
+
+  return null;
+}
+
+function getHeightCmRange(range: string | undefined) {
+  if (!range?.trim()) return null;
+
+  if (range === "under_120") return { lt: 120 };
+  if (range === "120_130") return { gte: 120, lte: 130 };
+  if (range === "131_140") return { gte: 131, lte: 140 };
+  if (range === "141_150") return { gte: 141, lte: 150 };
+  if (range === "151_160") return { gte: 151, lte: 160 };
+  if (range === "161_170") return { gte: 161, lte: 170 };
+  if (range === "171_180") return { gte: 171, lte: 180 };
+  if (range === "181_190") return { gte: 181, lte: 190 };
+  if (range === "over_191") return { gt: 191 };
+
+  return null;
+}
+
+function dateYearsAgo(years: number) {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - years);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 export type SearchJobsParams = {

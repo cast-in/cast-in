@@ -44,6 +44,7 @@ const givenM = ["민재","준혁","도윤","서준","도현","지후","민준","
 const givenF = ["서연","유진","하늘","지아","예린","소희","유나","은비","채원","은서","하윤","수아","지원","가은","민서","하린","서윤","주아","다은","지연","예원","다경","예빈","시윤","다인","소민","지안","지우","해린","아린"];
 
 const regions = ["서울","서울 · 강남","서울 · 마포","서울 · 성수","서울 · 용산","경기 · 고양","경기 · 성남","경기 · 수원","인천","부산","대구","광주","대전","제주","전국"];
+const nationalities = ["Republic of Korea","United States","Japan","China","Canada"];
 const allGenres = ["드라마","영화","광고","뮤지컬","예능","웹드라마","뮤직비디오","다큐멘터리","연극","숏폼","시트콤"];
 const allSkills = ["보컬","댄스","승마","영어","일본어","중국어","펜싱","기타","피아노","발레","액션","방송 진행","MC","태권도","수영","서핑","스킨스쿠버","드럼","색소폰","바이올린","합기도","복싱"];
 const allImageTags = ["시크함","소년미","청량함","따뜻함","도시적","강렬함","자연스러움","고급스러움","반전 매력","차분함","밝은 에너지","신뢰감"];
@@ -374,6 +375,7 @@ async function insertActorProfile(userId, opts) {
     region: opts.region,
     height_cm: opts.height_cm,
     weight_kg: opts.weight_kg,
+    nationalities: opts.nationalities,
     affiliation: opts.affiliation,
     genres: opts.genres,
     skills: opts.skills,
@@ -516,6 +518,7 @@ async function main() {
       region: pick(regions),
       height_cm: actorSeed?.height_cm ?? randomHeightCm(gender),
       weight_kg: actorSeed?.weight_kg ?? randomWeightKg(gender),
+      nationalities: random() < 0.92 ? ["Republic of Korea"] : pickMany(nationalities, 1, 2),
       affiliation: random() < 0.72 ? "프리랜서" : pick(["에이전시 소속", "소속사 협의 중"]),
       genres: pickMany(allGenres, 1, 4),
       skills: pickMany(allSkills, 1, 5),

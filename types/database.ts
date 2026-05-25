@@ -48,6 +48,7 @@ export type Database = {
           genres: string[]
           height_cm: number | null
           image_tags: string[]
+          nationalities: string[]
           region: string | null
           skills: string[]
           social_links: Json
@@ -64,6 +65,7 @@ export type Database = {
           genres?: string[]
           height_cm?: number | null
           image_tags?: string[]
+          nationalities?: string[]
           region?: string | null
           skills?: string[]
           social_links?: Json
@@ -80,6 +82,7 @@ export type Database = {
           genres?: string[]
           height_cm?: number | null
           image_tags?: string[]
+          nationalities?: string[]
           region?: string | null
           skills?: string[]
           social_links?: Json
