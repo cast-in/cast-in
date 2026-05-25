@@ -1,22 +1,18 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatCard } from "@/components/ui/stat-card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { PageContainer } from "@/components/page-container";
-import type { ApplicationWithJob } from "@/lib/queries/jobs";
+import type {
+  Applicant,
+  ApplicationWithJob,
+  JobWithCounts,
+} from "@/lib/queries/jobs";
 import {
+  listApplicants,
   listMyApplicationsWithJobs,
   listMyJobsWithCounts,
 } from "@/lib/queries/jobs";
@@ -29,10 +25,16 @@ import {
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { cn } from "@/lib/utils";
+import type { ApplicationStatus } from "@/types/enums";
+import { ApplicationStatusSelect } from "./application-status-select";
 import { ActorApplicationSort } from "./actor-application-sort";
+import { JobConversationButton } from "./[id]/job-conversation-button";
 
+const CASTING_APPLICANT_PAGE_SIZE = 4;
 const ACTOR_APPLICATION_PAGE_SIZE = 7;
 
+type CastingJobFilter = "all" | "open" | "closed" | "draft";
+type CastingApplicantFilter = "all" | "reviewing" | "pass" | "hold" | "reject";
 type ActorApplicationFilter =
   | "all"
   | "pending"
@@ -59,12 +61,22 @@ export default async function JobsPage({
     status === "closed" || status === "draft" || status === "open"
       ? status
       : "all";
+  const selectedJobId = asString(params.job);
+  const castingApplicantFilter = parseCastingApplicantFilter(
+    asString(params.application_status),
+  );
+  const castingApplicantPage = parsePage(params.applicant_page);
   const actorFilter = parseActorApplicationFilter(status);
   const actorSort = parseActorApplicationSort(asString(params.sort));
   const actorPage = parsePage(params.page);
 
   return activeRole === "casting" ? (
-    <CastingJobsPage filter={jobFilter} />
+    <CastingJobsPage
+      filter={jobFilter}
+      selectedJobId={selectedJobId}
+      applicantFilter={castingApplicantFilter}
+      applicantPage={castingApplicantPage}
+    />
   ) : (
     <ActorJobsPage filter={actorFilter} page={actorPage} sort={actorSort} />
   );
@@ -72,10 +84,17 @@ export default async function JobsPage({
 
 async function CastingJobsPage({
   filter,
+  selectedJobId,
+  applicantFilter,
+  applicantPage,
 }: {
-  filter: "all" | "open" | "closed" | "draft";
+  filter: CastingJobFilter;
+  selectedJobId: string;
+  applicantFilter: CastingApplicantFilter;
+  applicantPage: number;
 }) {
   let jobs: Awaited<ReturnType<typeof listMyJobsWithCounts>> = [];
+  let applicants: Awaited<ReturnType<typeof listApplicants>> = [];
   let errorMessage: string | null = null;
 
   try {
@@ -85,9 +104,6 @@ async function CastingJobsPage({
       error instanceof Error ? error.message : "공고 목록을 불러오지 못했어요.";
   }
 
-  const totalApplicants = jobs.reduce((sum, job) => sum + job.applicant_count, 0);
-  const totalChecked = jobs.reduce((sum, job) => sum + job.reviewing_count, 0);
-  const totalPass = jobs.reduce((sum, job) => sum + job.pass_count, 0);
   const filteredJobs = jobs.filter((job) => {
     if (filter === "all") return true;
     if (filter === "open") return isJobAccepting(job);
@@ -99,124 +115,603 @@ async function CastingJobsPage({
     }
     return job.status === "draft";
   });
+  const selectedJob =
+    filteredJobs.find((job) => job.id === selectedJobId) ??
+    filteredJobs[0] ??
+    null;
+
+  if (selectedJob) {
+    try {
+      applicants = await listApplicants(selectedJob.id);
+    } catch (error) {
+      errorMessage =
+        error instanceof Error ? error.message : "지원자 정보를 불러오지 못했어요.";
+    }
+  }
+
+  const applicantFilterOptions = getCastingApplicantFilterOptions(applicants);
+  const filteredApplicants = applicants.filter((applicant) =>
+    matchesCastingApplicantFilter(applicant.status, applicantFilter),
+  );
+  const totalApplicantPages = Math.max(
+    1,
+    Math.ceil(filteredApplicants.length / CASTING_APPLICANT_PAGE_SIZE),
+  );
+  const currentApplicantPage = Math.min(applicantPage, totalApplicantPages);
+  const startIndex = (currentApplicantPage - 1) * CASTING_APPLICANT_PAGE_SIZE;
+  const visibleApplicants = filteredApplicants.slice(
+    startIndex,
+    startIndex + CASTING_APPLICANT_PAGE_SIZE,
+  );
 
   return (
     <PageContainer
       pageTitle="공고 관리"
+      size="wide"
+      className="max-w-[1500px] pb-16 pt-4 md:pt-8"
       actions={
-        <Link href="/jobs/new" className={buttonVariants()}>
-          새 공고 만들기
-        </Link>
+        <>
+          <Link
+            href="/jobs?status=draft"
+            className={buttonVariants({
+              color: "neutral",
+              variant: "outline",
+              className: "border-foreground/20",
+            })}
+          >
+            임시저장
+          </Link>
+          <Link
+            href="/jobs/new"
+            className={buttonVariants({
+              color: "primary",
+              variant: "fill",
+            })}
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            공고 올리기
+          </Link>
+        </>
       }
     >
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <StatCard label="전체 지원자" value={totalApplicants} />
-        <StatCard label="검토 중" value={totalChecked} />
-        <StatCard label="합격" value={totalPass} />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {[
-          ["all", "전체"],
-          ["open", "모집중"],
-          ["closed", "마감/종료"],
-          ["draft", "임시저장"],
-        ].map(([value, label]) => (
-          <Link
-            key={value}
-            href={value === "all" ? "/jobs" : `/jobs?status=${value}`}
-            className={buttonVariants({
-              color: filter === value ? "primary" : "neutral",
-              variant: filter === value ? "fill" : "outline",
-              size: "sm",
-            })}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      {filteredJobs.length === 0 ? (
-        <EmptyState
-          title={
-            errorMessage
-              ? "공고를 보여줄 수 없어요"
-              : "조건에 맞는 공고가 없어요"
-          }
-          description={errorMessage ? "잠시 후 다시 확인해주세요." : undefined}
+      <div className="grid gap-5 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.9fr)]">
+        <CastingJobList
+          jobs={filteredJobs}
+          selectedJobId={selectedJob?.id ?? null}
+          filter={filter}
         />
-      ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>공고명</TableHead>
-                <TableHead>장르</TableHead>
-                <TableHead>지역</TableHead>
-                <TableHead>마감</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>지원/검토/합격</TableHead>
-                <TableHead>액션</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredJobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="text-primary hover:underline"
-                    >
-                      {job.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {job.genre ?? "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {job.region ?? "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDeadline(job.deadline)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge color={isJobAccepting(job) ? "primary" : "secondary"}>
-                      {getJobAvailabilityLabel(job)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {job.applicant_count} / {job.reviewing_count} /{" "}
-                    {job.pass_count}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Link
-                        href={`/jobs/${job.id}`}
-                        className={buttonVariants({
-                          color: "secondary",
-                          size: "sm",
-                        })}
-                      >
-                        상세
-                      </Link>
-                      <Link
-                        href={`/messages?job=${job.id}`}
-                        className={buttonVariants({ size: "sm" })}
-                      >
-                        메시지
-                      </Link>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
-      )}
+        <CastingApplicantBoard
+          selectedJob={selectedJob}
+          applicants={visibleApplicants}
+          applicantFilter={applicantFilter}
+          applicantFilterOptions={applicantFilterOptions}
+          currentPage={currentApplicantPage}
+          totalApplicants={filteredApplicants.length}
+          totalPages={totalApplicantPages}
+          filter={filter}
+        />
+      </div>
     </PageContainer>
   );
+}
+
+function CastingJobList({
+  jobs,
+  selectedJobId,
+  filter,
+}: {
+  jobs: JobWithCounts[];
+  selectedJobId: string | null;
+  filter: CastingJobFilter;
+}) {
+  return (
+    <Card className="h-[680px] gap-0 rounded-2xl py-0">
+      <section className="flex h-full min-h-0 flex-col p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-extrabold tracking-normal">나의 공고</h2>
+          {filter !== "all" ? (
+            <Link
+              href="/jobs"
+              className="text-sm font-bold text-primary hover:underline"
+            >
+              전체 보기
+            </Link>
+          ) : null}
+        </div>
+
+        <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+          {jobs.length === 0 ? (
+            <div className="grid h-full place-items-center">
+              <EmptyState
+                title="공고가 없어요"
+                description="공고를 올리면 지원자 현황을 한곳에서 볼 수 있어요."
+                className="min-h-0 bg-transparent py-0 ring-0"
+              />
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {jobs.map((job) => (
+                <li key={job.id}>
+                  <Link
+                    href={buildCastingJobsHref({
+                      filter,
+                      selectedJobId: job.id,
+                      applicantFilter: "all",
+                      applicantPage: 1,
+                    })}
+                    aria-current={selectedJobId === job.id ? "page" : undefined}
+                    className={cn(
+                      "grid grid-cols-[5.75rem_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border p-3 transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      selectedJobId === job.id
+                        ? "border-primary bg-primary-soft/60"
+                        : "border-transparent hover:bg-muted/60",
+                    )}
+                  >
+                    <JobPoster job={job} />
+                    <span className="min-w-0">
+                      <span className="line-clamp-2 text-base font-extrabold leading-snug">
+                        {job.title}
+                      </span>
+                      <span className="mt-2 block text-sm font-medium text-muted-foreground">
+                        {formatCastingJobMeta(job)}
+                      </span>
+                    </span>
+                    <JobStatusBadge job={job} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    </Card>
+  );
+}
+
+function CastingApplicantBoard({
+  selectedJob,
+  applicants,
+  applicantFilter,
+  applicantFilterOptions,
+  currentPage,
+  totalApplicants,
+  totalPages,
+  filter,
+}: {
+  selectedJob: JobWithCounts | null;
+  applicants: Applicant[];
+  applicantFilter: CastingApplicantFilter;
+  applicantFilterOptions: {
+    value: CastingApplicantFilter;
+    label: string;
+    count: number;
+  }[];
+  currentPage: number;
+  totalApplicants: number;
+  totalPages: number;
+  filter: CastingJobFilter;
+}) {
+  return (
+    <Card className="min-h-[680px] gap-0 rounded-2xl py-0">
+      <section className="flex min-h-[680px] flex-col p-5">
+        <h2 className="text-xl font-extrabold tracking-normal">
+          지원 상태별로 보기
+        </h2>
+
+        {selectedJob ? (
+          <>
+            <nav aria-label="지원 상태 필터" className="mt-6">
+              <ul className="flex flex-wrap items-center gap-2">
+                {applicantFilterOptions.map((option) => {
+                  const active = option.value === applicantFilter;
+
+                  return (
+                    <li key={option.value}>
+                      <Link
+                        href={buildCastingJobsHref({
+                          filter,
+                          selectedJobId: selectedJob.id,
+                          applicantFilter: option.value,
+                          applicantPage: 1,
+                        })}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-extrabold transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                          active
+                            ? "bg-primary-soft text-primary"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                        )}
+                      >
+                        <span>{option.label}</span>
+                        <span>{option.count}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+
+            <div className="mt-6 flex-1 space-y-3">
+              {applicants.length === 0 ? (
+                <EmptyState
+                  title="조건에 맞는 지원자가 없어요"
+                  description="다른 상태 필터를 선택해보세요."
+                />
+              ) : (
+                applicants.map((applicant) => (
+                  <CastingApplicantCard
+                    key={applicant.id}
+                    applicant={applicant}
+                  />
+                ))
+              )}
+            </div>
+
+            <CastingApplicantsPagination
+              selectedJobId={selectedJob.id}
+              filter={filter}
+              applicantFilter={applicantFilter}
+              page={currentPage}
+              total={totalApplicants}
+              totalPages={totalPages}
+            />
+          </>
+        ) : (
+          <div className="grid flex-1 place-items-center">
+            <EmptyState
+              title="공고가 없어요"
+              description="먼저 공고를 올려 지원자를 받아보세요."
+              className="min-h-0 bg-transparent py-0 ring-0"
+            />
+          </div>
+        )}
+      </section>
+    </Card>
+  );
+}
+
+function CastingApplicantCard({ applicant }: { applicant: Applicant }) {
+  const facts = getApplicantFacts(applicant);
+  const tags = getApplicantTags(applicant);
+
+  return (
+    <article className="grid gap-4 rounded-xl border border-border bg-card p-4 md:grid-cols-[7.5rem_minmax(0,1fr)_auto] md:items-center">
+      <ActorPortrait applicant={applicant} />
+
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h3 className="text-2xl font-extrabold tracking-normal">
+            {applicant.actor_name}
+          </h3>
+          {facts.length > 0 ? (
+            <p className="text-sm font-medium text-muted-foreground">
+              {facts.join(" · ")}
+            </p>
+          ) : null}
+        </div>
+
+        <p className="mt-2 text-sm font-medium text-muted-foreground">
+          지원 날짜: {formatApplicantSubmittedAt(applicant.created_at)}
+        </p>
+
+        {tags.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <Badge
+                key={tag}
+                color="neutral"
+                variant="soft-outline"
+                className="h-6 rounded-full px-2.5"
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href={`/talents/${applicant.actor_id}`}
+            className={buttonVariants({
+              color: "neutral",
+              variant: "outline",
+              size: "sm",
+              className: "min-w-28 rounded-lg font-bold",
+            })}
+          >
+            프로필 보기
+          </Link>
+          <JobConversationButton
+            jobId={applicant.job_id}
+            actorId={applicant.actor_id}
+            label="메시지"
+            size="sm"
+            color="neutral"
+            variant="outline"
+            className="min-w-24 rounded-lg font-bold"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-start md:justify-end">
+        <ApplicationStatusSelect
+          applicationId={applicant.id}
+          applicantName={applicant.actor_name}
+          initialStatus={applicant.status}
+          className="min-w-36"
+        />
+      </div>
+    </article>
+  );
+}
+
+function CastingApplicantsPagination({
+  selectedJobId,
+  filter,
+  applicantFilter,
+  page,
+  total,
+  totalPages,
+}: {
+  selectedJobId: string;
+  filter: CastingJobFilter;
+  applicantFilter: CastingApplicantFilter;
+  page: number;
+  total: number;
+  totalPages: number;
+}) {
+  if (total === 0) return null;
+
+  const items = getPaginationItems(page, totalPages);
+
+  return (
+    <nav
+      aria-label={`지원자 페이지, 총 ${total}명`}
+      className="mt-4 flex items-center justify-center gap-2"
+    >
+      <PaginationLink
+        href={buildCastingJobsHref({
+          filter,
+          selectedJobId,
+          applicantFilter,
+          applicantPage: Math.max(1, page - 1),
+        })}
+        disabled={page <= 1}
+        label="이전 페이지"
+      >
+        <ChevronLeft aria-hidden="true" className="size-4" />
+      </PaginationLink>
+
+      {items.map((item, index) =>
+        item === "ellipsis" ? (
+          <span
+            key={`casting-ellipsis-${index}`}
+            className="grid size-9 place-items-center text-sm font-medium text-muted-foreground"
+            aria-hidden="true"
+          >
+            ...
+          </span>
+        ) : (
+          <Link
+            key={item}
+            href={buildCastingJobsHref({
+              filter,
+              selectedJobId,
+              applicantFilter,
+              applicantPage: item,
+            })}
+            aria-current={page === item ? "page" : undefined}
+            className={cn(
+              "grid size-9 place-items-center rounded-md border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              page === item
+                ? "border-primary bg-primary text-white"
+                : "border-border bg-card text-foreground hover:bg-muted",
+            )}
+          >
+            {item}
+          </Link>
+        ),
+      )}
+
+      <PaginationLink
+        href={buildCastingJobsHref({
+          filter,
+          selectedJobId,
+          applicantFilter,
+          applicantPage: Math.min(totalPages, page + 1),
+        })}
+        disabled={page >= totalPages}
+        label="다음 페이지"
+      >
+        <ChevronRight aria-hidden="true" className="size-4" />
+      </PaginationLink>
+    </nav>
+  );
+}
+
+function JobPoster({ job }: { job: JobWithCounts }) {
+  return (
+    <span className="block size-[5.75rem] overflow-hidden rounded-md bg-muted">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getJobPosterSrc(job)}
+        alt={`${job.title} 대표 이미지`}
+        className="h-full w-full object-cover object-center"
+        loading="lazy"
+      />
+    </span>
+  );
+}
+
+function ActorPortrait({ applicant }: { applicant: Applicant }) {
+  return (
+    <div className="size-[7.5rem] overflow-hidden rounded-md bg-muted">
+      {applicant.actor_avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={applicant.actor_avatar_url}
+          alt={`${applicant.actor_name} 프로필 사진`}
+          className="h-full w-full object-cover object-center"
+          loading="lazy"
+        />
+      ) : (
+        <div className="grid h-full w-full place-items-center text-3xl font-extrabold text-muted-foreground">
+          {getInitial(applicant.actor_name)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JobStatusBadge({ job }: { job: JobWithCounts }) {
+  if (job.status === "draft") {
+    return (
+      <Badge color="neutral" variant="soft-outline" className="shrink-0">
+        임시저장
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      color={isJobAccepting(job) ? "primary" : "destructive"}
+      variant={isJobAccepting(job) ? "soft" : "soft-outline"}
+      className="shrink-0"
+    >
+      {getJobAvailabilityLabel(job)}
+    </Badge>
+  );
+}
+
+function getCastingApplicantFilterOptions(applicants: Applicant[]) {
+  const reviewingCount = applicants.filter((applicant) =>
+    isReviewingApplicationStatus(applicant.status),
+  ).length;
+
+  return [
+    { value: "all", label: "전체", count: applicants.length },
+    { value: "reviewing", label: "검토 중", count: reviewingCount },
+    {
+      value: "pass",
+      label: "합격",
+      count: applicants.filter((applicant) => applicant.status === "pass")
+        .length,
+    },
+    {
+      value: "hold",
+      label: "보류",
+      count: applicants.filter((applicant) => applicant.status === "hold")
+        .length,
+    },
+    {
+      value: "reject",
+      label: "반려",
+      count: applicants.filter((applicant) => applicant.status === "reject")
+        .length,
+    },
+  ] satisfies {
+    value: CastingApplicantFilter;
+    label: string;
+    count: number;
+  }[];
+}
+
+function matchesCastingApplicantFilter(
+  status: ApplicationStatus,
+  filter: CastingApplicantFilter,
+) {
+  if (filter === "all") return true;
+  if (filter === "reviewing") return isReviewingApplicationStatus(status);
+  return status === filter;
+}
+
+function isReviewingApplicationStatus(status: ApplicationStatus) {
+  return status === "pending" || status === "reviewing";
+}
+
+function buildCastingJobsHref({
+  filter,
+  selectedJobId,
+  applicantFilter,
+  applicantPage,
+}: {
+  filter: CastingJobFilter;
+  selectedJobId?: string | null;
+  applicantFilter?: CastingApplicantFilter;
+  applicantPage?: number;
+}) {
+  const params = new URLSearchParams();
+  if (filter !== "all") params.set("status", filter);
+  if (selectedJobId) params.set("job", selectedJobId);
+  if (applicantFilter && applicantFilter !== "all") {
+    params.set("application_status", applicantFilter);
+  }
+  if (applicantPage && applicantPage > 1) {
+    params.set("applicant_page", String(applicantPage));
+  }
+  const query = params.toString();
+  return query ? `/jobs?${query}` : "/jobs";
+}
+
+function formatCastingJobMeta(job: JobWithCounts) {
+  return [
+    job.genre ?? "장르 미정",
+    normalizeRegionLabel(job.region),
+    formatDeadline(job.deadline),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function getApplicantFacts(applicant: Applicant) {
+  return [
+    applicant.actor_age !== null ? `${applicant.actor_age}세` : null,
+    getGenderLabel(applicant.actor_gender),
+    normalizeRegionLabel(applicant.actor_region),
+    applicant.actor_height_cm !== null ? `${applicant.actor_height_cm}cm` : null,
+    applicant.actor_weight_kg !== null ? `${applicant.actor_weight_kg}kg` : null,
+  ].filter((value): value is string => Boolean(value));
+}
+
+function getApplicantTags(applicant: Applicant) {
+  return [
+    ...applicant.actor_image_tags,
+    ...applicant.actor_genres,
+    ...applicant.actor_skills,
+  ]
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function formatApplicantSubmittedAt(iso: string | null) {
+  if (!iso) return "-";
+  return formatNumericDate(iso);
+}
+
+function getJobPosterSrc(job: JobWithCounts) {
+  const mediaUrl = job.media_urls.find(
+    (url) => !/\.(mp4|mov|webm)(?:$|\?)/i.test(url),
+  );
+  if (mediaUrl) return mediaUrl;
+
+  const sum = Array.from(job.id).reduce(
+    (acc, char) => acc + char.charCodeAt(0),
+    0,
+  );
+  return fallbackJobPosterImages[sum % fallbackJobPosterImages.length];
+}
+
+function getGenderLabel(value: string | null) {
+  if (value === "male") return "남성";
+  if (value === "female") return "여성";
+  if (value === "other") return "기타";
+  return value?.trim() || null;
+}
+
+function getInitial(name: string) {
+  return name.trim().slice(0, 1) || "?";
 }
 
 async function ActorJobsPage({
@@ -766,6 +1261,18 @@ function buildActorApplicationsHref({
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
   return query ? `/jobs?${query}` : "/jobs";
+}
+
+function parseCastingApplicantFilter(value: string): CastingApplicantFilter {
+  if (
+    value === "reviewing" ||
+    value === "pass" ||
+    value === "hold" ||
+    value === "reject"
+  ) {
+    return value;
+  }
+  return "all";
 }
 
 function getPaginationItems(page: number, totalPages: number) {

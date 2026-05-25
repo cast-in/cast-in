@@ -225,6 +225,7 @@ export type Database = {
       applications: {
         Row: {
           actor_id: string
+          answers: Json
           casting_memo: string | null
           created_at: string
           id: string
@@ -235,6 +236,7 @@ export type Database = {
         }
         Insert: {
           actor_id: string
+          answers?: Json
           casting_memo?: string | null
           created_at?: string
           id?: string
@@ -245,6 +247,7 @@ export type Database = {
         }
         Update: {
           actor_id?: string
+          answers?: Json
           casting_memo?: string | null
           created_at?: string
           id?: string
@@ -395,17 +398,23 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string | null
+          fee_amount: number | null
           fee_text: string | null
+          fee_type: string
           genre: string | null
           id: string
           media_urls: string[]
           platforms: string[]
+          production_name: string | null
           region: string | null
           requirements: string[]
+          role_name: string | null
           role_type: string | null
           shooting_schedule: string | null
           status: Database["public"]["Enums"]["job_status"]
+          target_age_max: number | null
           target_age_groups: string[]
+          target_age_min: number | null
           target_genders: string[]
           title: string
           updated_at: string
@@ -415,17 +424,23 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string | null
+          fee_amount?: number | null
           fee_text?: string | null
+          fee_type?: string
           genre?: string | null
           id?: string
           media_urls?: string[]
           platforms?: string[]
+          production_name?: string | null
           region?: string | null
           requirements?: string[]
+          role_name?: string | null
           role_type?: string | null
           shooting_schedule?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          target_age_max?: number | null
           target_age_groups?: string[]
+          target_age_min?: number | null
           target_genders?: string[]
           title: string
           updated_at?: string
@@ -435,17 +450,23 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string | null
+          fee_amount?: number | null
           fee_text?: string | null
+          fee_type?: string
           genre?: string | null
           id?: string
           media_urls?: string[]
           platforms?: string[]
+          production_name?: string | null
           region?: string | null
           requirements?: string[]
+          role_name?: string | null
           role_type?: string | null
           shooting_schedule?: string | null
           status?: Database["public"]["Enums"]["job_status"]
+          target_age_max?: number | null
           target_age_groups?: string[]
+          target_age_min?: number | null
           target_genders?: string[]
           title?: string
           updated_at?: string
@@ -457,6 +478,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "casting_profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      job_application_questions: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          label: string
+          required: boolean
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          label: string
+          required?: boolean
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          label?: string
+          required?: boolean
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_application_questions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
           },
         ]
       }

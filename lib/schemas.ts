@@ -7,8 +7,8 @@ import {
 } from "@/lib/job-filter-options";
 
 const optionalString = z
-  .string()
-  .transform((value) => value.trim())
+  .union([z.string(), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "string" ? value.trim() : ""))
   .transform((value) => (value.length > 0 ? value : null))
   .nullable();
 
@@ -37,6 +37,29 @@ function csvOptionArray(
   });
 }
 
+const optionalPositiveInt = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((value, ctx) => {
+    if (value === null || value === undefined || value === "") return null;
+
+    const normalized =
+      typeof value === "number"
+        ? String(value)
+        : value.replaceAll(",", "").trim();
+    if (!normalized) return null;
+
+    const parsed = Number(normalized);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "숫자를 다시 입력해주세요.",
+      });
+      return z.NEVER;
+    }
+
+    return parsed;
+  });
+
 const roleTypeSchema = optionalString.refine(
   (value) =>
     value === null ||
@@ -46,6 +69,45 @@ const roleTypeSchema = optionalString.refine(
   "역할을 다시 선택해주세요.",
 );
 
+const feeTypeSchema = z
+  .enum(["negotiable", "per_episode", "daily", "flat", "other"])
+  .catch("negotiable");
+
+const JobApplicationQuestionSchema = z.object({
+  label: z
+    .string()
+    .trim()
+    .min(1, "추가 질문 내용을 입력해주세요.")
+    .max(80, "추가 질문은 80자 이내로 입력해주세요."),
+  required: z.boolean().catch(false),
+});
+
+const applicationQuestionsJson = z
+  .string()
+  .optional()
+  .transform((value, ctx) => {
+    if (!value?.trim()) return [];
+
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      const result = z.array(JobApplicationQuestionSchema).safeParse(parsed);
+      if (!result.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: formatZodError(result.error),
+        });
+        return z.NEVER;
+      }
+      return result.data;
+    } catch {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "추가 질문 정보를 다시 확인해주세요.",
+      });
+      return z.NEVER;
+    }
+  });
+
 export const ApplicationStatusSchema = z.enum([
   "pending",
   "reviewing",
@@ -54,20 +116,26 @@ export const ApplicationStatusSchema = z.enum([
   "reject",
 ]);
 
-export const CreateJobSchema = z.object({
+const JobFieldsSchema = z.object({
   title: z
     .string()
     .trim()
     .min(1, "공고 제목을 입력해주세요.")
     .max(120, "공고 제목은 120자 이내로 입력해주세요."),
+  production_name: optionalString,
   description: optionalString,
+  role_name: optionalString,
   fee_text: optionalString,
+  fee_type: feeTypeSchema,
+  fee_amount: optionalPositiveInt,
   genre: optionalString,
   region: optionalString,
   shooting_schedule: optionalString,
   deadline: optionalString,
   requirements: csvStringArray,
   role_type: roleTypeSchema,
+  target_age_min: optionalPositiveInt,
+  target_age_max: optionalPositiveInt,
   target_genders: csvOptionArray(
     JOB_TARGET_GENDER_OPTIONS.map((option) => option.value),
     "대상 성별을 다시 선택해주세요.",
@@ -80,10 +148,56 @@ export const CreateJobSchema = z.object({
     JOB_PLATFORM_OPTIONS,
     "플랫폼/채널을 다시 선택해주세요.",
   ),
-  status: z.enum(["open", "draft"]).catch("open"),
+  media_urls: csvStringArray,
+  application_questions: applicationQuestionsJson,
 });
 
-export const UpdateJobSchema = CreateJobSchema.extend({
+export const CreateJobSchema = JobFieldsSchema.extend({
+  status: z.enum(["open", "draft"]).catch("open"),
+}).superRefine((data, ctx) => {
+  if (data.status !== "open") return;
+
+  const requiredFields = [
+    ["production_name", data.production_name, "제작사/브랜드명을 입력해주세요."],
+    ["region", data.region, "촬영 지역을 선택해주세요."],
+    ["genre", data.genre, "장르를 선택해주세요."],
+    ["deadline", data.deadline, "마감 일시를 선택해주세요."],
+    ["role_type", data.role_type, "역할 유형을 선택해주세요."],
+    ["description", data.description, "상세 설명을 입력해주세요."],
+  ] as const;
+
+  for (const [path, value, message] of requiredFields) {
+    if (!value) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [path],
+        message,
+      });
+    }
+  }
+
+  if (data.target_genders.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["target_genders"],
+      message: "성별을 선택해주세요.",
+    });
+  }
+
+  if (
+    data.target_age_min !== null &&
+    data.target_age_max !== null &&
+    data.target_age_min > data.target_age_max
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["target_age_min"],
+      message: "최소 나이는 최대 나이보다 작아야 해요.",
+    });
+  }
+});
+
+export const UpdateJobSchema = JobFieldsSchema.extend({
   job_id: z.string().uuid("공고 정보를 찾을 수 없어요."),
   status: z.enum(["open", "closed", "draft"]).catch("open"),
 });

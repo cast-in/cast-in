@@ -8,14 +8,43 @@ export type ApplicationStatusMeta = {
   variant: BadgeVariant;
 };
 
+export type SelectableApplicationStatus = Exclude<ApplicationStatus, "pending">;
+
+export const APPLICATION_STATUS_META: Record<
+  ApplicationStatus,
+  ApplicationStatusMeta
+> = {
+  pending: {
+    value: "pending",
+    label: "검토 중",
+    color: "primary",
+    variant: "soft-outline",
+  },
+  reviewing: {
+    value: "reviewing",
+    label: "검토 중",
+    color: "primary",
+    variant: "soft-outline",
+  },
+  pass: { value: "pass", label: "합격", color: "primary", variant: "fill" },
+  hold: { value: "hold", label: "보류", color: "neutral", variant: "outline" },
+  reject: {
+    value: "reject",
+    label: "반려",
+    color: "destructive",
+    variant: "soft",
+  },
+};
+
 export const APPLICATION_STATUS_OPTIONS: ApplicationStatusMeta[] = [
-  { value: "pending", label: "대기", color: "secondary", variant: "fill" },
-  { value: "reviewing", label: "검토 중", color: "primary", variant: "fill" },
+  APPLICATION_STATUS_META.reviewing,
   { value: "pass", label: "합격", color: "primary", variant: "fill" },
   { value: "hold", label: "보류", color: "neutral", variant: "outline" },
   { value: "reject", label: "반려", color: "destructive", variant: "soft" },
 ];
 
-export const APPLICATION_STATUS_META = Object.fromEntries(
-  APPLICATION_STATUS_OPTIONS.map((opt) => [opt.value, opt]),
-) as Record<ApplicationStatus, ApplicationStatusMeta>;
+export function toSelectableApplicationStatus(
+  status: ApplicationStatus,
+): SelectableApplicationStatus {
+  return status === "pending" ? "reviewing" : status;
+}

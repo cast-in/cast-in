@@ -21,6 +21,7 @@ import {
   getJob,
   getJobDetailMeta,
   getMyApplicationForJob,
+  listJobApplicationQuestions,
   listApplicants,
   type JobDetailMeta,
 } from "@/lib/queries/jobs";
@@ -79,10 +80,16 @@ export default async function JobDetailPage({
 
   if (activeRole === "actor") {
     let application: Awaited<ReturnType<typeof getMyApplicationForJob>> = null;
+    let applicationQuestions: Awaited<
+      ReturnType<typeof listJobApplicationQuestions>
+    > = [];
     let applicationLoaded = true;
 
     try {
-      application = await getMyApplicationForJob(id);
+      [application, applicationQuestions] = await Promise.all([
+        getMyApplicationForJob(id),
+        listJobApplicationQuestions(id),
+      ]);
     } catch (error) {
       applicationLoaded = false;
       errorMessage =
@@ -101,6 +108,7 @@ export default async function JobDetailPage({
             backFallbackHref="/talents"
             canApply={!application && applicationLoaded && isJobAccepting(job)}
             applied={Boolean(application)}
+            applicationQuestions={applicationQuestions}
           />
         ) : null}
       </PageContainer>
@@ -166,6 +174,7 @@ function JobDetailView({
   canApply,
   applied,
   actionSlot,
+  applicationQuestions = [],
 }: {
   job: Job;
   detailMeta: JobDetailMeta;
@@ -173,6 +182,7 @@ function JobDetailView({
   contextLabel?: string;
   canApply?: boolean;
   applied?: boolean;
+  applicationQuestions?: Awaited<ReturnType<typeof listJobApplicationQuestions>>;
   actionSlot?: ReactNode;
 }) {
   const resolvedActionSlot =
@@ -181,6 +191,7 @@ function JobDetailView({
           job,
           canApply: Boolean(canApply),
           applied: Boolean(applied),
+          applicationQuestions,
         })
       : actionSlot;
 
@@ -205,6 +216,10 @@ function JobDetailView({
           <JobInfoList
             items={[
               {
+                label: "제작사/브랜드",
+                value: job.production_name ?? "미등록",
+              },
+              {
                 label: "지역",
                 value: job.region ?? "지역 협의",
               },
@@ -228,12 +243,16 @@ function JobDetailView({
           <JobInfoList
             items={[
               {
+                label: "역할명",
+                value: job.role_name ?? "역할명 협의",
+              },
+              {
                 label: "역할",
                 value: formatJobRoleType(job.role_type),
               },
               {
-                label: "성별 / 연령대",
-                value: `${formatJobGenderLabel(job.target_genders)} · ${formatJobAgeGroupsLabel(job.target_age_groups)}`,
+                label: "성별 / 나이",
+                value: `${formatJobGenderLabel(job.target_genders)} · ${formatJobAgeTargetLabel(job)}`,
               },
               {
                 label: "출연료",
@@ -341,14 +360,17 @@ function getActorActionSlot({
   job,
   canApply,
   applied,
+  applicationQuestions,
 }: {
   job: Job;
   canApply: boolean;
   applied: boolean;
+  applicationQuestions: Awaited<ReturnType<typeof listJobApplicationQuestions>>;
 }) {
   return canApply ? (
     <ApplyForm
       jobId={job.id}
+      questions={applicationQuestions}
       className="h-11 rounded-xl px-7 text-base font-bold sm:w-auto"
     />
   ) : (
@@ -577,6 +599,17 @@ function getJobMediaUrls(job: Job) {
 
 function formatDeadlineDate(iso: string | null) {
   return formatDeadline(iso).replace(" 마감", "");
+}
+
+function formatJobAgeTargetLabel(
+  job: Pick<Job, "target_age_groups" | "target_age_min" | "target_age_max">,
+) {
+  if (job.target_age_min !== null && job.target_age_max !== null) {
+    return `${job.target_age_min}~${job.target_age_max}세`;
+  }
+  if (job.target_age_min !== null) return `${job.target_age_min}세 이상`;
+  if (job.target_age_max !== null) return `${job.target_age_max}세 이하`;
+  return formatJobAgeGroupsLabel(job.target_age_groups);
 }
 
 function getFallbackDetailMeta(): JobDetailMeta {

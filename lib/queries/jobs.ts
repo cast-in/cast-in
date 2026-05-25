@@ -5,6 +5,8 @@ import type { Database } from "@/types/database";
 import type { ApplicationStatus } from "@/types/enums";
 
 export type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
+export type JobApplicationQuestion =
+  Database["public"]["Tables"]["job_application_questions"]["Row"];
 
 export async function listMyJobs() {
   const supabase = await createClient();
@@ -31,6 +33,19 @@ export async function getJob(id: string) {
     .maybeSingle();
   if (error) throw error;
   return data;
+}
+
+export async function listJobApplicationQuestions(
+  jobId: string,
+): Promise<JobApplicationQuestion[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("job_application_questions")
+    .select("id, job_id, label, required, sort_order, created_at")
+    .eq("job_id", jobId)
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
 }
 
 export type JobDetailMeta = {
@@ -720,6 +735,15 @@ export type Applicant = {
   created_at: string;
   actor_id: string;
   actor_name: string;
+  actor_avatar_url: string | null;
+  actor_age: number | null;
+  actor_gender: string | null;
+  actor_region: string | null;
+  actor_height_cm: number | null;
+  actor_weight_kg: number | null;
+  actor_genres: string[];
+  actor_skills: string[];
+  actor_image_tags: string[];
 };
 
 export async function listApplicants(jobId: string): Promise<Applicant[]> {
@@ -733,25 +757,49 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
   if (!apps || apps.length === 0) return [];
 
   const actorIds = apps.map((a) => a.actor_id);
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, name")
-    .in("id", actorIds);
+  const [{ data: profiles }, { data: actorProfiles }] = await Promise.all([
+    supabase.from("profiles").select("id, name, avatar_url").in("id", actorIds),
+    supabase
+      .from("actor_profiles")
+      .select(
+        "user_id, birth_date, gender, height_cm, image_tags, region, genres, skills, weight_kg",
+      )
+      .in("user_id", actorIds),
+  ]);
 
   const nameById = new Map(
     (profiles ?? []).map((p) => [p.id, p.name ?? "이름 미등록"]),
   );
+  const avatarById = new Map(
+    (profiles ?? []).map((p) => [p.id, p.avatar_url ?? null]),
+  );
+  const actorProfileById = new Map(
+    (actorProfiles ?? []).map((profile) => [profile.user_id, profile]),
+  );
 
-  return apps.map((a) => ({
-    id: a.id,
-    job_id: a.job_id,
-    memo: a.memo,
-    casting_memo: a.casting_memo,
-    status: a.status,
-    created_at: a.created_at,
-    actor_id: a.actor_id,
-    actor_name: nameById.get(a.actor_id) ?? "이름 미등록",
-  }));
+  return apps.map((a) => {
+    const actorProfile = actorProfileById.get(a.actor_id);
+
+    return {
+      id: a.id,
+      job_id: a.job_id,
+      memo: a.memo,
+      casting_memo: a.casting_memo,
+      status: a.status,
+      created_at: a.created_at,
+      actor_id: a.actor_id,
+      actor_name: nameById.get(a.actor_id) ?? "이름 미등록",
+      actor_avatar_url: avatarById.get(a.actor_id) ?? null,
+      actor_age: calculateAge(actorProfile?.birth_date ?? null),
+      actor_gender: actorProfile?.gender ?? null,
+      actor_region: actorProfile?.region ?? null,
+      actor_height_cm: actorProfile?.height_cm ?? null,
+      actor_weight_kg: actorProfile?.weight_kg ?? null,
+      actor_genres: actorProfile?.genres ?? [],
+      actor_skills: actorProfile?.skills ?? [],
+      actor_image_tags: actorProfile?.image_tags ?? [],
+    };
+  });
 }
 
 export type JobWithCounts = JobRow & {

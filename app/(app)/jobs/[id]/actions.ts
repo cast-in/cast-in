@@ -62,9 +62,17 @@ export async function closeJobAction(formData: FormData): Promise<void> {
     .eq("casting_id", user.id);
   if (error) throw new Error(error.message);
 
+  const { error: applicationsError } = await supabase
+    .from("applications")
+    .update({ status: "reject" })
+    .eq("job_id", parsed.data.job_id)
+    .in("status", ["pending", "reviewing", "hold"]);
+  if (applicationsError) throw new Error(applicationsError.message);
+
   revalidatePath(`/jobs/${parsed.data.job_id}`);
   revalidatePath("/jobs");
   revalidatePath("/discover");
+  revalidatePath("/dashboard");
   redirect(`/jobs/${parsed.data.job_id}`);
 }
 
@@ -161,10 +169,25 @@ export async function applyToJobAction(
   }
 
   const memo = parsed.data.memo;
+  const { data: questions, error: questionsErr } = await supabase
+    .from("job_application_questions")
+    .select("id, label, required")
+    .eq("job_id", parsed.data.job_id)
+    .order("sort_order", { ascending: true });
+  if (questionsErr) return { ok: false, error: questionsErr.message };
+
+  const answers: Record<string, string> = {};
+  for (const question of questions ?? []) {
+    const answer = String(formData.get(`question_${question.id}`) ?? "").trim();
+    if (question.required && !answer) {
+      return { ok: false, error: `${question.label} 답변을 입력해주세요.` };
+    }
+    if (answer) answers[question.id] = answer;
+  }
 
   const { data: application, error: appErr } = await supabase
     .from("applications")
-    .insert({ job_id: parsed.data.job_id, actor_id: user.id, memo })
+    .insert({ job_id: parsed.data.job_id, actor_id: user.id, memo, answers })
     .select("id")
     .maybeSingle();
   if (appErr) {

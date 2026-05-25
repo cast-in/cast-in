@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Loader2, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -27,13 +26,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   APPLICATION_STATUS_META,
-  APPLICATION_STATUS_OPTIONS,
 } from "@/lib/application-status";
 import { cn } from "@/lib/utils";
 import type { Applicant } from "@/lib/queries/jobs";
-import type { ApplicationStatus } from "@/types/enums";
 import { updateApplicationAction } from "./actions";
 import { JobConversationButton } from "./job-conversation-button";
+import { ApplicationStatusSelect } from "../application-status-select";
 
 export function ApplicantsTable({ applicants }: { applicants: Applicant[] }) {
   return (
@@ -57,33 +55,9 @@ export function ApplicantsTable({ applicants }: { applicants: Applicant[] }) {
 }
 
 function ApplicantRow({ applicant }: { applicant: Applicant }) {
-  const [status, setStatus] = useState<ApplicationStatus>(applicant.status);
   const [castingMemo, setCastingMemo] = useState<string | null>(
     applicant.casting_memo,
   );
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  function submitStatus(next: ApplicationStatus) {
-    const prev = status;
-    setStatus(next);
-    setError(null);
-    const data = new FormData();
-    data.set("application_id", applicant.id);
-    data.set("status", next);
-    startTransition(async () => {
-      const result = await updateApplicationAction(data);
-      if (!result.ok) {
-        setStatus(prev);
-        setError(result.error);
-        toast.error(result.error);
-      } else {
-        toast.success(
-          `${applicant.actor_name}님 상태를 ${APPLICATION_STATUS_META[next].label}(으)로 변경했어요.`,
-        );
-      }
-    });
-  }
 
   return (
     <TableRow>
@@ -94,29 +68,18 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
       <TableCell>
         <div className="flex items-center gap-2">
           <Badge
-            color={APPLICATION_STATUS_META[status].color}
-            variant={APPLICATION_STATUS_META[status].variant}
+            color={APPLICATION_STATUS_META[applicant.status].color}
+            variant={APPLICATION_STATUS_META[applicant.status].variant}
           >
-            {APPLICATION_STATUS_META[status].label}
+            {APPLICATION_STATUS_META[applicant.status].label}
           </Badge>
-          <Select
-            value={status}
-            onChange={(e) => submitStatus(e.target.value as ApplicationStatus)}
-            disabled={pending}
-            aria-label="상태 변경"
-            className="h-8 px-2 text-xs"
-          >
-            {APPLICATION_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
-          {pending && (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin text-muted-foreground" />
-          )}
+          <ApplicationStatusSelect
+            applicationId={applicant.id}
+            applicantName={applicant.actor_name}
+            initialStatus={applicant.status}
+            className="h-8 min-w-28 px-3 text-xs"
+          />
         </div>
-        {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
       </TableCell>
       <TableCell className="max-w-[240px]">
         <CastingMemoCell

@@ -14,16 +14,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ErrorNotice } from "@/components/ui/error-notice";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { JobApplicationQuestion } from "@/lib/queries/jobs";
 import { cn } from "@/lib/utils";
 import { applyToJobAction } from "./actions";
 
 export function ApplyForm({
   jobId,
+  questions = [],
   className,
 }: {
   jobId: string;
+  questions?: JobApplicationQuestion[];
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -88,6 +92,27 @@ export function ApplyForm({
               placeholder="예: 액션 연기 경험이 있고, 다음 주 평일 촬영 가능해요."
             />
           </div>
+
+          {questions.length > 0 ? (
+            <div className="grid gap-3 border-t pt-4">
+              {questions.map((question) => (
+                <div key={question.id} className="grid gap-2">
+                  <Label htmlFor={`question-${question.id}`}>
+                    {question.label}
+                    {question.required ? (
+                      <span className="text-destructive"> *</span>
+                    ) : null}
+                  </Label>
+                  <Input
+                    id={`question-${question.id}`}
+                    name={`question_${question.id}`}
+                    aria-required={question.required}
+                    placeholder="답변을 입력해주세요"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <DialogFooter>
             <DialogClose

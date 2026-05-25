@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@source inline("bg-secondary-soft bg-secondary-hover bg-secondary-soft-hover bg-success bg-success-soft bg-warning bg-warning-soft text-secondary-soft-foreground text-success text-success-foreground text-warning text-warning-foreground border-success border-warning hover:bg-secondary-soft-hover hover:bg-success/80 hover:bg-success/15 hover:bg-warning/80 hover:bg-warning/20 aria-expanded:bg-secondary-soft-hover aria-expanded:bg-success aria-expanded:bg-success/15 aria-expanded:bg-success-soft aria-expanded:bg-warning aria-expanded:bg-warning/20 aria-expanded:bg-warning-soft aria-expanded:text-secondary-soft-foreground aria-expanded:text-success aria-expanded:text-success-foreground aria-expanded:text-warning aria-expanded:text-warning-foreground");
+@source inline("bg-primary-foreground bg-secondary-soft bg-secondary-hover bg-secondary-soft-hover bg-success bg-success-soft bg-warning bg-warning-soft text-primary-foreground text-secondary-soft-foreground text-success text-success-foreground text-warning text-warning-foreground border-success border-warning hover:bg-secondary-soft-hover hover:bg-success/80 hover:bg-success/15 hover:bg-warning/80 hover:bg-warning/20 aria-expanded:bg-secondary-soft-hover aria-expanded:bg-success aria-expanded:bg-success/15 aria-expanded:bg-success-soft aria-expanded:bg-warning aria-expanded:bg-warning/20 aria-expanded:bg-warning-soft aria-expanded:text-primary-foreground aria-expanded:text-secondary-soft-foreground aria-expanded:text-success aria-expanded:text-success-foreground aria-expanded:text-warning aria-expanded:text-warning-foreground");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -91,7 +91,8 @@
   --popover-foreground: oklch(0.18 0.015 148.67);
   --primary: oklch(0.7697 0.2124 148.67);
   --primary-soft: oklch(0.7695 0.2127 148.73 / 10%);
-  --primary-foreground: oklch(0.145 0 0);
+  /* 임시 변경 전: --primary-foreground: oklch(0.145 0 0); */
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.4598 0.0267 254.54);
   --secondary-foreground: oklch(1 0 0);
   --secondary-hover: oklch(0.4598 0.0267 254.54 / 90%);
@@ -141,7 +142,8 @@
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.7697 0.2124 148.67);
   --primary-soft: oklch(0.7697 0.2124 148.67 / 10%);
-  --primary-foreground: oklch(0.145 0 0);
+  /* 임시 변경 전: --primary-foreground: oklch(0.145 0 0); */
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.4598 0.0267 254.54);
   --secondary-foreground: oklch(1 0 0);
   --secondary-hover: oklch(0.4598 0.0267 254.54 / 90%);
