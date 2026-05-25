@@ -575,17 +575,26 @@ export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
 export type ApplicationWithJob = {
   id: string;
   created_at: string;
+  updated_at: string;
   memo: string | null;
   status: ApplicationStatus;
   job_id: string;
   job_title: string;
   job_genre: string | null;
   job_region: string | null;
+  job_role_type: string | null;
+  job_target_age_groups: string[];
+  job_target_genders: string[];
+  job_media_urls: string[];
   deadline: string | null;
   last_message_at: string | null;
+  last_message_body: string | null;
+  unread_message_count: number;
 };
 
-export async function listMyApplicationsWithJobs(): Promise<ApplicationWithJob[]> {
+export async function listMyApplicationsWithJobs(
+  options: { since?: string } = {},
+): Promise<ApplicationWithJob[]> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -593,11 +602,19 @@ export async function listMyApplicationsWithJobs(): Promise<ApplicationWithJob[]
 
   if (!user) return [];
 
-  const { data: applications, error } = await supabase
+  let applicationsQuery = supabase
     .from("applications")
-    .select("id, created_at, memo, status, job_id")
-    .eq("actor_id", user.id)
-    .order("created_at", { ascending: false });
+    .select("id, created_at, updated_at, memo, status, job_id")
+    .eq("actor_id", user.id);
+
+  if (options.since) {
+    applicationsQuery = applicationsQuery.gte("created_at", options.since);
+  }
+
+  const { data: applications, error } = await applicationsQuery.order(
+    "created_at",
+    { ascending: false },
+  );
   if (error) throw error;
   if (!applications || applications.length === 0) return [];
 
@@ -605,36 +622,80 @@ export async function listMyApplicationsWithJobs(): Promise<ApplicationWithJob[]
   const [{ data: jobs }, { data: rooms }] = await Promise.all([
     supabase
       .from("jobs")
-      .select("id, title, genre, region, deadline")
+      .select(
+        "id, title, genre, region, role_type, target_age_groups, target_genders, media_urls, deadline",
+      )
       .in("id", jobIds),
     supabase
       .from("chat_rooms")
-      .select("job_id, last_message_at")
+      .select("id, job_id, last_message_at")
       .eq("actor_id", user.id)
       .in("job_id", jobIds),
   ]);
 
   const jobById = new Map((jobs ?? []).map((job) => [job.id, job]));
+  const roomsByJobId = new Map((rooms ?? []).map((room) => [room.job_id, room]));
   const lastMessageByJobId = new Map(
     (rooms ?? []).map((room) => [room.job_id, room.last_message_at]),
   );
+  const roomIds = (rooms ?? []).map((room) => room.id);
+  const unreadByRoomId = new Map<string, number>();
+  const latestBodyByRoomId = new Map<string, string>();
+
+  if (roomIds.length > 0) {
+    const [{ data: unreadMessages }, { data: recentMessages }] = await Promise.all([
+      supabase
+        .from("messages")
+        .select("room_id")
+        .neq("sender_id", user.id)
+        .is("read_at", null)
+        .in("room_id", roomIds),
+      supabase
+        .from("messages")
+        .select("room_id, body, created_at")
+        .in("room_id", roomIds)
+        .order("created_at", { ascending: false })
+        .limit(200),
+    ]);
+
+    for (const message of unreadMessages ?? []) {
+      unreadByRoomId.set(
+        message.room_id,
+        (unreadByRoomId.get(message.room_id) ?? 0) + 1,
+      );
+    }
+
+    for (const message of recentMessages ?? []) {
+      if (!latestBodyByRoomId.has(message.room_id)) {
+        latestBodyByRoomId.set(message.room_id, message.body);
+      }
+    }
+  }
 
   return applications
     .map((application) => {
       const job = jobById.get(application.job_id);
       if (!job) return null;
+      const room = roomsByJobId.get(application.job_id);
 
       return {
         id: application.id,
         created_at: application.created_at,
+        updated_at: application.updated_at,
         memo: application.memo,
         status: application.status,
         job_id: application.job_id,
         job_title: job.title,
         job_genre: job.genre,
         job_region: job.region,
+        job_role_type: job.role_type,
+        job_target_age_groups: job.target_age_groups ?? [],
+        job_target_genders: job.target_genders ?? [],
+        job_media_urls: job.media_urls ?? [],
         deadline: job.deadline,
         last_message_at: lastMessageByJobId.get(application.job_id) ?? null,
+        last_message_body: room ? (latestBodyByRoomId.get(room.id) ?? null) : null,
+        unread_message_count: room ? (unreadByRoomId.get(room.id) ?? 0) : 0,
       };
     })
     .filter((application): application is ApplicationWithJob => Boolean(application));
