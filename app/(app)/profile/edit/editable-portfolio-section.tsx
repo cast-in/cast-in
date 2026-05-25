@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ import {
   addPortfolioItemAction,
   deletePortfolioItemAction,
 } from "../portfolio/actions";
+import { updateProfileAvatarAction } from "../avatar-actions";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
@@ -27,18 +28,29 @@ export function EditablePortfolioSection({
   kind,
   items,
   limit,
+  avatarUrl,
 }: {
   userId: string;
   title: string;
   kind: "image" | "video";
   items: PortfolioItem[];
   limit: number;
+  avatarUrl?: string | null;
 }) {
   const router = useRouter();
   const inputId = useId();
   const [visibleItems, setVisibleItems] = useState(items.slice(0, limit));
+
+  // items prop이 변경되면 (추가/삭제 후 router.refresh) visibleItems를 동기화
+  const itemIds = items.map((i) => i.id).join(",");
+  useEffect(() => {
+    setVisibleItems(items.slice(0, limit));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemIds, limit]);
+
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const accepts = kind === "image" ? IMAGE_TYPES : VIDEO_TYPES;
 
@@ -115,6 +127,23 @@ export function EditablePortfolioSection({
     }
   }
 
+  async function handleSetPrimary(item: PortfolioItem) {
+    setError(null);
+    setSettingPrimaryId(item.id);
+    try {
+      const result = await updateProfileAvatarAction({ url: item.url });
+      if (!result.ok) {
+        setError(result.error);
+        toast.error(result.error);
+        return;
+      }
+      toast.success("대표 이미지로 설정했어요.");
+      router.refresh();
+    } finally {
+      setSettingPrimaryId(null);
+    }
+  }
+
   function onChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -139,6 +168,9 @@ export function EditablePortfolioSection({
             kind={kind}
             deleting={deletingId === item.id}
             onDelete={() => void handleDelete(item)}
+            isPrimary={kind === "image" && item.url === avatarUrl}
+            onSetPrimary={kind === "image" ? () => void handleSetPrimary(item) : undefined}
+            settingPrimary={settingPrimaryId === item.id}
           />
         ))}
 
@@ -188,12 +220,18 @@ function EditablePortfolioTile({
   kind,
   deleting,
   onDelete,
+  isPrimary,
+  onSetPrimary,
+  settingPrimary,
 }: {
   item: PortfolioItem;
   index: number;
   kind: "image" | "video";
   deleting: boolean;
   onDelete: () => void;
+  isPrimary?: boolean;
+  onSetPrimary?: () => void;
+  settingPrimary?: boolean;
 }) {
   return (
     <figure className={cn("group relative overflow-hidden rounded-xl bg-muted", kind === "image" ? "aspect-square" : "aspect-video")}>
@@ -214,30 +252,48 @@ function EditablePortfolioTile({
         />
       )}
 
-      <Badge
-        color="neutral"
-        size="sm"
-        className="absolute left-3 top-3 bg-background/85 text-foreground backdrop-blur"
-      >
-        대표
-      </Badge>
+      {(isPrimary || kind === "video") && (
+        <Badge
+          color="neutral"
+          size="sm"
+          className="absolute left-3 top-3 bg-background/85 text-foreground backdrop-blur"
+        >
+          대표
+        </Badge>
+      )}
 
       <div className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover:bg-black/20 group-focus-within:bg-black/20">
-        <Button
-          type="button"
-          color="destructive"
-          size="sm"
-          className="opacity-0 shadow-sm transition group-hover:opacity-100 group-focus-within:opacity-100"
-          onClick={onDelete}
-          disabled={deleting}
-        >
-          {deleting ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Trash2 aria-hidden="true" className="size-4" />
+        <div className="flex items-center gap-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+          {onSetPrimary && !isPrimary && (
+            <Button
+              type="button"
+              size="sm"
+              className="border-0 bg-white text-black shadow-sm hover:bg-white/90"
+              onClick={onSetPrimary}
+              disabled={settingPrimary}
+            >
+              {settingPrimary ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : null}
+              대표 설정
+            </Button>
           )}
-          삭제
-        </Button>
+          <Button
+            type="button"
+            color="destructive"
+            size="sm"
+            className="shadow-sm"
+            onClick={onDelete}
+            disabled={deleting}
+          >
+            {deleting ? (
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            ) : (
+              <Trash2 aria-hidden="true" className="size-4" />
+            )}
+            삭제
+          </Button>
+        </div>
       </div>
     </figure>
   );

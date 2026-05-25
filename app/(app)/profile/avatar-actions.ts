@@ -17,7 +17,9 @@ export async function updateProfileAvatarAction(input: {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "먼저 로그인해주세요." };
 
-  const newPath = getUserPublicStoragePath(input.url, "avatars", user.id);
+  const newPath =
+    getUserPublicStoragePath(input.url, "avatars", user.id) ??
+    getUserPublicStoragePath(input.url, "portfolio", user.id);
   if (!newPath) {
     return { ok: false, error: "업로드된 파일 URL이 올바르지 않아요." };
   }
@@ -44,7 +46,7 @@ export async function updateProfileAvatarAction(input: {
 
   revalidatePath("/profile");
   revalidatePath("/profile/edit");
-  revalidatePath("/dashboard");
+  revalidatePath("/talents");
   revalidatePath("/talents");
   return { ok: true };
 }

@@ -6,6 +6,14 @@ import { Check, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -42,20 +50,26 @@ export function ApplicationStatusSelect({
 }: ApplicationStatusSelectProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<ApplicationStatus>(initialStatus);
+  const [pendingStatus, setPendingStatus] =
+    useState<SelectableApplicationStatus | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const selectedStatus = toSelectableApplicationStatus(status);
   const selectedMeta = APPLICATION_STATUS_META[selectedStatus];
 
-  function submitStatus(next: SelectableApplicationStatus) {
-    if (next === status) {
-      setOpen(false);
-      return;
-    }
+  function handleSelect(next: SelectableApplicationStatus) {
+    setOpen(false);
+    if (next === status) return;
+    setPendingStatus(next);
+  }
 
+  function confirmStatus() {
+    if (!pendingStatus) return;
+
+    const next = pendingStatus;
     const prev = status;
     setStatus(next);
-    setOpen(false);
+    setPendingStatus(null);
 
     const data = new FormData();
     data.set("application_id", applicationId);
@@ -77,7 +91,8 @@ export function ApplicationStatusSelect({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         render={
           <Button
@@ -117,7 +132,7 @@ export function ApplicationStatusSelect({
                 "flex h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-bold transition hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                 selected && "bg-primary-soft text-primary",
               )}
-              onClick={() => submitStatus(value)}
+              onClick={() => handleSelect(value)}
               disabled={pending}
             >
               {selected ? (
@@ -137,5 +152,37 @@ export function ApplicationStatusSelect({
         })}
       </PopoverContent>
     </Popover>
+
+      <Dialog
+        open={pendingStatus !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setPendingStatus(null);
+        }}
+      >
+        <DialogContent showCloseButton={false} className="gap-6 p-6 text-center">
+          <DialogHeader className="items-center">
+            <DialogTitle className="text-lg">지원 상태 변경</DialogTitle>
+            <DialogDescription className="text-base">
+              {applicantName}님 상태를{" "}
+              {pendingStatus && APPLICATION_STATUS_META[pendingStatus].label}
+              (으)로 변경합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mx-0 mb-0 flex-row justify-center border-0 bg-transparent p-0">
+            <Button
+              color="neutral"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setPendingStatus(null)}
+            >
+              취소
+            </Button>
+            <Button className="flex-1" onClick={confirmStatus}>
+              변경
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

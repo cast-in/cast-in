@@ -121,7 +121,8 @@ export function ActorSearchPanel({
   );
   const selectedCounts = useMemo(
     () => ({
-      ageGender: selectedFilters.gender.length + selectedFilters.ageGroup.length,
+      ageGender:
+        selectedFilters.gender.length + selectedFilters.ageGroup.length,
       genre: selectedFilters.genre.length,
       heightRange: selectedFilters.heightRange.length,
       nationality: selectedFilters.nationality.length,
@@ -147,7 +148,11 @@ export function ActorSearchPanel({
     setFiltersOpen((open) => !open);
   }
 
-  function setFilterValue(key: keyof ActorFilterState, value: string, checked: boolean) {
+  function setFilterValue(
+    key: keyof ActorFilterState,
+    value: string,
+    checked: boolean,
+  ) {
     setSelectedFilters((current) => {
       const values = new Set(current[key]);
       if (checked) values.add(value);
@@ -426,7 +431,9 @@ function FilterSummaryButton({
           {count}
         </span>
       ) : null}
-      {!isPrimary ? <ChevronDown aria-hidden="true" className="size-4" /> : null}
+      {!isPrimary ? (
+        <ChevronDown aria-hidden="true" className="size-4" />
+      ) : null}
     </button>
   );
 }
@@ -565,7 +572,7 @@ function HeightFilterColumn({
   return (
     <fieldset className={filterColumnClassName}>
       <legend className="text-base font-bold">신장</legend>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         <FilterCheckbox
           name="height"
           label="전체"

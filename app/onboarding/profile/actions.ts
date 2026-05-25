@@ -45,7 +45,7 @@ export async function saveOnboardingProfile(
   if (!name) return { ok: false, error: "이름을 입력해주세요." };
 
   const rawRedirect = String(formData.get("redirect_to") ?? "");
-  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/dashboard";
+  const redirectTo = rawRedirect.startsWith("/") ? rawRedirect : "/talents";
 
   // 1. profiles upsert
   const profilePayload: ProfileUpsert = {

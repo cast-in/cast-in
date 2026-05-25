@@ -38,14 +38,14 @@ export async function GET(request: Request) {
 }
 
 function getSafeNextPath(value: string | null) {
-  if (!value) return "/dashboard";
-  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  if (!value) return "/talents";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/talents";
 
   try {
     const parsed = new URL(value, "http://localhost");
-    if (parsed.origin !== "http://localhost") return "/dashboard";
+    if (parsed.origin !== "http://localhost") return "/talents";
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return "/dashboard";
+    return "/talents";
   }
 }

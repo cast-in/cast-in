@@ -77,7 +77,7 @@ export async function closeJobAction(formData: FormData): Promise<void> {
   revalidatePath(`/jobs/${parsed.data.job_id}`);
   revalidatePath("/jobs");
   revalidatePath("/discover");
-  revalidatePath("/dashboard");
+  revalidatePath("/talents");
   redirect(`/jobs/${parsed.data.job_id}`);
 }
 

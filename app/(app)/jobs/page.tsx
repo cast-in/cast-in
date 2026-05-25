@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Plus,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -234,7 +240,7 @@ function CastingJobList({
           ) : (
             <ul className="space-y-3">
               {jobs.map((job) => (
-                <li key={job.id}>
+                <li key={job.id} className="relative">
                   <Link
                     href={buildCastingJobsHref({
                       filter,
@@ -244,7 +250,7 @@ function CastingJobList({
                     })}
                     aria-current={selectedJobId === job.id ? "page" : undefined}
                     className={cn(
-                      "grid grid-cols-[5.75rem_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border p-3 transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      "grid grid-cols-[5.75rem_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border p-3 pr-10 transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                       selectedJobId === job.id
                         ? "border-primary bg-primary-soft/60"
                         : "border-transparent hover:bg-muted/60",
@@ -260,6 +266,13 @@ function CastingJobList({
                       </span>
                     </span>
                     <JobStatusBadge job={job} />
+                  </Link>
+                  <Link
+                    href={`/jobs/${job.id}`}
+                    aria-label={`${job.title} 공고 상세`}
+                    className="absolute top-1/2 right-2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    <ExternalLink aria-hidden="true" className="size-4" />
                   </Link>
                 </li>
               ))}

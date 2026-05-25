@@ -65,7 +65,7 @@ export async function withdrawApplicationAction(
   }
 
   revalidatePath("/jobs");
-  revalidatePath("/dashboard");
+  revalidatePath("/talents");
   revalidatePath(`/jobs/${application.job_id}`);
   return { ok: true };
 }

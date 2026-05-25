@@ -1,6 +1,6 @@
 import type { UserRole } from "@/types/enums";
 
-export const APP_HOME_HREF = "/dashboard";
+export const APP_HOME_HREF = "/talents";
 
 export type AppTabHref =
   | "/talents"

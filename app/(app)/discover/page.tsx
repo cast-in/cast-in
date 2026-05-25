@@ -46,7 +46,7 @@ export default async function DiscoverPage({
 }) {
   const { activeRole } = await getViewerProfile();
   if (activeRole === "actor") redirect("/talents");
-  if (activeRole !== "casting") redirect("/dashboard");
+  if (activeRole !== "casting") redirect("/talents");
 
   const sp = await searchParams;
   const q = asString(sp.q);

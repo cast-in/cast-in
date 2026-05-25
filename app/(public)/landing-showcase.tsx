@@ -138,6 +138,7 @@ export function LandingShowcase({
   const suppressCardClickRef = useRef(false);
   const pendingActorSelectRef = useRef<LandingActor | null>(null);
   const pendingCompanySelectRef = useRef<CompanyLogo | null>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
   const dragRef = useRef<{
     startX: number;
@@ -193,6 +194,75 @@ export function LandingShowcase({
     window.cancelAnimationFrame(animationRef.current);
     animationRef.current = null;
   }
+
+  function startMomentum(initialVelocity: number) {
+    cancelMomentum();
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCarouselPosition(Math.round(positionRef.current));
+      setCarouselActivity(0);
+      return;
+    }
+
+    setCarouselActivity(1);
+
+    let velocity = Math.max(-0.018, Math.min(0.018, initialVelocity));
+    let previousTime = performance.now();
+
+    const tick = (time: number) => {
+      const elapsed = Math.min(32, time - previousTime);
+      previousTime = time;
+      const nextActivity =
+        activityRef.current - elapsed / VISUAL_RETURN_DURATION;
+
+      setCarouselActivity(nextActivity);
+
+      if (Math.abs(velocity) > 0.0003) {
+        setCarouselPosition(positionRef.current + velocity * elapsed);
+        velocity *= Math.exp(-elapsed * 0.0032);
+      } else {
+        const target = Math.round(positionRef.current);
+        const distance = target - positionRef.current;
+
+        if (Math.abs(distance) < 0.001) {
+          setCarouselPosition(target);
+          setCarouselActivity(0);
+          animationRef.current = null;
+          return;
+        }
+
+        setCarouselPosition(
+          positionRef.current + distance * Math.min(1, elapsed * 0.018),
+        );
+      }
+
+      animationRef.current = window.requestAnimationFrame(tick);
+    };
+
+    animationRef.current = window.requestAnimationFrame(tick);
+  }
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const step = cardStep;
+    let idleTimer: ReturnType<typeof setTimeout>;
+    const onWheel = (e: globalThis.WheelEvent) => {
+      const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (Math.abs(dx) < 1) return;
+      e.preventDefault();
+      cancelMomentum();
+      clearTimeout(idleTimer);
+      setCarouselActivity(1);
+      setCarouselPosition(positionRef.current + dx / step);
+      idleTimer = setTimeout(() => startMomentum(0), 120);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      clearTimeout(idleTimer);
+    };
+  });
 
   function switchMode(nextMode: LandingMode) {
     cancelMomentum();
@@ -288,9 +358,13 @@ export function LandingShowcase({
         suppressCardClickRef.current = false;
       }, 250);
     } else if (pendingActor) {
+      suppressCardClickRef.current = true;
+      window.setTimeout(() => { suppressCardClickRef.current = false; }, 0);
       setSelectedActor(pendingActor);
       return;
     } else if (pendingCompany) {
+      suppressCardClickRef.current = true;
+      window.setTimeout(() => { suppressCardClickRef.current = false; }, 0);
       openRandomJob(pendingCompany);
       return;
     } else {
@@ -326,53 +400,6 @@ export function LandingShowcase({
       event.preventDefault();
       move(-1);
     }
-  }
-
-  function startMomentum(initialVelocity: number) {
-    cancelMomentum();
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setCarouselPosition(Math.round(positionRef.current));
-      setCarouselActivity(0);
-      return;
-    }
-
-    setCarouselActivity(1);
-
-    let velocity = Math.max(-0.018, Math.min(0.018, initialVelocity));
-    let previousTime = performance.now();
-
-    const tick = (time: number) => {
-      const elapsed = Math.min(32, time - previousTime);
-      previousTime = time;
-      const nextActivity =
-        activityRef.current - elapsed / VISUAL_RETURN_DURATION;
-
-      setCarouselActivity(nextActivity);
-
-      if (Math.abs(velocity) > 0.0003) {
-        setCarouselPosition(positionRef.current + velocity * elapsed);
-        velocity *= Math.exp(-elapsed * 0.0032);
-      } else {
-        const target = Math.round(positionRef.current);
-        const distance = target - positionRef.current;
-
-        if (Math.abs(distance) < 0.001) {
-          setCarouselPosition(target);
-          setCarouselActivity(0);
-          animationRef.current = null;
-          return;
-        }
-
-        setCarouselPosition(
-          positionRef.current + distance * Math.min(1, elapsed * 0.018),
-        );
-      }
-
-      animationRef.current = window.requestAnimationFrame(tick);
-    };
-
-    animationRef.current = window.requestAnimationFrame(tick);
   }
 
   function openRandomJob(company: CompanyLogo) {
@@ -422,6 +449,7 @@ export function LandingShowcase({
           </div>
 
           <div
+            ref={carouselRef}
             data-landing-carousel
             role="region"
             aria-label={
@@ -635,9 +663,7 @@ function PlaceholderCard({
               }}
               onClick={(event) => {
                 event.stopPropagation();
-                if (event.detail === 0) {
-                  onCompanySelect(logo);
-                }
+                onCompanySelect(logo);
               }}
               style={
                 {
@@ -675,9 +701,7 @@ function PlaceholderCard({
       }}
       onClick={(event) => {
         event.stopPropagation();
-        if (event.detail === 0) {
-          onActorSelect(actor);
-        }
+        onActorSelect(actor);
       }}
       className={cn(
         "absolute left-1/2 top-1/2 -translate-y-1/2 overflow-hidden rounded-sm bg-muted text-muted-foreground shadow-[0_18px_44px_rgba(0,0,0,0.16)] ring-1 ring-black/5 hover:![filter:none] focus-visible:![filter:none] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/35",

@@ -6,7 +6,6 @@ import {
   AtSign,
   BriefcaseBusiness,
   CalendarDays,
-  ChevronDown,
   ExternalLink,
   FileImage,
   Mail,
@@ -30,6 +29,7 @@ import type {
 import type { PortfolioItem } from "@/lib/queries/portfolio";
 import type { ActorSocialLink } from "@/lib/social-links";
 import { cn } from "@/lib/utils";
+import { ExpandableItems } from "./expandable-items";
 
 type ActorProfileRecord = {
   affiliation?: string | null;
@@ -115,7 +115,6 @@ export function ActorProfileView({
             emptyLabel="대표 이미지가 없어요."
             limit={3}
             editHref={editable ? "/profile/portfolio" : undefined}
-            moreHref={editable ? "/profile/portfolio" : undefined}
           />
 
           <MediaSection
@@ -125,7 +124,6 @@ export function ActorProfileView({
             emptyLabel="대표 영상이 없어요."
             limit={2}
             editHref={editable ? "/profile/portfolio" : undefined}
-            moreHref={editable ? "/profile/portfolio" : undefined}
           />
 
           <div className="grid gap-5 md:grid-cols-2">
@@ -134,14 +132,12 @@ export function ActorProfileView({
               items={credits}
               emptyLabel="등록된 필모그래피가 없어요."
               editHref={editable ? "/profile/showcase" : undefined}
-              moreHref={editable ? "/profile/showcase" : undefined}
             />
             <AwardsCard
               title="수상"
               items={awards}
               emptyLabel="등록된 수상 이력이 없어요."
               editHref={editable ? "/profile/showcase" : undefined}
-              moreHref={editable ? "/profile/showcase" : undefined}
             />
           </div>
         </div>
@@ -320,7 +316,6 @@ function MediaSection({
   emptyLabel,
   limit,
   editHref,
-  moreHref,
 }: {
   title: string;
   items: PortfolioItem[];
@@ -328,38 +323,41 @@ function MediaSection({
   emptyLabel: string;
   limit: number;
   editHref?: string;
-  moreHref?: string;
 }) {
-  const visibleItems = items.slice(0, limit);
+  const previewItems = items.slice(0, limit);
+  const extraItems = items.slice(limit);
+  const gridClassName =
+    kind === "image" ? "sm:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2";
+
+  function renderTile(item: PortfolioItem, index: number) {
+    return kind === "image" ? (
+      <ImageTile key={item.id} item={item} index={index} />
+    ) : (
+      <VideoTile key={item.id} item={item} index={index} />
+    );
+  }
 
   return (
     <SurfaceCard className={sectionCardClassName}>
       <SectionHeader title={title} editHref={editHref} />
 
-      {visibleItems.length === 0 ? (
+      {previewItems.length === 0 ? (
         <EmptyState label={emptyLabel} />
       ) : (
         <>
-          <div
-            className={cn(
-              "mt-5 grid gap-3",
-              kind === "image"
-                ? "sm:grid-cols-2 xl:grid-cols-3"
-                : "md:grid-cols-2",
-            )}
-          >
-            {visibleItems.map((item, index) =>
-              kind === "image" ? (
-                <ImageTile key={item.id} item={item} index={index} />
-              ) : (
-                <VideoTile key={item.id} item={item} index={index} />
-              ),
-            )}
+          <div className={cn("mt-5 grid gap-3", gridClassName)}>
+            {previewItems.map((item, index) => renderTile(item, index))}
           </div>
 
-          {items.length > limit && moreHref ? (
-            <MoreLink href={moreHref} />
-          ) : null}
+          {extraItems.length > 0 && (
+            <ExpandableItems>
+              <div className={cn("mt-3 grid gap-3", gridClassName)}>
+                {extraItems.map((item, index) =>
+                  renderTile(item, limit + index),
+                )}
+              </div>
+            </ExpandableItems>
+          )}
         </>
       )}
     </SurfaceCard>
@@ -514,14 +512,50 @@ function HistoryCard({
   items,
   emptyLabel,
   editHref,
-  moreHref,
 }: {
   title: string;
   items: ActorCredit[];
   emptyLabel: string;
   editHref?: string;
-  moreHref?: string;
 }) {
+  const previewItems = items.slice(0, 4);
+  const extraItems = items.slice(4);
+
+  function renderItem(item: ActorCredit) {
+    return (
+      <li
+        key={item.id}
+        className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-3 py-4"
+      >
+        <time className="text-sm font-bold text-foreground">
+          {item.year ?? "-"}
+        </time>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{item.title}</p>
+          {item.role ? (
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {item.role}
+            </p>
+          ) : null}
+        </div>
+        {item.href ? (
+          <a
+            href={item.href}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              buttonVariants({ color: "primary", variant: "soft", size: "xs" }),
+              "rounded-full px-4",
+            )}
+          >
+            보러가기
+            <ExternalLink aria-hidden="true" className="size-3" />
+          </a>
+        ) : null}
+      </li>
+    );
+  }
+
   return (
     <SurfaceCard className={sectionCardClassName}>
       <SectionHeader title={title} editHref={editHref} />
@@ -531,41 +565,16 @@ function HistoryCard({
       ) : (
         <>
           <ul className="mt-5 divide-y divide-border">
-            {items.slice(0, 4).map((item) => (
-              <li
-                key={item.id}
-                className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-3 py-4"
-              >
-                <time className="text-sm font-bold text-foreground">
-                  {item.year ?? "-"}
-                </time>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{item.title}</p>
-                  {item.role ? (
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {item.role}
-                    </p>
-                  ) : null}
-                </div>
-                {item.href ? (
-                  <a
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cn(
-                      buttonVariants({ color: "primary", variant: "soft", size: "xs" }),
-                      "rounded-full px-4",
-                    )}
-                  >
-                    보러가기
-                    <ExternalLink aria-hidden="true" className="size-3" />
-                  </a>
-                ) : null}
-              </li>
-            ))}
+            {previewItems.map(renderItem)}
           </ul>
 
-          {items.length > 4 && moreHref ? <MoreLink href={moreHref} /> : null}
+          {extraItems.length > 0 && (
+            <ExpandableItems>
+              <ul className="divide-y divide-border border-t border-border">
+                {extraItems.map(renderItem)}
+              </ul>
+            </ExpandableItems>
+          )}
         </>
       )}
     </SurfaceCard>
@@ -577,14 +586,36 @@ function AwardsCard({
   items,
   emptyLabel,
   editHref,
-  moreHref,
 }: {
   title: string;
   items: ActorAward[];
   emptyLabel: string;
   editHref?: string;
-  moreHref?: string;
 }) {
+  const previewItems = items.slice(0, 4);
+  const extraItems = items.slice(4);
+
+  function renderItem(item: ActorAward) {
+    return (
+      <li
+        key={item.id}
+        className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 py-4"
+      >
+        <time className="text-sm font-bold text-foreground">
+          {item.year ?? "-"}
+        </time>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{item.title}</p>
+          {item.organization ? (
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {item.organization}
+            </p>
+          ) : null}
+        </div>
+      </li>
+    );
+  }
+
   return (
     <SurfaceCard className={sectionCardClassName}>
       <SectionHeader title={title} editHref={editHref} />
@@ -594,27 +625,16 @@ function AwardsCard({
       ) : (
         <>
           <ul className="mt-5 divide-y divide-border">
-            {items.slice(0, 4).map((item) => (
-              <li
-                key={item.id}
-                className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 py-4"
-              >
-                <time className="text-sm font-bold text-foreground">
-                  {item.year ?? "-"}
-                </time>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{item.title}</p>
-                  {item.organization ? (
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {item.organization}
-                    </p>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+            {previewItems.map(renderItem)}
           </ul>
 
-          {items.length > 4 && moreHref ? <MoreLink href={moreHref} /> : null}
+          {extraItems.length > 0 && (
+            <ExpandableItems>
+              <ul className="divide-y divide-border border-t border-border">
+                {extraItems.map(renderItem)}
+              </ul>
+            </ExpandableItems>
+          )}
         </>
       )}
     </SurfaceCard>
@@ -722,20 +742,6 @@ function EmptyState({ label }: { label: string }) {
   return (
     <div className="mt-5 grid min-h-36 place-items-center rounded-xl bg-muted/25 px-5 py-8 text-center">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
-    </div>
-  );
-}
-
-function MoreLink({ href }: { href: string }) {
-  return (
-    <div className="mt-5 flex justify-center">
-      <Link
-        href={href}
-        className="inline-flex h-9 items-center gap-2 px-3 text-sm font-bold text-foreground/75 transition hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        더보기
-        <ChevronDown aria-hidden="true" className="size-4" />
-      </Link>
     </div>
   );
 }

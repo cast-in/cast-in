@@ -160,6 +160,7 @@ export function ActorProfileEditView({
               kind="image"
               items={imageItems}
               limit={3}
+              avatarUrl={profile.avatar_url}
             />
 
             <EditablePortfolioSection

@@ -30,7 +30,7 @@ export async function signInWithPassword(
     .eq("id", user.id)
     .maybeSingle();
 
-  redirect(profile ? "/dashboard" : "/onboarding/role");
+  redirect(profile ? "/talents" : "/onboarding/role");
 }
 
 export async function signUpWithPassword(
@@ -117,7 +117,7 @@ export async function updatePasswordAction(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { ok: false, error: translateAuthError(error.message) };
 
-  redirect("/dashboard");
+  redirect("/talents");
 }
 
 // useActionState 시그니처용 래퍼 — 서버 액션이어야 React가 form action 바인딩을 정상 처리해요.
