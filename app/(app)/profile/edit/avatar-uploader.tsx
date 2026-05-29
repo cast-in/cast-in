@@ -113,21 +113,25 @@ export function AvatarUploader({
           <Label
             htmlFor={inputId}
             className={cn(
-              "inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium shadow-sm transition hover:bg-muted",
+              "relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium shadow-sm transition hover:bg-muted",
               uploading && "pointer-events-none opacity-60",
             )}
           >
             {uploading ? (
-              <>
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                업로드하는 중이에요
-              </>
-            ) : (
-              <>
-                <Upload aria-hidden="true" className="size-4" />
-                사진 선택
-              </>
-            )}
+              <Loader2
+                aria-hidden="true"
+                className="absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 animate-spin"
+              />
+            ) : null}
+            <span
+              className={cn(
+                "inline-flex items-center justify-center gap-2",
+                uploading && "opacity-0",
+              )}
+            >
+              <Upload aria-hidden="true" className="size-4" />
+              사진 선택
+            </span>
           </Label>
           <input
             id={inputId}

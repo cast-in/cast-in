@@ -174,8 +174,9 @@ export function ActorMessageDialog({
               color="primary"
               className="min-w-40"
               disabled={pending || !message.trim()}
+              isLoading={pending}
             >
-              {pending ? "보내는 중이에요" : "보내기"}
+              보내기
             </Button>
           </div>
         </form>

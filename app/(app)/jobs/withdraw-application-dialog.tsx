@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,11 +74,9 @@ export function WithdrawApplicationDialog({
             type="button"
             color="destructive"
             disabled={pending}
+            isLoading={pending}
             onClick={handleWithdraw}
           >
-            {pending ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : null}
             철회하기
           </Button>
         </DialogFooter>
@@ -87,4 +84,3 @@ export function WithdrawApplicationDialog({
     </Dialog>
   );
 }
-

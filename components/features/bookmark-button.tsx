@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Bookmark, BookmarkCheck, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { toggleBookmarkAction } from "@/app/(app)/bookmarks/actions";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { BookmarkTargetType } from "@/lib/queries/bookmarks";
 
@@ -46,18 +46,17 @@ export function BookmarkButton({
   }
 
   return (
-    <button
+    <Button
       type="button"
       onClick={handleClick}
       disabled={pending}
+      isLoading={pending}
       aria-pressed={optimistic}
       aria-label={optimistic ? "저장 취소" : "저장하기"}
+      color={compact ? "neutral" : optimistic ? "secondary" : "neutral"}
+      variant={compact ? "ghost" : optimistic ? "fill" : "outline"}
+      size={compact ? "icon-lg" : "sm"}
       className={cn(
-        buttonVariants({
-          color: compact ? "neutral" : optimistic ? "secondary" : "neutral",
-          variant: compact ? "ghost" : optimistic ? "fill" : "outline",
-          size: compact ? "icon-lg" : "sm",
-        }),
         compact && "rounded-full text-muted-foreground hover:text-foreground",
         compact && optimistic && "bg-primary/10 text-primary hover:bg-primary/15",
         className,
@@ -68,6 +67,6 @@ export function BookmarkButton({
         className={cn("size-4", icon === "heart" && optimistic && "fill-current")}
       />
       {compact ? null : optimistic ? "저장됨" : "저장"}
-    </button>
+    </Button>
   );
 }

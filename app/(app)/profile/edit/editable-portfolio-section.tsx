@@ -178,18 +178,26 @@ export function EditablePortfolioSection({
           <Label
             htmlFor={inputId}
             className={cn(
-              "grid min-h-48 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-primary/35 bg-[linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%),linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%)] bg-[length:32px_32px] bg-[position:0_0,16px_16px] text-primary transition hover:bg-primary-soft",
+              "relative grid min-h-48 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-primary/35 bg-[linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%),linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%)] bg-[length:32px_32px] bg-[position:0_0,16px_16px] text-primary transition hover:bg-primary-soft",
               uploading && "pointer-events-none opacity-60",
             )}
+            aria-busy={uploading ? true : undefined}
           >
-            <span className="grid place-items-center gap-2 text-sm font-bold">
-              {uploading ? (
-                <Loader2 aria-hidden="true" className="size-7 animate-spin" />
-              ) : (
-                <span className="grid size-14 place-items-center rounded-full bg-primary-soft">
-                  <Plus aria-hidden="true" className="size-7" />
-                </span>
+            {uploading ? (
+              <Loader2
+                aria-hidden="true"
+                className="absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 animate-spin"
+              />
+            ) : null}
+            <span
+              className={cn(
+                "grid place-items-center gap-2 text-sm font-bold",
+                uploading && "opacity-0",
               )}
+            >
+              <span className="grid size-14 place-items-center rounded-full bg-primary-soft">
+                <Plus aria-hidden="true" className="size-7" />
+              </span>
               {kind === "image" ? "이미지 추가" : "영상 추가"}
             </span>
           </Label>
@@ -271,10 +279,8 @@ function EditablePortfolioTile({
               className="border-0 bg-white text-black shadow-sm hover:bg-white/90"
               onClick={onSetPrimary}
               disabled={settingPrimary}
+              isLoading={settingPrimary}
             >
-              {settingPrimary ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : null}
               대표 설정
             </Button>
           )}
@@ -285,12 +291,9 @@ function EditablePortfolioTile({
             className="shadow-sm"
             onClick={onDelete}
             disabled={deleting}
+            isLoading={deleting}
           >
-            {deleting ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : (
-              <Trash2 aria-hidden="true" className="size-4" />
-            )}
+            <Trash2 aria-hidden="true" className="size-4" />
             삭제
           </Button>
         </div>

@@ -202,8 +202,8 @@ function CastingMemoCell({
           >
             닫기
           </Button>
-          <Button onClick={handleSave} disabled={pending}>
-            {pending ? "저장하는 중이에요" : "저장"}
+          <Button onClick={handleSave} disabled={pending} isLoading={pending}>
+            저장
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -105,7 +105,12 @@ export function ModeSwitcher({
             >
               닫기
             </Button>
-            <Button type="button" onClick={handleConfirm} disabled={isPending}>
+            <Button
+              type="button"
+              onClick={handleConfirm}
+              disabled={isPending}
+              isLoading={isPending}
+            >
               전환하기
             </Button>
           </DialogFooter>

@@ -93,25 +93,33 @@ export function HeroAvatarUploader({
       <Label
         htmlFor={inputId}
         className={cn(
-          "grid aspect-[3/4] w-full max-w-[300px] cursor-pointer place-items-center overflow-hidden rounded-lg border-2 border-dashed border-primary/45 bg-[linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%),linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%)] bg-[length:32px_32px] bg-[position:0_0,16px_16px] text-primary transition hover:bg-primary-soft",
+          "relative grid aspect-[3/4] w-full max-w-[300px] cursor-pointer place-items-center overflow-hidden rounded-lg border-2 border-dashed border-primary/45 bg-[linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%),linear-gradient(45deg,rgba(0,0,0,0.035)_25%,transparent_25%,transparent_75%,rgba(0,0,0,0.035)_75%)] bg-[length:32px_32px] bg-[position:0_0,16px_16px] text-primary transition hover:bg-primary-soft",
           uploading && "pointer-events-none opacity-60",
         )}
+        aria-busy={uploading ? true : undefined}
       >
+        {uploading ? (
+          <Loader2
+            aria-hidden="true"
+            className="absolute left-1/2 top-1/2 z-10 size-8 -translate-x-1/2 -translate-y-1/2 animate-spin"
+          />
+        ) : null}
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={`${profileName} 프로필 사진`}
-            className="h-full w-full object-cover"
+            className={cn("h-full w-full object-cover", uploading && "opacity-40")}
           />
         ) : (
-          <span className="grid place-items-center gap-3 text-center text-sm font-bold">
-            {uploading ? (
-              <Loader2 aria-hidden="true" className="size-8 animate-spin" />
-            ) : (
-              <span className="grid size-14 place-items-center rounded-full bg-primary-soft">
-                <Plus aria-hidden="true" className="size-8" />
-              </span>
+          <span
+            className={cn(
+              "grid place-items-center gap-3 text-center text-sm font-bold",
+              uploading && "opacity-0",
             )}
+          >
+            <span className="grid size-14 place-items-center rounded-full bg-primary-soft">
+              <Plus aria-hidden="true" className="size-8" />
+            </span>
             <span>
               프로필 사진 변경
               <span className="mt-2 block text-xs text-muted-foreground">

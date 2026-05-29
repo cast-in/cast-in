@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Loader2 } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,6 +101,7 @@ export function ApplicationStatusSelect({
             variant="outline"
             aria-label={`${applicantName} 지원 상태 변경`}
             disabled={pending}
+            isLoading={pending}
             className={cn(
               "min-w-32 justify-between rounded-xl px-4 font-bold",
               className,
@@ -109,11 +110,7 @@ export function ApplicationStatusSelect({
         }
       >
         <span>{selectedMeta.label}</span>
-        {pending ? (
-          <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-        ) : (
-          <ChevronDown aria-hidden="true" className="size-4" />
-        )}
+        <ChevronDown aria-hidden="true" className="size-4" />
       </PopoverTrigger>
       <PopoverContent
         align="end"

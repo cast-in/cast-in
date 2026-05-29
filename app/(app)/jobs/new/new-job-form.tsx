@@ -71,6 +71,9 @@ type JobQuestionDraft = {
 
 export function NewJobForm({ userId }: { userId: string }) {
   const [pending, startTransition] = useTransition();
+  const [submittingStatus, setSubmittingStatus] = useState<
+    "draft" | "open" | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [mediaUploading, setMediaUploading] = useState(false);
@@ -89,8 +92,10 @@ export function NewJobForm({ userId }: { userId: string }) {
     const submitter = (e.nativeEvent as SubmitEvent).submitter as
       | HTMLButtonElement
       | null;
-    if (submitter?.value) data.set("status", submitter.value);
+    const nextStatus = submitter?.value === "draft" ? "draft" : "open";
+    data.set("status", nextStatus);
     data.set("application_questions", JSON.stringify(getValidQuestions(questions)));
+    setSubmittingStatus(nextStatus);
 
     startTransition(async () => {
       const result = await createJobAction(data);
@@ -98,6 +103,7 @@ export function NewJobForm({ userId }: { userId: string }) {
         setError(result.error);
         toast.error(result.error);
       }
+      setSubmittingStatus(null);
     });
   }
 
@@ -118,6 +124,7 @@ export function NewJobForm({ userId }: { userId: string }) {
             color="neutral"
             variant="outline"
             disabled={pending || mediaUploading}
+            isLoading={pending && submittingStatus === "draft"}
             className="border-foreground/20"
           >
             임시저장
@@ -127,8 +134,9 @@ export function NewJobForm({ userId }: { userId: string }) {
             name="status"
             value="open"
             disabled={pending || mediaUploading}
+            isLoading={pending && submittingStatus === "open"}
           >
-            {pending ? "올리는 중이에요" : "공고 올리기"}
+            공고 올리기
           </Button>
         </div>
       </header>
@@ -328,14 +336,16 @@ export function NewJobForm({ userId }: { userId: string }) {
                 name="status"
                 value="open"
                 disabled={pending || mediaUploading}
+                isLoading={pending && submittingStatus === "open"}
               >
-                {pending ? "올리는 중이에요" : "공고 올리기"}
+                공고 올리기
               </Button>
               <Button
                 type="submit"
                 name="status"
                 value="draft"
                 disabled={pending || mediaUploading}
+                isLoading={pending && submittingStatus === "draft"}
                 color="neutral"
                 variant="outline"
                 className="border-foreground/20"

@@ -175,7 +175,7 @@ export function JobMediaUploader({
           disabled={uploadingType !== null || images.length >= MAX_IMAGE_COUNT}
           htmlFor={imageInputId}
           icon={<ImagePlus aria-hidden="true" className="size-8" />}
-          label={uploadingType === "image" ? "업로드 중" : "이미지 업로드"}
+          label="이미지 업로드"
           multiple
           onChange={(event) => handleChange(event, "image")}
           uploading={uploadingType === "image"}
@@ -186,7 +186,7 @@ export function JobMediaUploader({
           disabled={uploadingType !== null || videos.length >= MAX_VIDEO_COUNT}
           htmlFor={videoInputId}
           icon={<Video aria-hidden="true" className="size-8" />}
-          label={uploadingType === "video" ? "업로드 중" : "영상 업로드"}
+          label="영상 업로드"
           onChange={(event) => handleChange(event, "video")}
           uploading={uploadingType === "video"}
         />
@@ -287,9 +287,10 @@ function UploadTile({
     <Label
       htmlFor={htmlFor}
       className={cn(
-        "grid min-h-36 cursor-pointer place-items-center rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center transition hover:bg-muted",
+        "relative grid min-h-36 cursor-pointer place-items-center rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center transition hover:bg-muted",
         disabled && "pointer-events-none opacity-55",
       )}
+      aria-busy={uploading ? true : undefined}
     >
       <input
         id={htmlFor}
@@ -301,13 +302,20 @@ function UploadTile({
         onChange={onChange}
         disabled={disabled}
       />
-      <span className="grid place-items-center gap-3">
+      {uploading ? (
+        <Loader2
+          aria-hidden="true"
+          className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 animate-spin"
+        />
+      ) : null}
+      <span
+        className={cn(
+          "grid place-items-center gap-3",
+          uploading && "opacity-0",
+        )}
+      >
         <span className="grid size-12 place-items-center rounded-full bg-background shadow-sm">
-          {uploading ? (
-            <Loader2 aria-hidden="true" className="size-6 animate-spin" />
-          ) : (
-            icon
-          )}
+          {icon}
         </span>
         <span className="text-sm font-extrabold">{label}</span>
         <span

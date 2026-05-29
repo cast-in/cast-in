@@ -16,7 +16,6 @@ type JobConversationButtonProps = {
   jobId: string;
   actorId?: string;
   label?: string;
-  pendingLabel?: string;
   iconOnly?: boolean;
   ariaLabel?: string;
   color?: ButtonColor;
@@ -29,7 +28,6 @@ export function JobConversationButton({
   jobId,
   actorId,
   label = "문의하기",
-  pendingLabel = "여는 중이에요",
   iconOnly = false,
   ariaLabel,
   color = "neutral",
@@ -64,11 +62,12 @@ export function JobConversationButton({
       size={iconOnly ? "icon-lg" : size}
       className={cn(className)}
       disabled={pending}
+      isLoading={pending}
       aria-label={iconOnly ? (ariaLabel ?? label) : undefined}
       onClick={handleClick}
     >
       <MessageCircleMore aria-hidden="true" className="size-4" />
-      {iconOnly ? null : pending ? pendingLabel : label}
+      {iconOnly ? null : label}
     </Button>
   );
 }

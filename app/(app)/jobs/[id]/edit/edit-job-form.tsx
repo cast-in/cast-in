@@ -189,9 +189,10 @@ export function EditJobForm({ job }: { job: JobForEdit }) {
         <Button
           type="submit"
           disabled={pending || mediaUploading}
+          isLoading={pending}
           className="min-w-32"
         >
-          {pending ? "저장하는 중이에요" : "저장하기"}
+          저장하기
         </Button>
       </div>
     </form>

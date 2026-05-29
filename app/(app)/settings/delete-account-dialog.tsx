@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,11 +92,9 @@ export function DeleteAccountDialog() {
             type="button"
             color="destructive"
             disabled={!canDelete || pending}
+            isLoading={pending}
             onClick={handleDelete}
           >
-            {pending ? (
-              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-            ) : null}
             삭제하기
           </Button>
         </DialogFooter>

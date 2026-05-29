@@ -391,7 +391,6 @@ export function MessageRoom({
             title="파일 첨부"
             aria-label="파일 첨부"
             loading={uploading}
-            loadingLabel="파일을 올리고 있어요"
             disabled={
               sending ||
               pendingAttachments.length >= MAX_ATTACHMENT_COUNT
@@ -414,6 +413,7 @@ export function MessageRoom({
               uploading ||
               (!body.trim() && pendingAttachments.length === 0)
             }
+            isLoading={sending}
           >
             전송
           </Button>

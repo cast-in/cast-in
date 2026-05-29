@@ -247,8 +247,13 @@ export function ProfileForm({
         </>
       )}
 
-      <Button type="submit" disabled={pending} className="mt-2 w-full">
-        {pending ? "저장하는 중이에요" : (submitLabel ?? "캐스트인 시작하기")}
+      <Button
+        type="submit"
+        disabled={pending}
+        isLoading={pending}
+        className="mt-2 w-full"
+      >
+        {submitLabel ?? "캐스트인 시작하기"}
       </Button>
     </form>
   );

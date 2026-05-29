@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Paperclip, X } from "lucide-react";
+import { Loader2, Paperclip, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -252,15 +252,28 @@ export function ApplyForm({
                     variant: "outline",
                     size: "sm",
                   }),
-                  "w-fit",
+                  "relative w-fit",
                   (pending ||
                     uploading ||
                     attachments.length >= MAX_ATTACHMENT_COUNT) &&
                     "pointer-events-none opacity-50",
                 )}
               >
-                <Paperclip aria-hidden="true" className="size-4" />
-                {uploading ? "올리는 중이에요" : "파일 첨부"}
+                {uploading ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 animate-spin"
+                  />
+                ) : null}
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center [gap:inherit]",
+                    uploading && "opacity-0",
+                  )}
+                >
+                  <Paperclip aria-hidden="true" className="size-4" />
+                  파일 첨부
+                </span>
               </label>
 
               {attachments.length > 0 ? (
@@ -313,8 +326,12 @@ export function ApplyForm({
             >
               닫기
             </DialogClose>
-            <Button type="submit" disabled={pending || uploading}>
-              {pending ? "제출하는 중이에요" : "최종 제출"}
+            <Button
+              type="submit"
+              disabled={pending || uploading}
+              isLoading={pending}
+            >
+              최종 제출
             </Button>
           </DialogFooter>
         </form>
