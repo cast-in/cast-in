@@ -1,4 +1,7 @@
-import { createClient as createSupabaseServiceClient } from "@supabase/supabase-js";
+import {
+  createClient as createSupabaseServiceClient,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 import { calculateAge, formatDeadline } from "@/lib/format";
 import {
   parseAttachmentList,
@@ -38,6 +41,7 @@ const RECOMMENDATION_CANDIDATE_LIMIT = 200;
 const JOB_IMAGE_PRIORITY_CANDIDATE_LIMIT = 600;
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+type StorageSupabaseClient = SupabaseClient<Database>;
 
 export async function listMyJobs() {
   const supabase = await createClient();
@@ -414,8 +418,9 @@ export async function listLandingJobsWithImages(
   const jobsWithImages = (data ?? [])
     .filter(hasPrimaryJobImage)
     .slice(0, limit);
+  const signedJobs = await signOpenJobPreviewMedia(supabase, jobsWithImages);
 
-  return jobsWithImages
+  return signedJobs
     .map((job): LandingJobPosting | null => {
       const imageUrl = getPrimaryJobImageUrl(job.media_urls);
       if (!imageUrl) return null;
@@ -829,7 +834,7 @@ function normalizeSearchValues(value: SearchFilterValue | undefined) {
 }
 
 async function signJobMediaUrls(
-  supabase: ServerSupabaseClient,
+  supabase: StorageSupabaseClient,
   urls: readonly string[],
 ) {
   const mediaUrls = normalizeJobMediaUrls(urls);
@@ -843,7 +848,7 @@ async function signJobMediaUrls(
 }
 
 async function signOpenJobPreviewMedia<T extends { media_urls?: string[] | null }>(
-  supabase: ServerSupabaseClient,
+  supabase: StorageSupabaseClient,
   jobs: readonly T[],
 ): Promise<Array<T & { media_urls: string[] }>> {
   const mediaUrlsByJob = new Map(
