@@ -636,12 +636,12 @@ function PlaceholderCard({
                   : "cursor-default opacity-70",
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                draggable={false}
+              <ProgressiveImage
                 src={logo.src}
                 alt=""
-                className="pointer-events-none h-full w-full select-none object-cover"
+                className="h-full w-full bg-white"
+                imageClassName="pointer-events-none h-full w-full select-none object-cover"
+                draggable={false}
               />
             </button>
           );
@@ -677,13 +677,13 @@ function PlaceholderCard({
       style={directorStyle}
     >
       {actor.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <ProgressiveImage
           src={actor.avatar_url}
           alt=""
-          draggable={false}
           loading="lazy"
-          className="pointer-events-none h-full w-full select-none object-cover"
+          className="h-full w-full bg-muted"
+          imageClassName="pointer-events-none h-full w-full select-none object-cover"
+          draggable={false}
         />
       ) : null}
     </button>
@@ -732,11 +732,11 @@ function JobPostingDialog({
 
             <div className="grid min-h-0 grid-rows-[0.9fr_auto_auto] gap-3">
               <div className="relative min-h-0 overflow-hidden border border-border/60 bg-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <ProgressiveImage
                   src={job.company.src}
                   alt={job.company.name}
-                  className="h-full w-full object-contain p-12"
+                  className="h-full w-full bg-white"
+                  imageClassName="h-full w-full object-contain p-12"
                   draggable={false}
                 />
               </div>
@@ -793,11 +793,11 @@ function JobPostingDialog({
 function JobPosterImage({ title, src }: { title: string; src: string }) {
   return (
     <div className="min-h-0 overflow-hidden border border-border/60 bg-muted/60">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <ProgressiveImage
         src={src}
         alt={`${title} 공고 이미지`}
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full"
+        imageClassName="h-full w-full object-cover object-center"
         draggable={false}
       />
     </div>
@@ -911,15 +911,71 @@ function ActorModalPhoto({
       )}
     >
       {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <ProgressiveImage
           src={src}
           alt={alt}
+          className="h-full w-full"
+          imageClassName="h-full w-full object-cover"
           draggable={false}
-          className="h-full w-full object-cover"
         />
       ) : null}
     </div>
+  );
+}
+
+function ProgressiveImage({
+  src,
+  alt,
+  className,
+  imageClassName,
+  loading,
+  draggable,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  imageClassName?: string;
+  loading?: "eager" | "lazy";
+  draggable?: boolean;
+}) {
+  const [state, setState] = useState({
+    src,
+    loaded: false,
+    failed: false,
+  });
+  const loaded = state.src === src && state.loaded;
+  const failed = state.src === src && state.failed;
+
+  return (
+    <div className={cn("relative overflow-hidden bg-muted/60", className)}>
+      {!loaded && !failed ? <ImageSkeleton /> : null}
+      {failed ? (
+        <div aria-hidden="true" className="absolute inset-0 bg-muted/60" />
+      ) : null}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        loading={loading}
+        draggable={draggable}
+        onLoad={() => setState({ src, loaded: true, failed: false })}
+        onError={() => setState({ src, loaded: false, failed: true })}
+        className={cn(
+          "absolute inset-0 opacity-0 transition-opacity duration-300 ease-out motion-reduce:transition-none",
+          loaded && !failed && "opacity-100",
+          imageClassName,
+        )}
+      />
+    </div>
+  );
+}
+
+function ImageSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute inset-0 animate-pulse bg-muted/70 motion-reduce:animate-none"
+    />
   );
 }
 
