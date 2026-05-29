@@ -22,6 +22,9 @@ import type { Database } from "@/types/database";
 import type { ApplicationStatus } from "@/types/enums";
 
 export type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
+export type JobForEdit = JobRow & {
+  signed_media_urls: string[];
+};
 export type JobApplicationQuestion =
   Database["public"]["Tables"]["job_application_questions"]["Row"];
 
@@ -57,6 +60,22 @@ export async function getJob(id: string) {
   return {
     ...data,
     media_urls: await signJobMediaUrls(supabase, data.media_urls ?? []),
+  };
+}
+
+export async function getJobForEdit(id: string): Promise<JobForEdit | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    ...data,
+    signed_media_urls: await signJobMediaUrls(supabase, data.media_urls ?? []),
   };
 }
 
@@ -153,6 +172,7 @@ export type OpenJobPreview = Pick<
   | "target_age_min"
   | "target_age_max"
   | "platforms"
+  | "media_urls"
 > &
   Partial<RecommendationDetails>;
 
@@ -164,14 +184,14 @@ export async function listOpenJobsPreview(
   const { data, error } = await supabase
     .from("jobs")
     .select(
-      "id, title, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms",
+      "id, title, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms, media_urls",
     )
     .eq("status", "open")
     .or(`deadline.is.null,deadline.gte.${now}`)
     .order("deadline", { ascending: true, nullsFirst: false })
     .limit(limit);
   if (error) throw error;
-  return data ?? [];
+  return signOpenJobPreviewMedia(supabase, data ?? []);
 }
 
 export type ActorPreview = {
@@ -742,6 +762,24 @@ async function signJobMediaUrls(
   return urls.map((url) => signedUrlByUrl.get(url) ?? url);
 }
 
+async function signOpenJobPreviewMedia<T extends { media_urls?: string[] | null }>(
+  supabase: ServerSupabaseClient,
+  jobs: readonly T[],
+): Promise<Array<T & { media_urls: string[] }>> {
+  const signedUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    jobs.flatMap((job) => job.media_urls ?? []),
+    "job-media",
+  );
+
+  return jobs.map((job) => ({
+    ...job,
+    media_urls: (job.media_urls ?? []).map(
+      (url) => signedUrlByUrl.get(url) ?? url,
+    ),
+  }));
+}
+
 function dateYearsAgo(years: number) {
   const date = new Date();
   date.setFullYear(date.getFullYear() - years);
@@ -792,7 +830,7 @@ export async function searchOpenJobs(
   let query = supabase
     .from("jobs")
     .select(
-      "id, title, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms",
+      "id, title, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms, media_urls",
       { count: "exact" },
     );
 
@@ -850,12 +888,13 @@ export async function searchOpenJobs(
 
   const { data, count, error } = await query;
   if (error) throw error;
+  const jobs = await signOpenJobPreviewMedia(supabase, data ?? []);
 
   if (sort === "recommended") {
     const actorProfile = await getActorRecommendationProfile(supabase);
     const rankedItems = actorProfile
-      ? rankJobsForActor(data ?? [], actorProfile)
-      : (data ?? []).map((job) => ({
+      ? rankJobsForActor(jobs, actorProfile)
+      : jobs.map((job) => ({
           ...job,
           match_score: 0,
           match_reasons: [],
@@ -869,7 +908,7 @@ export async function searchOpenJobs(
     };
   }
 
-  return { items: data ?? [], total: count ?? 0, page, pageSize };
+  return { items: jobs, total: count ?? 0, page, pageSize };
 }
 
 async function getActorRecommendationProfile(

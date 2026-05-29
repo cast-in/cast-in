@@ -9,6 +9,7 @@ import {
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { UpdateJobSchema, formatZodError } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPublicStoragePath } from "@/lib/supabase/storage-url";
 
 export type UpdateJobResult =
   | { ok: true }
@@ -31,6 +32,7 @@ export async function updateJobAction(
     target_genders: formData.getAll("target_genders").join(","),
     target_age_groups: formData.getAll("target_age_groups").join(","),
     platforms: formData.getAll("platforms").join(","),
+    media_urls: formData.getAll("media_urls").join(","),
     status: formData.get("status") ?? "open",
   });
   if (!parsed.success) {
@@ -50,7 +52,7 @@ export async function updateJobAction(
 
   const { data: job, error: fetchError } = await supabase
     .from("jobs")
-    .select("id, casting_id")
+    .select("id, casting_id, media_urls")
     .eq("id", parsed.data.job_id)
     .maybeSingle();
   if (fetchError) return { ok: false, error: fetchError.message };
@@ -73,8 +75,19 @@ export async function updateJobAction(
     target_genders,
     target_age_groups,
     platforms,
+    media_urls,
     status,
   } = parsed.data;
+  const existingMediaUrls = job.media_urls ?? [];
+  const existingMediaUrlSet = new Set(existingMediaUrls);
+  const validMediaUrls = media_urls.every((url) =>
+    existingMediaUrlSet.has(url) ||
+    getUserPublicStoragePath(url, "job-media", user.id),
+  );
+
+  if (!validMediaUrls) {
+    return { ok: false, error: "업로드한 공고 이미지를 다시 확인해주세요." };
+  }
 
   const { error } = await supabase
     .from("jobs")
@@ -93,6 +106,7 @@ export async function updateJobAction(
       target_age_groups:
         target_age_groups.length > 0 ? target_age_groups : JOB_AGE_GROUP_VALUES,
       platforms,
+      media_urls,
       status,
     })
     .eq("id", job_id)
@@ -100,8 +114,47 @@ export async function updateJobAction(
 
   if (error) return { ok: false, error: error.message };
 
+  await removeUnusedJobMedia({
+    nextUrls: media_urls,
+    previousUrls: existingMediaUrls,
+    supabase,
+    userId: user.id,
+  });
+
   revalidatePath(`/jobs/${job_id}`);
   revalidatePath("/jobs");
   revalidatePath("/discover");
+  revalidatePath("/talents");
+  revalidatePath("/bookmarks");
+  revalidatePath(`/castings/${user.id}`);
   redirect(`/jobs/${job_id}`);
+}
+
+async function removeUnusedJobMedia({
+  nextUrls,
+  previousUrls,
+  supabase,
+  userId,
+}: {
+  nextUrls: readonly string[];
+  previousUrls: readonly string[];
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  userId: string;
+}) {
+  const nextPaths = new Set(
+    nextUrls
+      .map((url) => getUserPublicStoragePath(url, "job-media", userId))
+      .filter((path): path is string => Boolean(path)),
+  );
+  const removedPaths = [
+    ...new Set(
+      previousUrls
+        .map((url) => getUserPublicStoragePath(url, "job-media", userId))
+        .filter((path): path is string => Boolean(path))
+        .filter((path) => !nextPaths.has(path)),
+    ),
+  ];
+
+  if (removedPaths.length === 0) return;
+  await supabase.storage.from("job-media").remove(removedPaths);
 }

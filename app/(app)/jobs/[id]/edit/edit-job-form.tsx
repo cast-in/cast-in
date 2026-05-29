@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { DateTimePicker } from "@/components/features/date-picker";
+import {
+  JobMediaUploader,
+  toJobMediaUploaderItem,
+} from "@/components/features/job-media-uploader";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
@@ -15,17 +19,24 @@ import {
   JOB_ROLE_TYPE_OPTIONS,
   JOB_TARGET_GENDER_OPTIONS,
 } from "@/lib/job-filter-options";
-import type { JobRow } from "@/lib/queries/jobs";
+import type { JobForEdit } from "@/lib/queries/jobs";
 import { cn } from "@/lib/utils";
 import { updateJobAction } from "./actions";
 
-export function EditJobForm({ job }: { job: JobRow }) {
+export function EditJobForm({ job }: { job: JobForEdit }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [mediaUploading, setMediaUploading] = useState(false);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    if (mediaUploading) {
+      toast.error("파일 업로드가 끝난 뒤 저장해주세요.");
+      return;
+    }
+
     const data = new FormData(e.currentTarget);
 
     startTransition(async () => {
@@ -145,6 +156,14 @@ export function EditJobForm({ job }: { job: JobRow }) {
         />
       </div>
 
+      <div className="grid gap-3 rounded-xl border border-border p-4">
+        <JobMediaUploader
+          userId={job.casting_id}
+          initialItems={getInitialMediaItems(job)}
+          onUploadingChange={setMediaUploading}
+        />
+      </div>
+
       <div className="grid gap-2">
         <Label htmlFor="requirements">요건 (쉼표 구분)</Label>
         <Input
@@ -167,11 +186,21 @@ export function EditJobForm({ job }: { job: JobRow }) {
       </div>
 
       <div className="mt-2 flex justify-end">
-        <Button type="submit" disabled={pending} className="min-w-32">
+        <Button
+          type="submit"
+          disabled={pending || mediaUploading}
+          className="min-w-32"
+        >
           {pending ? "저장하는 중이에요" : "저장하기"}
         </Button>
       </div>
     </form>
+  );
+}
+
+function getInitialMediaItems(job: JobForEdit) {
+  return job.media_urls.map((url, index) =>
+    toJobMediaUploaderItem(url, index, job.signed_media_urls[index] ?? url),
   );
 }
 

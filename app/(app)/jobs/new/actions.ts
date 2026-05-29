@@ -144,6 +144,8 @@ export async function createJobAction(
   }
 
   revalidatePath("/jobs");
+  revalidatePath("/discover");
+  revalidatePath("/talents");
   redirect("/jobs");
 }
 

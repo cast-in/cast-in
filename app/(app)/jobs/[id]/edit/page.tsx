@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { BackButton } from "@/components/features/back-button";
 import { PageContainer } from "@/components/page-container";
-import { getJob } from "@/lib/queries/jobs";
+import { getJobForEdit } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { EditJobForm } from "./edit-job-form";
 
@@ -15,7 +15,7 @@ export default async function EditJobPage({
   const { user, activeRole } = await getViewerProfile();
   if (activeRole !== "casting") redirect("/jobs");
 
-  const job = await getJob(id);
+  const job = await getJobForEdit(id);
   if (!job) notFound();
   if (job.casting_id !== user?.id) notFound();
 

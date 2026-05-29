@@ -1,19 +1,11 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  ImagePlus,
-  Info,
-  Lightbulb,
-  Loader2,
-  Plus,
-  Trash2,
-  Video,
-  X,
-} from "lucide-react";
+import { Info, Lightbulb, Plus, X } from "lucide-react";
 import { BackButton } from "@/components/features/back-button";
 import { DateTimePicker } from "@/components/features/date-picker";
+import { JobMediaUploader } from "@/components/features/job-media-uploader";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { Input } from "@/components/ui/input";
@@ -24,7 +16,6 @@ import {
   JOB_ROLE_TYPE_OPTIONS,
   JOB_TARGET_GENDER_OPTIONS,
 } from "@/lib/job-filter-options";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { createJobAction } from "./actions";
 
@@ -72,23 +63,10 @@ const GUIDE_ITEMS = [
   ["이미지 / 영상", "작품 포스터 및 무드보드", "이미지는 최대 3장, 영상은 1개까지 올려요."],
 ] as const;
 
-const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp"];
-const ALLOWED_VIDEO = ["video/mp4", "video/quicktime", "video/webm"];
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
-
 type JobQuestionDraft = {
   id: string;
   label: string;
   required: boolean;
-};
-
-type MediaItem = {
-  id: string;
-  name: string;
-  path: string;
-  type: "image" | "video";
-  url: string;
 };
 
 export function NewJobForm({ userId }: { userId: string }) {
@@ -447,218 +425,6 @@ function ChoicePills({
   );
 }
 
-function JobMediaUploader({
-  onUploadingChange,
-  userId,
-}: {
-  onUploadingChange: (uploading: boolean) => void;
-  userId: string;
-}) {
-  const imageInputId = useId();
-  const videoInputId = useId();
-  const [items, setItems] = useState<MediaItem[]>([]);
-  const [uploadingType, setUploadingType] = useState<"image" | "video" | null>(
-    null,
-  );
-  const [error, setError] = useState<string | null>(null);
-  const images = items.filter((item) => item.type === "image");
-  const videos = items.filter((item) => item.type === "video");
-
-  async function uploadFile(file: File, type: "image" | "video") {
-    setError(null);
-
-    if (type === "image") {
-      if (!ALLOWED_IMAGE.includes(file.type)) {
-        setError("PNG, JPG, WEBP 이미지만 올릴 수 있어요.");
-        return;
-      }
-      if (file.size > MAX_IMAGE_SIZE) {
-        setError("이미지는 10MB 이하만 올릴 수 있어요.");
-        return;
-      }
-      if (images.length >= 3) {
-        setError("이미지는 최대 3장까지 올릴 수 있어요.");
-        return;
-      }
-    }
-
-    if (type === "video") {
-      if (!ALLOWED_VIDEO.includes(file.type)) {
-        setError("MP4, MOV, WEBM 영상만 올릴 수 있어요.");
-        return;
-      }
-      if (file.size > MAX_VIDEO_SIZE) {
-        setError("영상은 100MB 이하만 올릴 수 있어요.");
-        return;
-      }
-      if (videos.length >= 1) {
-        setError("영상은 1개만 올릴 수 있어요.");
-        return;
-      }
-    }
-
-    setUploadingType(type);
-    onUploadingChange(true);
-    try {
-      const supabase = createClient();
-      const id = randomId();
-      const path = `${userId}/${type}/${id}.${extForFile(file)}`;
-      const { error: uploadErr } = await supabase.storage
-        .from("job-media")
-        .upload(path, file, {
-          cacheControl: "3600",
-          contentType: file.type,
-          upsert: false,
-        });
-
-      if (uploadErr) {
-        setError(uploadErr.message);
-        toast.error(uploadErr.message);
-        return;
-      }
-
-      const { data: publicUrl } = supabase.storage
-        .from("job-media")
-        .getPublicUrl(path);
-
-      setItems((prev) => [
-        ...prev,
-        { id, name: file.name, path, type, url: publicUrl.publicUrl },
-      ]);
-    } finally {
-      setUploadingType(null);
-      onUploadingChange(false);
-    }
-  }
-
-  async function removeItem(item: MediaItem) {
-    setItems((prev) => prev.filter((target) => target.id !== item.id));
-    await createClient().storage.from("job-media").remove([item.path]);
-  }
-
-  function handleChange(
-    event: React.ChangeEvent<HTMLInputElement>,
-    type: "image" | "video",
-  ) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
-    for (const file of files) void uploadFile(file, type);
-  }
-
-  return (
-    <div className="space-y-3">
-      {items.map((item) => (
-        <input key={item.id} type="hidden" name="media_urls" value={item.url} />
-      ))}
-
-      <Label className="font-bold">작품 포스터 / 무드보드</Label>
-      <div className="grid gap-3 md:grid-cols-2">
-        <UploadTile
-          accept={ALLOWED_IMAGE.join(",")}
-          description="PNG, JPG · 최대 10MB · 최대 3장"
-          disabled={uploadingType !== null || images.length >= 3}
-          htmlFor={imageInputId}
-          icon={<ImagePlus aria-hidden="true" className="size-8" />}
-          label={uploadingType === "image" ? "업로드 중" : "이미지 업로드"}
-          multiple
-          onChange={(event) => handleChange(event, "image")}
-          uploading={uploadingType === "image"}
-        />
-        <UploadTile
-          accept={ALLOWED_VIDEO.join(",")}
-          description="MP4, MOV, WEBM · 최대 100MB · 최대 1개"
-          disabled={uploadingType !== null || videos.length >= 1}
-          htmlFor={videoInputId}
-          icon={<Video aria-hidden="true" className="size-8" />}
-          label={uploadingType === "video" ? "업로드 중" : "영상 업로드"}
-          onChange={(event) => handleChange(event, "video")}
-          uploading={uploadingType === "video"}
-        />
-      </div>
-
-      {items.length > 0 ? (
-        <ul className="grid gap-2">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm"
-            >
-              <span className="min-w-0 truncate font-medium">{item.name}</span>
-              <Button
-                type="button"
-                size="icon-xs"
-                color="neutral"
-                variant="ghost"
-                aria-label={`${item.name} 삭제`}
-                onClick={() => void removeItem(item)}
-              >
-                <Trash2 aria-hidden="true" className="size-3.5" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
-    </div>
-  );
-}
-
-function UploadTile({
-  accept,
-  description,
-  disabled,
-  htmlFor,
-  icon,
-  label,
-  multiple = false,
-  onChange,
-  uploading,
-}: {
-  accept: string;
-  description: string;
-  disabled: boolean;
-  htmlFor: string;
-  icon: React.ReactNode;
-  label: string;
-  multiple?: boolean;
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  uploading: boolean;
-}) {
-  return (
-    <Label
-      htmlFor={htmlFor}
-      className={cn(
-        "grid min-h-36 cursor-pointer place-items-center rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center transition hover:bg-muted",
-        disabled && "pointer-events-none opacity-55",
-      )}
-    >
-      <input
-        id={htmlFor}
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        className="sr-only"
-        onChange={onChange}
-        disabled={disabled}
-      />
-      <span className="grid place-items-center gap-3">
-        <span className="grid size-12 place-items-center rounded-full bg-background shadow-sm">
-          {uploading ? (
-            <Loader2 aria-hidden="true" className="size-6 animate-spin" />
-          ) : (
-            icon
-          )}
-        </span>
-        <span className="text-sm font-extrabold">{label}</span>
-        <span className="text-xs font-medium text-muted-foreground">
-          {description}
-        </span>
-      </span>
-    </Label>
-  );
-}
-
 function ApplicationQuestionEditor({
   onQuestionsChange,
   questions,
@@ -788,13 +554,6 @@ function getValidQuestions(questions: JobQuestionDraft[]) {
       required: question.required,
     }))
     .filter((question) => question.label.length > 0);
-}
-
-function extForFile(file: File) {
-  const fromName = file.name.split(".").pop();
-  if (fromName && fromName.length <= 5) return fromName.toLowerCase();
-  const fromMime = file.type.split("/")[1];
-  return (fromMime ?? "bin").toLowerCase();
 }
 
 function randomId() {

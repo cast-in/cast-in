@@ -1,6 +1,7 @@
 import { calculateAge, formatDeadline } from "@/lib/format";
 import { isJobAccepting } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
+import { signPublicStorageUrls } from "@/lib/supabase/storage-url";
 import type { Database } from "@/types/database";
 import type {
   CastingActorPreview,
@@ -235,7 +236,7 @@ export async function listMyBookmarkedJobs(
   const { data: jobs, error: jobsError } = await supabase
     .from("jobs")
     .select(
-      "id, title, description, genre, region, deadline, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms, created_at",
+      "id, title, description, genre, region, deadline, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms, media_urls, created_at",
     )
     .in("id", jobIds);
   if (jobsError) throw jobsError;
@@ -322,7 +323,13 @@ export async function listMyBookmarkedJobs(
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize;
-  const items = filtered.slice(from, to).map(
+  const pagedJobs = filtered.slice(from, to);
+  const signedMediaUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    pagedJobs.flatMap((job) => job.media_urls ?? []),
+    "job-media",
+  );
+  const items = pagedJobs.map(
     (job): OpenJobPreview => ({
       id: job.id,
       title: job.title,
@@ -339,6 +346,9 @@ export async function listMyBookmarkedJobs(
       target_age_min: job.target_age_min,
       target_age_max: job.target_age_max,
       platforms: job.platforms ?? [],
+      media_urls: (job.media_urls ?? []).map(
+        (url) => signedMediaUrlByUrl.get(url) ?? url,
+      ),
     }),
   );
 

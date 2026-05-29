@@ -8,14 +8,10 @@ import {
   formatJobRoleType,
   getPrimaryJobPlatform,
 } from "@/lib/job-filter-options";
+import { getJobPosterSrc } from "@/lib/job-media";
 import { isJobAccepting } from "@/lib/job-status";
 import type { OpenJobPreview } from "@/lib/queries/jobs";
 import { cn } from "@/lib/utils";
-
-const jobPosterImages = [
-  "/job-posters/sample-1.png",
-  "/job-posters/sample-2.png",
-] as const;
 
 export function JobCard({
   job,
@@ -34,7 +30,7 @@ export function JobCard({
   const deadlineSignal = formatDeadlineSignal(job.deadline);
   const jobHref = detailHref ?? `/jobs/${job.id}`;
   const statusLabel = accepting ? "지원 가능" : "지원 마감";
-  const posterSrc = getJobPosterSrc(job.id);
+  const posterSrc = getJobPosterSrc(job);
   const primaryPlatform = getPrimaryJobPlatform(job.platforms);
   const matchScore = job.match_score ?? 0;
   const matchReasons = job.match_reasons?.slice(0, compact ? 1 : 2) ?? [];
@@ -183,14 +179,6 @@ function JobPostingPreview({ title, src }: { title: string; src: string }) {
       />
     </div>
   );
-}
-
-function getJobPosterSrc(jobId: string) {
-  const sum = Array.from(jobId).reduce(
-    (acc, char) => acc + char.charCodeAt(0),
-    0,
-  );
-  return jobPosterImages[sum % jobPosterImages.length];
 }
 
 function normalizeRegionLabel(region: string | null) {
