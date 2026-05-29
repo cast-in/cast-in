@@ -1,4 +1,5 @@
-import { calculateAge } from "@/lib/format";
+import { createClient as createSupabaseServiceClient } from "@supabase/supabase-js";
+import { calculateAge, formatDeadline } from "@/lib/format";
 import {
   parseAttachmentList,
   signAttachments,
@@ -13,7 +14,11 @@ import {
   type RecommendationDetails,
   type RecommendableJob,
 } from "@/lib/recommendations";
-import { normalizeJobMediaUrls } from "@/lib/job-media";
+import { getPrimaryJobImageUrl, normalizeJobMediaUrls } from "@/lib/job-media";
+import {
+  formatJobAudienceLabel,
+  formatJobRoleType,
+} from "@/lib/job-filter-options";
 import { createClient } from "@/lib/supabase/server";
 import {
   signPublicStorageUrl,
@@ -30,6 +35,7 @@ export type JobApplicationQuestion =
   Database["public"]["Tables"]["job_application_questions"]["Row"];
 
 const RECOMMENDATION_CANDIDATE_LIMIT = 200;
+const JOB_IMAGE_PRIORITY_CANDIDATE_LIMIT = 600;
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -243,6 +249,18 @@ export type LandingActor = ActorPreview & {
   updated_at: string;
 };
 
+export type LandingJobPosting = {
+  id: string;
+  title: string;
+  category: string;
+  location: string;
+  deadline: string;
+  role: string;
+  summary: string;
+  tags: string[];
+  imageUrl: string;
+};
+
 export async function listActorPreviews(limit = 6): Promise<ActorPreview[]> {
   const supabase = await createClient();
 
@@ -361,6 +379,60 @@ export async function listLandingActors(limit = 18): Promise<LandingActor[]> {
       : null,
     portfolio_image_urls: imageUrlsByActorId.get(actor.id) ?? [],
   }));
+}
+
+export async function listLandingJobsWithImages(
+  limit = 24,
+): Promise<LandingJobPosting[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) return [];
+
+  const supabase = createSupabaseServiceClient<Database>(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(
+      "id, title, description, genre, region, deadline, created_at, status, requirements, role_name, role_type, target_genders, target_age_groups, target_age_min, target_age_max, platforms, media_urls",
+    )
+    .eq("status", "open")
+    .or(`deadline.is.null,deadline.gte.${now}`)
+    .order("created_at", { ascending: false })
+    .limit(RECOMMENDATION_CANDIDATE_LIMIT);
+
+  if (error) throw error;
+
+  const jobsWithImages = (data ?? [])
+    .filter(hasPrimaryJobImage)
+    .slice(0, limit);
+
+  return jobsWithImages
+    .map((job): LandingJobPosting | null => {
+      const imageUrl = getPrimaryJobImageUrl(job.media_urls);
+      if (!imageUrl) return null;
+
+      return {
+        id: job.id,
+        title: job.title,
+        category: job.genre ?? "장르 미정",
+        location: normalizeRegionLabel(job.region),
+        deadline: formatDeadline(job.deadline),
+        role: job.role_name?.trim() || formatJobRoleType(job.role_type),
+        summary: formatLandingJobSummary(job),
+        tags: getLandingJobTags(job),
+        imageUrl,
+      };
+    })
+    .filter((job): job is LandingJobPosting => job !== null);
 }
 
 type SearchFilterValue = string | readonly string[];
@@ -791,6 +863,69 @@ async function signOpenJobPreviewMedia<T extends { media_urls?: string[] | null 
   }));
 }
 
+function prioritizeJobsWithImages<T extends { media_urls?: readonly string[] | null }>(
+  jobs: readonly T[],
+) {
+  return jobs
+    .map((job, index) => ({
+      job,
+      index,
+      hasImage: hasPrimaryJobImage(job),
+    }))
+    .sort((a, b) => {
+      if (a.hasImage !== b.hasImage) return a.hasImage ? -1 : 1;
+      return a.index - b.index;
+    })
+    .map(({ job }) => job);
+}
+
+function hasPrimaryJobImage(job: { media_urls?: readonly string[] | null }) {
+  return Boolean(getPrimaryJobImageUrl(job.media_urls));
+}
+
+function formatLandingJobSummary(job: {
+  description?: string | null;
+  requirements?: readonly string[] | null;
+}) {
+  const description = job.description?.trim();
+  if (description) return description;
+
+  const requirements = job.requirements?.filter(Boolean) ?? [];
+  if (requirements.length > 0) {
+    return `${requirements.slice(0, 3).join(", ")} 조건을 중심으로 검토해요.`;
+  }
+
+  return "작품에 어울리는 배우를 찾고 있어요. 상세 조건은 공고에서 확인할 수 있어요.";
+}
+
+function getLandingJobTags(job: {
+  genre?: string | null;
+  region?: string | null;
+  role_type?: string | null;
+  target_age_groups?: readonly string[] | null;
+  target_genders?: readonly string[] | null;
+  platforms?: readonly string[] | null;
+}) {
+  return [
+    job.genre,
+    normalizeRegionLabel(job.region),
+    formatJobRoleType(job.role_type),
+    formatJobAudienceLabel({
+      targetAgeGroups: job.target_age_groups,
+      targetGenders: job.target_genders,
+    }),
+    job.platforms?.[0],
+  ]
+    .map((item) => item?.trim())
+    .filter((item): item is string => Boolean(item))
+    .slice(0, 4);
+}
+
+function normalizeRegionLabel(region: string | null | undefined) {
+  if (!region) return "지역 협의";
+  return region.split("·")[0]?.trim() || region;
+}
+
 function dateYearsAgo(years: number) {
   const date = new Date();
   date.setFullYear(date.getFullYear() - years);
@@ -892,14 +1027,14 @@ export async function searchOpenJobs(
   } else {
     query = query.order("deadline", { ascending: true, nullsFirst: false });
   }
-  query =
-    sort === "recommended"
-      ? query.range(0, RECOMMENDATION_CANDIDATE_LIMIT - 1)
-      : query.range(from, to);
+  query = query.range(
+    0,
+    Math.max(to, JOB_IMAGE_PRIORITY_CANDIDATE_LIMIT - 1),
+  );
 
   const { data, count, error } = await query;
   if (error) throw error;
-  const jobs = await signOpenJobPreviewMedia(supabase, data ?? []);
+  const jobs = data ?? [];
 
   if (sort === "recommended") {
     const actorProfile = await getActorRecommendationProfile(supabase);
@@ -910,16 +1045,24 @@ export async function searchOpenJobs(
           match_score: 0,
           match_reasons: [],
         }));
+    const items = prioritizeJobsWithImages(rankedItems).slice(from, to + 1);
 
     return {
-      items: rankedItems.slice(from, to + 1),
+      items: await signOpenJobPreviewMedia(supabase, items),
       total: count ?? 0,
       page,
       pageSize,
     };
   }
 
-  return { items: jobs, total: count ?? 0, page, pageSize };
+  const items = prioritizeJobsWithImages(jobs).slice(from, to + 1);
+
+  return {
+    items: await signOpenJobPreviewMedia(supabase, items),
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
 }
 
 async function getActorRecommendationProfile(

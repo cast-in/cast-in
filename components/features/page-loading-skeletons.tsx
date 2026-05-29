@@ -341,18 +341,26 @@ function ListingSkeleton({
                 ? "sm:grid-cols-2 lg:grid-cols-4"
                 : card === "saved"
                   ? "lg:grid-cols-2"
-                  : "sm:grid-cols-2 lg:grid-cols-3",
+                  : "sm:grid-cols-2 lg:grid-cols-4",
             )}
           >
-            {Array.from({ length: card === "actor" ? 8 : 6 }).map((_, index) => (
-              <CardSkeleton key={index} />
-            ))}
+            {Array.from({ length: getListingSkeletonCount(card) }).map(
+              (_, index) => (
+                <CardSkeleton key={index} />
+              ),
+            )}
           </div>
           <PaginationSkeleton />
         </section>
       </LoadingStatus>
     </PageContainer>
   );
+}
+
+function getListingSkeletonCount(card: "job" | "actor" | "saved") {
+  if (card === "actor") return 8;
+  if (card === "job") return 12;
+  return 6;
 }
 
 function DetailInfoGrid({ rows = 4 }: { rows?: number }) {

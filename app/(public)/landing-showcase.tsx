@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import type { LandingActor } from "@/lib/queries/jobs";
+import type { LandingActor, LandingJobPosting } from "@/lib/queries/jobs";
 import { cn } from "@/lib/utils";
 import { XIcon } from "lucide-react";
 
@@ -30,17 +30,7 @@ type CompanyLogo = {
   src: string;
 };
 
-type JobPosting = {
-  title: string;
-  category: string;
-  location: string;
-  deadline: string;
-  role: string;
-  summary: string;
-  tags: string[];
-};
-
-type SelectedJobPosting = JobPosting & {
+type SelectedJobPosting = LandingJobPosting & {
   company: CompanyLogo;
 };
 
@@ -74,55 +64,14 @@ const DIRECTOR_ITEMS = createPlaceholderItems("actor", 36, DIRECTOR_TONES);
 const ACTOR_ITEMS = createPlaceholderItems("work", 36, ACTOR_TONES);
 const VISIBLE_OFFSETS = Array.from({ length: 29 }, (_, index) => index - 14);
 const VISUAL_RETURN_DURATION = 1100;
-const MOCK_JOB_POSTINGS: JobPosting[] = [
-  {
-    title: "OTT 시리즈 〈와일드씽〉",
-    category: "드라마",
-    location: "서울",
-    deadline: "5월 24일 마감",
-    role: "10대 후반부터 20대 초반 배우",
-    summary:
-      "밝고 에너지 있는 캐릭터를 찾고 있어요. 자연스러운 대사와 표정 연기가 중요해요.",
-    tags: ["주연급 조연", "서울 촬영", "프로필 필수"],
-  },
-  {
-    title: "브랜드 숏폼 캠페인",
-    category: "광고",
-    location: "경기",
-    deadline: "5월 27일 마감",
-    role: "20대 배우와 모델",
-    summary:
-      "제품을 자연스럽게 소개하는 숏폼 광고예요. 카메라 앞 움직임이 편한 분을 찾고 있어요.",
-    tags: ["숏폼", "1회차", "상업광고"],
-  },
-  {
-    title: "음악 예능 파일럿",
-    category: "예능",
-    location: "서울",
-    deadline: "5월 30일 마감",
-    role: "리액션이 좋은 패널",
-    summary:
-      "음악을 좋아하고 대화 흐름을 잘 이어갈 수 있는 출연자를 찾고 있어요.",
-    tags: ["파일럿", "스튜디오", "토크"],
-  },
-  {
-    title: "청춘 로맨스 웹드라마",
-    category: "웹드라마",
-    location: "인천",
-    deadline: "6월 2일 마감",
-    role: "고등학생 이미지 배우",
-    summary:
-      "친구 사이의 미묘한 감정을 표현하는 장면이 많아요. 생활 연기가 자연스러운 분이 좋아요.",
-    tags: ["웹드라마", "교복", "생활연기"],
-  },
-];
-
 export function LandingShowcase({
   actors = [],
   companyLogos = [],
+  jobPostings = [],
 }: {
   actors?: LandingActor[];
   companyLogos?: CompanyLogo[];
+  jobPostings?: LandingJobPosting[];
 }) {
   const [mode, setMode] = useState<LandingMode>("director");
   const [carouselPosition, setCarouselPositionState] = useState(0);
@@ -403,8 +352,8 @@ export function LandingShowcase({
   }
 
   function openRandomJob(company: CompanyLogo) {
-    const job =
-      MOCK_JOB_POSTINGS[Math.floor(Math.random() * MOCK_JOB_POSTINGS.length)];
+    const job = jobPostings[Math.floor(Math.random() * jobPostings.length)];
+    if (!job) return;
     setSelectedJob({ ...job, company });
   }
 
@@ -494,6 +443,7 @@ export function LandingShowcase({
                   carouselActivity={carouselActivity}
                   actors={displayActors}
                   companyLogos={companyLogos}
+                  jobPostingsAvailable={jobPostings.length > 0}
                   onActorPointerStart={handleActorPointerStart}
                   onActorSelect={handleActorSelect}
                   onCompanyPointerStart={handleCompanyPointerStart}
@@ -577,6 +527,7 @@ function PlaceholderCard({
   carouselActivity,
   actors,
   companyLogos,
+  jobPostingsAvailable,
   onActorPointerStart,
   onActorSelect,
   onCompanyPointerStart,
@@ -589,6 +540,7 @@ function PlaceholderCard({
   carouselActivity: number;
   actors: LandingActor[];
   companyLogos: CompanyLogo[];
+  jobPostingsAvailable: boolean;
   onActorPointerStart: (actor: LandingActor) => void;
   onActorSelect: (actor: LandingActor) => void;
   onCompanyPointerStart: (company: CompanyLogo) => void;
@@ -657,12 +609,19 @@ function PlaceholderCard({
               key={`${item.id}-${rowIndex}`}
               data-company-logo-button
               type="button"
-              aria-label={`${logo.name} 공고 보기`}
+              aria-label={
+                jobPostingsAvailable
+                  ? `${logo.name} 공고 보기`
+                  : `${logo.name} 공고 준비 중`
+              }
+              disabled={!jobPostingsAvailable}
               onPointerDown={() => {
+                if (!jobPostingsAvailable) return;
                 onCompanyPointerStart(logo);
               }}
               onClick={(event) => {
                 event.stopPropagation();
+                if (!jobPostingsAvailable) return;
                 onCompanySelect(logo);
               }}
               style={
@@ -670,7 +629,12 @@ function PlaceholderCard({
                   "--company-logo-filter": logoFilter,
                 } as CSSProperties
               }
-              className="relative h-[76px] w-[76px] cursor-pointer overflow-hidden rounded-[24px] bg-white shadow-[0_10px_24px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-[filter,box-shadow,transform] duration-200 [filter:var(--company-logo-filter)] hover:scale-[1.04] hover:![filter:none] hover:shadow-[0_16px_34px_rgba(0,0,0,0.2)] focus-visible:![filter:none] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/35 sm:h-[92px] sm:w-[92px] md:h-[104px] md:w-[104px]"
+              className={cn(
+                "relative h-[76px] w-[76px] overflow-hidden rounded-[24px] bg-white shadow-[0_10px_24px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-[filter,box-shadow,transform] duration-200 [filter:var(--company-logo-filter)] focus-visible:![filter:none] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/35 sm:h-[92px] sm:w-[92px] md:h-[104px] md:w-[104px]",
+                jobPostingsAvailable
+                  ? "cursor-pointer hover:scale-[1.04] hover:![filter:none] hover:shadow-[0_16px_34px_rgba(0,0,0,0.2)]"
+                  : "cursor-default opacity-70",
+              )}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -760,11 +724,11 @@ function JobPostingDialog({
           </DialogClose>
 
           <DialogDescription className="sr-only">
-            {job.company.name} 제작사의 {job.title} 공고 정보입니다.
+            {job.title} 공고 정보입니다.
           </DialogDescription>
 
           <div className="absolute inset-3 grid grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-4">
-            <JobPosterPlaceholder />
+            <JobPosterImage title={job.title} src={job.imageUrl} />
 
             <div className="grid min-h-0 grid-rows-[0.9fr_auto_auto] gap-3">
               <div className="relative min-h-0 overflow-hidden border border-border/60 bg-white">
@@ -826,12 +790,17 @@ function JobPostingDialog({
   );
 }
 
-function JobPosterPlaceholder() {
+function JobPosterImage({ title, src }: { title: string; src: string }) {
   return (
-    <div
-      aria-hidden="true"
-      className="min-h-0 border border-border/60 bg-muted/60"
-    />
+    <div className="min-h-0 overflow-hidden border border-border/60 bg-muted/60">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={`${title} 공고 이미지`}
+        className="h-full w-full object-cover object-center"
+        draggable={false}
+      />
+    </div>
   );
 }
 

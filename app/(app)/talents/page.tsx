@@ -30,7 +30,7 @@ import { searchCastingActors, searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 
 const PAGE_SIZE = 12;
-const JOB_PAGE_SIZE = 8;
+const JOB_PAGE_SIZE = 12;
 
 function parsePage(raw: string | string[] | undefined) {
   const value = Array.isArray(raw) ? raw[0] : raw;
