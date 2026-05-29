@@ -87,6 +87,7 @@ Storage bucket 중 `avatars`, `portfolio`, `job-media`, `attachments`는 private
 node --env-file=.env.local scripts/seed.mjs
 node --env-file=.env.local scripts/seed.mjs --reset
 node --env-file=.env.local scripts/seed.mjs --avatars-only
+node --env-file=.env.local scripts/seed.mjs --deadlines-only
 ```
 
 ## Security Notes

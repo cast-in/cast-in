@@ -28,6 +28,7 @@ import {
   formatJobAudienceLabel,
   formatJobRoleType,
 } from "@/lib/job-filter-options";
+import { getPrimaryJobImageUrl } from "@/lib/job-media";
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { getViewerProfile } from "@/lib/queries/viewer";
 import { cn } from "@/lib/utils";
@@ -49,11 +50,6 @@ type ActorApplicationFilter =
   | "pass"
   | "reject";
 type ActorApplicationSortValue = "latest" | "oldest";
-
-const fallbackJobPosterImages = [
-  "/job-posters/sample-1.png",
-  "/job-posters/sample-2.png",
-] as const;
 
 export default async function JobsPage({
   searchParams,
@@ -546,15 +542,23 @@ function CastingApplicantsPagination({
 }
 
 function JobPoster({ job }: { job: JobWithCounts }) {
+  const posterSrc = getJobPosterSrc(job);
+
   return (
     <span className="block size-[5.75rem] overflow-hidden rounded-md bg-muted">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={getJobPosterSrc(job)}
-        alt={`${job.title} 대표 이미지`}
-        className="h-full w-full object-cover object-center"
-        loading="lazy"
-      />
+      {posterSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={posterSrc}
+          alt={`${job.title} 대표 이미지`}
+          className="h-full w-full object-cover object-center"
+          loading="lazy"
+        />
+      ) : (
+        <span className="grid h-full w-full place-items-center text-xs font-medium text-muted-foreground">
+          이미지 없음
+        </span>
+      )}
     </span>
   );
 }
@@ -705,16 +709,7 @@ function formatApplicantSubmittedAt(iso: string | null) {
 }
 
 function getJobPosterSrc(job: JobWithCounts) {
-  const mediaUrl = job.media_urls.find(
-    (url) => !/\.(mp4|mov|webm)(?:$|\?)/i.test(url),
-  );
-  if (mediaUrl) return mediaUrl;
-
-  const sum = Array.from(job.id).reduce(
-    (acc, char) => acc + char.charCodeAt(0),
-    0,
-  );
-  return fallbackJobPosterImages[sum % fallbackJobPosterImages.length];
+  return getPrimaryJobImageUrl(job.media_urls);
 }
 
 function getGenderLabel(value: string | null) {
@@ -921,14 +916,22 @@ function ApplicationCard({
     <article className="grid min-h-[140px] gap-6 rounded-xl border border-border bg-card px-5 py-5 ring-1 ring-foreground/[0.03] md:grid-cols-[minmax(310px,1.15fr)_minmax(320px,1fr)] md:items-center lg:grid-cols-[minmax(360px,1.15fr)_minmax(330px,0.95fr)_minmax(210px,0.7fr)_auto] lg:px-8">
       <div className="flex min-w-0 items-center gap-4">
         <div className="size-24 shrink-0 overflow-hidden rounded-md bg-muted">
-          {/* Remote Supabase media URLs are user content, so this keeps the existing app pattern of native image rendering. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={posterSrc}
-            alt={`${application.job_title} 대표 이미지`}
-            className="h-full w-full object-cover object-center"
-            loading="lazy"
-          />
+          {posterSrc ? (
+            <>
+              {/* Remote Supabase media URLs are user content, so this keeps the existing app pattern of native image rendering. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={posterSrc}
+                alt={`${application.job_title} 대표 이미지`}
+                className="h-full w-full object-cover object-center"
+                loading="lazy"
+              />
+            </>
+          ) : (
+            <span className="grid h-full w-full place-items-center text-xs font-medium text-muted-foreground">
+              이미지 없음
+            </span>
+          )}
         </div>
 
         <div className="min-w-0 space-y-2">
@@ -1259,16 +1262,7 @@ function getActorApplicationStatus(status: ApplicationWithJob["status"]) {
 }
 
 function getApplicationPosterSrc(application: ApplicationWithJob) {
-  const mediaUrl = application.job_media_urls.find(
-    (url) => !/\.(mp4|mov|webm)(?:$|\?)/i.test(url),
-  );
-  if (mediaUrl) return mediaUrl;
-
-  const sum = Array.from(application.job_id).reduce(
-    (acc, char) => acc + char.charCodeAt(0),
-    0,
-  );
-  return fallbackJobPosterImages[sum % fallbackJobPosterImages.length];
+  return getPrimaryJobImageUrl(application.job_media_urls);
 }
 
 function buildActorApplicationsHref({

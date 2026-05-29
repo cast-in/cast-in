@@ -4,6 +4,7 @@
 //   node --env-file=.env.local scripts/seed.mjs
 //   node --env-file=.env.local scripts/seed.mjs --reset          # 기존 seed 유저 제거 후 재생성
 //   node --env-file=.env.local scripts/seed.mjs --avatars-only   # 기존 seed 유저의 avatar_url만 갱신
+//   node --env-file=.env.local scripts/seed.mjs --deadlines-only # 기존 seed 공고 마감일만 발표용으로 연장
 //
 // 필요: SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL in .env.local
 
@@ -23,6 +24,10 @@ const SEED_PASSWORD = "seedPass123!";
 const args = new Set(process.argv.slice(2));
 const RESET = args.has("--reset");
 const AVATARS_ONLY = args.has("--avatars-only");
+const DEADLINES_ONLY = args.has("--deadlines-only") || args.has("--refresh-deadlines");
+
+const DEMO_DEADLINE_MIN_DAYS = 35;
+const DEMO_DEADLINE_MAX_DAYS = 80;
 
 function actorAvatarUrl() {
   // 배우 기본 샘플 사진은 품질 편차가 커서 비워둔다.
@@ -60,11 +65,6 @@ const jobSchedules = [
   "주말 포함 3회차 촬영",
   "프로덕션 일정에 따라 협의",
 ];
-const jobMediaUrls = [
-  "/job-posters/sample-1.png",
-  "/job-posters/sample-2.png",
-];
-
 const creditTemplates = [
   { title: "영화 〈D.P〉", role: "조연" },
   { title: "OTT 드라마 〈서울 나이트〉", role: "단역" },
@@ -283,13 +283,15 @@ function randomWeightKg(gender) {
   if (gender === "female") return 44 + Math.floor(random() * 18);
   return 45 + Math.floor(random() * 30);
 }
-function randomFutureOrPastISO() {
-  // 80%는 앞으로 1~60일, 20%는 지난 1~30일(마감된 공고)
-  const offsetDays = random() < 0.8 ? 1 + Math.floor(random() * 60) : -(1 + Math.floor(random() * 30));
+function randomDemoDeadlineISO() {
+  // 발표용 seed는 실행일 기준 35~80일 뒤로 잡아 2주 뒤에도 공고가 사라지지 않게 한다.
+  const offsetDays =
+    DEMO_DEADLINE_MIN_DAYS +
+    Math.floor(random() * (DEMO_DEADLINE_MAX_DAYS - DEMO_DEADLINE_MIN_DAYS + 1));
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
   d.setHours(23, 59, 0, 0);
-  return { iso: d.toISOString(), isPast: offsetDays < 0 };
+  return { iso: d.toISOString(), offsetDays };
 }
 function inferJobRoleType(text) {
   if (text.includes("주연")) return "주연";
@@ -464,9 +466,56 @@ async function patchAvatarsOnly() {
   console.log(`🖼  아바타 업데이트 완료: ${updated}명`);
 }
 
+async function refreshSeedJobDeadlinesOnly() {
+  const { data: seedCastings, error: castingError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("role", "casting")
+    .like("email", `${SEED_EMAIL_PREFIX}casting-%@${SEED_DOMAIN}`);
+
+  if (castingError) throw new Error(`seed 캐스팅 조회 실패: ${castingError.message}`);
+  const castingIds = (seedCastings ?? []).map((profile) => profile.id);
+  if (castingIds.length === 0) {
+    console.log("연장할 seed 캐스팅 계정이 없어요.");
+    return;
+  }
+
+  const { data: seedJobs, error: jobsError } = await supabase
+    .from("jobs")
+    .select("id, title, status, deadline")
+    .in("casting_id", castingIds)
+    .order("deadline", { ascending: true });
+
+  if (jobsError) throw new Error(`seed 공고 조회 실패: ${jobsError.message}`);
+  if (!seedJobs?.length) {
+    console.log("연장할 seed 공고가 없어요.");
+    return;
+  }
+
+  let updated = 0;
+  for (const job of seedJobs) {
+    const { iso } = randomDemoDeadlineISO();
+    const { error } = await supabase
+      .from("jobs")
+      .update({ deadline: iso })
+      .eq("id", job.id);
+    if (error) throw new Error(`공고 마감일 갱신 실패(${job.title}): ${error.message}`);
+    updated += 1;
+    process.stdout.write(".");
+  }
+
+  console.log(
+    `\n📅 seed 공고 ${updated}개 마감일 갱신 완료 (${DEMO_DEADLINE_MIN_DAYS}~${DEMO_DEADLINE_MAX_DAYS}일 뒤)`,
+  );
+}
+
 // ───────────── 메인 ─────────────
 async function main() {
   console.log(`🚀 Supabase: ${SUPABASE_URL}`);
+  if (DEADLINES_ONLY) {
+    await refreshSeedJobDeadlinesOnly();
+    return;
+  }
   if (AVATARS_ONLY) {
     await patchAvatarsOnly();
     return;
@@ -541,9 +590,8 @@ async function main() {
       const tpl = pick(jobTemplates);
       const title = tpl.title.replace("{name}", pick(["여름","겨울","봄","이방인","낯선 이"]));
       const jobText = `${title} ${tpl.description}`;
-      const { iso: deadline, isPast } = randomFutureOrPastISO();
-      const rawStatus = pick(statuses);
-      const status = isPast && rawStatus === "open" ? "closed" : rawStatus;
+      const { iso: deadline } = randomDemoDeadlineISO();
+      const status = pick(statuses);
 
       const { data, error } = await supabase
         .from("jobs")
@@ -553,7 +601,7 @@ async function main() {
           description: tpl.description,
           fee_text: pick(jobFees),
           genre: tpl.genre,
-          media_urls: jobMediaUrls,
+          media_urls: [],
           region: pick(regions),
           deadline,
           requirements: pickMany(["연기 경력", "보컬", "영어", "승마", "운전 면허", "해외 촬영 가능"], 0, 3),

@@ -1,4 +1,5 @@
 import { calculateAge, formatDeadline } from "@/lib/format";
+import { normalizeJobMediaUrls } from "@/lib/job-media";
 import { isJobAccepting } from "@/lib/job-status";
 import { createClient } from "@/lib/supabase/server";
 import { signPublicStorageUrls } from "@/lib/supabase/storage-url";
@@ -324,9 +325,12 @@ export async function listMyBookmarkedJobs(
   const from = (page - 1) * pageSize;
   const to = from + pageSize;
   const pagedJobs = filtered.slice(from, to);
+  const mediaUrlsByJobId = new Map(
+    pagedJobs.map((job) => [job.id, normalizeJobMediaUrls(job.media_urls)]),
+  );
   const signedMediaUrlByUrl = await signPublicStorageUrls(
     supabase,
-    pagedJobs.flatMap((job) => job.media_urls ?? []),
+    Array.from(mediaUrlsByJobId.values()).flat(),
     "job-media",
   );
   const items = pagedJobs.map(
@@ -346,7 +350,7 @@ export async function listMyBookmarkedJobs(
       target_age_min: job.target_age_min,
       target_age_max: job.target_age_max,
       platforms: job.platforms ?? [],
-      media_urls: (job.media_urls ?? []).map(
+      media_urls: (mediaUrlsByJobId.get(job.id) ?? []).map(
         (url) => signedMediaUrlByUrl.get(url) ?? url,
       ),
     }),

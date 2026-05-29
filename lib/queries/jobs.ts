@@ -13,6 +13,7 @@ import {
   type RecommendationDetails,
   type RecommendableJob,
 } from "@/lib/recommendations";
+import { normalizeJobMediaUrls } from "@/lib/job-media";
 import { createClient } from "@/lib/supabase/server";
 import {
   signPublicStorageUrl,
@@ -45,7 +46,10 @@ export async function listMyJobs() {
     .eq("casting_id", user.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((job) => ({
+    ...job,
+    media_urls: normalizeJobMediaUrls(job.media_urls),
+  }));
 }
 
 export async function getJob(id: string) {
@@ -57,9 +61,10 @@ export async function getJob(id: string) {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  const mediaUrls = normalizeJobMediaUrls(data.media_urls);
   return {
     ...data,
-    media_urls: await signJobMediaUrls(supabase, data.media_urls ?? []),
+    media_urls: await signJobMediaUrls(supabase, mediaUrls),
   };
 }
 
@@ -72,10 +77,12 @@ export async function getJobForEdit(id: string): Promise<JobForEdit | null> {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
+  const mediaUrls = normalizeJobMediaUrls(data.media_urls);
 
   return {
     ...data,
-    signed_media_urls: await signJobMediaUrls(supabase, data.media_urls ?? []),
+    media_urls: mediaUrls,
+    signed_media_urls: await signJobMediaUrls(supabase, mediaUrls),
   };
 }
 
@@ -753,28 +760,32 @@ async function signJobMediaUrls(
   supabase: ServerSupabaseClient,
   urls: readonly string[],
 ) {
+  const mediaUrls = normalizeJobMediaUrls(urls);
   const signedUrlByUrl = await signPublicStorageUrls(
     supabase,
-    urls,
+    mediaUrls,
     "job-media",
   );
 
-  return urls.map((url) => signedUrlByUrl.get(url) ?? url);
+  return mediaUrls.map((url) => signedUrlByUrl.get(url) ?? url);
 }
 
 async function signOpenJobPreviewMedia<T extends { media_urls?: string[] | null }>(
   supabase: ServerSupabaseClient,
   jobs: readonly T[],
 ): Promise<Array<T & { media_urls: string[] }>> {
+  const mediaUrlsByJob = new Map(
+    jobs.map((job) => [job, normalizeJobMediaUrls(job.media_urls)]),
+  );
   const signedUrlByUrl = await signPublicStorageUrls(
     supabase,
-    jobs.flatMap((job) => job.media_urls ?? []),
+    Array.from(mediaUrlsByJob.values()).flat(),
     "job-media",
   );
 
   return jobs.map((job) => ({
     ...job,
-    media_urls: (job.media_urls ?? []).map(
+    media_urls: (mediaUrlsByJob.get(job) ?? []).map(
       (url) => signedUrlByUrl.get(url) ?? url,
     ),
   }));
@@ -1193,9 +1204,12 @@ export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
     if (a.status === "reject") agg.reject += 1;
   }
 
+  const mediaUrlsByJobId = new Map(
+    jobs.map((job) => [job.id, normalizeJobMediaUrls(job.media_urls)]),
+  );
   const signedMediaUrlByUrl = await signPublicStorageUrls(
     supabase,
-    jobs.flatMap((job) => job.media_urls ?? []),
+    Array.from(mediaUrlsByJobId.values()).flat(),
     "job-media",
   );
 
@@ -1210,7 +1224,7 @@ export async function listMyJobsWithCounts(): Promise<JobWithCounts[]> {
     };
     return {
       ...j,
-      media_urls: (j.media_urls ?? []).map(
+      media_urls: (mediaUrlsByJobId.get(j.id) ?? []).map(
         (url) => signedMediaUrlByUrl.get(url) ?? url,
       ),
       applicant_count: agg.total,
@@ -1285,9 +1299,12 @@ export async function listMyApplicationsWithJobs(
   ]);
 
   const jobById = new Map((jobs ?? []).map((job) => [job.id, job]));
+  const mediaUrlsByJobId = new Map(
+    (jobs ?? []).map((job) => [job.id, normalizeJobMediaUrls(job.media_urls)]),
+  );
   const signedMediaUrlByUrl = await signPublicStorageUrls(
     supabase,
-    (jobs ?? []).flatMap((job) => job.media_urls ?? []),
+    Array.from(mediaUrlsByJobId.values()).flat(),
     "job-media",
   );
   const roomsByJobId = new Map((rooms ?? []).map((room) => [room.job_id, room]));
@@ -1347,7 +1364,7 @@ export async function listMyApplicationsWithJobs(
         job_role_type: job.role_type,
         job_target_age_groups: job.target_age_groups ?? [],
         job_target_genders: job.target_genders ?? [],
-        job_media_urls: (job.media_urls ?? []).map(
+        job_media_urls: (mediaUrlsByJobId.get(job.id) ?? []).map(
           (url) => signedMediaUrlByUrl.get(url) ?? url,
         ),
         deadline: job.deadline,

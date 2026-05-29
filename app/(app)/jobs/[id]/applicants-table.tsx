@@ -43,8 +43,8 @@ export function ApplicantsTable({ applicants }: { applicants: Applicant[] }) {
           <TableHead>지원 사유</TableHead>
           <TableHead>첨부</TableHead>
           <TableHead>상태</TableHead>
-          <TableHead>내부 메모</TableHead>
-          <TableHead>액션</TableHead>
+          <TableHead className="w-[18rem] max-w-[18rem]">내부 메모</TableHead>
+          <TableHead className="w-32">액션</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -86,7 +86,7 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
           />
         </div>
       </TableCell>
-      <TableCell className="max-w-[240px]">
+      <TableCell className="w-[18rem] max-w-[18rem]">
         <CastingMemoCell
           applicantId={applicant.id}
           applicantName={applicant.actor_name}
@@ -94,7 +94,7 @@ function ApplicantRow({ applicant }: { applicant: Applicant }) {
           onSaved={(next) => setCastingMemo(next)}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className="w-32">
         <JobConversationButton
           jobId={applicant.job_id}
           actorId={applicant.actor_id}
@@ -154,15 +154,24 @@ function CastingMemoCell({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <div className="flex items-start gap-2">
         <p
+          title={memo ?? undefined}
           className={cn(
-            "flex-1 text-sm leading-6",
+            "min-w-0 flex-1 truncate text-sm leading-6",
             memo ? "text-foreground" : "text-muted-foreground",
           )}
         >
           {memo ?? "메모 없음"}
         </p>
         <DialogTrigger
-          render={<Button color="neutral" variant="ghost" size="sm" aria-label="내부 메모 수정" />}
+          render={
+            <Button
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              aria-label="내부 메모 수정"
+            />
+          }
         >
           <Pencil aria-hidden="true" className="size-4" />
         </DialogTrigger>

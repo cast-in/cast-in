@@ -18,6 +18,7 @@ import {
   formatJobRoleType,
   getPrimaryJobPlatform,
 } from "@/lib/job-filter-options";
+import { normalizeJobMediaUrls } from "@/lib/job-media";
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import { getCastingProfileDetail } from "@/lib/queries/castings";
 import { getViewerProfile } from "@/lib/queries/viewer";
@@ -30,10 +31,6 @@ type CastingProfile = NonNullable<
 type CastingJob = CastingProfile["jobs"][number];
 
 const sectionCardClassName = "rounded-[22px] px-5 py-6 md:px-7 md:py-7";
-const fallbackMedia = [
-  "/job-posters/sample-1.png",
-  "/job-posters/sample-2.png",
-] as const;
 
 export default async function CastingProfilePage({
   params,
@@ -208,7 +205,13 @@ function BasicInfoCard({
 }
 
 function WorkVideoSection({ jobs }: { jobs: CastingJob[] }) {
-  const visibleJobs = jobs.slice(0, 2);
+  const jobsWithMedia = jobs
+    .map((job) => ({ job, thumbnail: getJobMediaUrl(job) }))
+    .filter(
+      (item): item is { job: CastingJob; thumbnail: string } =>
+        item.thumbnail !== null,
+    );
+  const visibleJobs = jobsWithMedia.slice(0, 2);
 
   return (
     <SurfaceCard className={sectionCardClassName}>
@@ -219,21 +222,25 @@ function WorkVideoSection({ jobs }: { jobs: CastingJob[] }) {
       ) : (
         <>
           <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {visibleJobs.map((job, index) => (
-              <VideoTile key={job.id} job={job} index={index} />
+            {visibleJobs.map(({ job, thumbnail }) => (
+              <VideoTile key={job.id} job={job} thumbnail={thumbnail} />
             ))}
           </div>
 
-          {jobs.length > 2 ? <MoreLink href="#casting-projects" /> : null}
+          {jobsWithMedia.length > 2 ? <MoreLink href="#casting-projects" /> : null}
         </>
       )}
     </SurfaceCard>
   );
 }
 
-function VideoTile({ job, index }: { job: CastingJob; index: number }) {
-  const thumbnail = getJobMediaUrl(job, index);
-
+function VideoTile({
+  job,
+  thumbnail,
+}: {
+  job: CastingJob;
+  thumbnail: string;
+}) {
   return (
     <Link
       href={`/jobs/${job.id}?from=discover`}
@@ -463,14 +470,11 @@ function formatActivityRegion(jobs: CastingJob[]) {
 }
 
 function getCastingMediaUrls(jobs: CastingJob[]) {
-  return jobs.flatMap((job) =>
-    (job.media_urls ?? []).filter((url) => url.trim().length > 0),
-  );
+  return jobs.flatMap((job) => normalizeJobMediaUrls(job.media_urls));
 }
 
-function getJobMediaUrl(job: CastingJob, index: number) {
-  return job.media_urls.find((url) => url.trim().length > 0) ??
-    fallbackMedia[index % fallbackMedia.length];
+function getJobMediaUrl(job: CastingJob) {
+  return normalizeJobMediaUrls(job.media_urls)[0] ?? null;
 }
 
 function formatJobYear(job: CastingJob) {

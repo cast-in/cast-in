@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { normalizeJobMediaUrls } from "@/lib/job-media";
 import {
   signPublicStorageUrl,
   signPublicStorageUrls,
@@ -85,7 +86,10 @@ export async function getCastingProfileDetail(
   if (error) throw error;
   if (!profile || !castingProfile) return null;
 
-  const allMediaUrls = (jobs ?? []).flatMap((job) => job.media_urls ?? []);
+  const mediaUrlsByJobId = new Map(
+    (jobs ?? []).map((job) => [job.id, normalizeJobMediaUrls(job.media_urls)]),
+  );
+  const allMediaUrls = Array.from(mediaUrlsByJobId.values()).flat();
   const [avatarUrl, signedMediaUrlByUrl] = await Promise.all([
     signPublicStorageUrl(supabase, profile.avatar_url, "avatars"),
     signPublicStorageUrls(supabase, allMediaUrls, "job-media"),
@@ -101,7 +105,7 @@ export async function getCastingProfileDetail(
     job_count: jobCount ?? 0,
     jobs: (jobs ?? []).map((job) => ({
       ...job,
-      media_urls: (job.media_urls ?? []).map(
+      media_urls: (mediaUrlsByJobId.get(job.id) ?? []).map(
         (url) => signedMediaUrlByUrl.get(url) ?? url,
       ),
     })),

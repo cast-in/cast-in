@@ -167,7 +167,21 @@ export function JobCard({
   );
 }
 
-function JobPostingPreview({ title, src }: { title: string; src: string }) {
+function JobPostingPreview({
+  title,
+  src,
+}: {
+  title: string;
+  src: string | null;
+}) {
+  if (!src) {
+    return (
+      <div className="grid h-full w-full place-items-center bg-muted text-xs font-medium text-muted-foreground">
+        이미지 없음
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full overflow-hidden bg-muted transition-transform duration-200 group-hover:scale-[1.02]">
       {/* eslint-disable-next-line @next/next/no-img-element */}

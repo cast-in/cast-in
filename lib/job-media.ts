@@ -1,4 +1,4 @@
-export const fallbackJobPosterImages = [
+const placeholderJobPosterImages = [
   "/job-posters/sample-1.png",
   "/job-posters/sample-2.png",
 ] as const;
@@ -11,27 +11,34 @@ export function getPrimaryJobImageUrl(
   mediaUrls: readonly string[] | null | undefined,
 ) {
   return (
-    mediaUrls?.find(
-      (url) => url.trim().length > 0 && !isJobVideoMediaUrl(url),
-    ) ?? null
+    normalizeJobMediaUrls(mediaUrls).find((url) => !isJobVideoMediaUrl(url)) ??
+    null
   );
 }
 
-export function getFallbackJobPosterSrc(jobId: string) {
-  const sum = Array.from(jobId).reduce(
-    (acc, char) => acc + char.charCodeAt(0),
-    0,
+export function isPlaceholderJobPosterUrl(url: string) {
+  const pathname = getUrlPathname(url);
+  return Boolean(
+    pathname &&
+      placeholderJobPosterImages.some((placeholder) => pathname === placeholder),
   );
-  return fallbackJobPosterImages[sum % fallbackJobPosterImages.length];
+}
+
+export function normalizeJobMediaUrls(
+  mediaUrls: readonly string[] | null | undefined,
+) {
+  return (
+    mediaUrls
+      ?.map((url) => url.trim())
+      .filter((url) => url.length > 0 && !isPlaceholderJobPosterUrl(url)) ?? []
+  );
 }
 
 export function getJobPosterSrc(job: {
   id: string;
   media_urls?: readonly string[] | null;
 }) {
-  return (
-    getPrimaryJobImageUrl(job.media_urls) ?? getFallbackJobPosterSrc(job.id)
-  );
+  return getPrimaryJobImageUrl(job.media_urls);
 }
 
 export function getMediaFileName(url: string, fallback: string) {

@@ -16,6 +16,7 @@ import {
   formatJobPlatformsLabel,
   formatJobRoleType,
 } from "@/lib/job-filter-options";
+import { normalizeJobMediaUrls } from "@/lib/job-media";
 import { getJobAvailabilityLabel, isJobAccepting } from "@/lib/job-status";
 import {
   getJob,
@@ -32,12 +33,6 @@ import { ApplicantsTable } from "./applicants-table";
 import { closeJobAction } from "./actions";
 
 type Job = NonNullable<Awaited<ReturnType<typeof getJob>>>;
-
-const fallbackJobMedia = [
-  "/job-posters/sample-1.png",
-  "/job-posters/sample-2.png",
-  "/job-posters/sample-1.png",
-] as const;
 
 export default async function JobDetailPage({
   params,
@@ -551,17 +546,40 @@ function JobInfoList({ items }: { items: JobInfoItem[] }) {
 function JobMediaGallery({ job }: { job: Job }) {
   const mediaUrls = getJobMediaUrls(job);
 
+  if (mediaUrls.length === 0) {
+    return (
+      <div className="grid min-h-40 place-items-center rounded-2xl bg-muted/25 px-5 py-8 text-center">
+        <p className="text-sm font-medium text-muted-foreground">
+          등록된 이미지나 영상이 없어요.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.55fr)]">
+    <div
+      className={cn(
+        "grid gap-3",
+        mediaUrls.length > 1 &&
+          "lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.55fr)]",
+      )}
+    >
       <MediaTile
         src={mediaUrls[0]}
         alt={`${job.title} 대표 이미지`}
         className="aspect-[16/9]"
       />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-        <MediaTile src={mediaUrls[1]} alt={`${job.title} 참고 이미지 1`} />
-        <MediaTile src={mediaUrls[2]} alt={`${job.title} 참고 이미지 2`} />
-      </div>
+      {mediaUrls.length > 1 ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+          {mediaUrls.slice(1, 3).map((url, index) => (
+            <MediaTile
+              key={`${url}-${index}`}
+              src={url}
+              alt={`${job.title} 참고 이미지 ${index + 1}`}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -594,14 +612,7 @@ function MediaTile({
 }
 
 function getJobMediaUrls(job: Job) {
-  const mediaUrls = job.media_urls.filter((url) => url.trim().length > 0);
-  const urls = mediaUrls.length > 0 ? [...mediaUrls] : [...fallbackJobMedia];
-
-  while (urls.length < 3) {
-    urls.push(fallbackJobMedia[urls.length % fallbackJobMedia.length]);
-  }
-
-  return urls.slice(0, 3);
+  return normalizeJobMediaUrls(job.media_urls).slice(0, 3);
 }
 
 function formatDeadlineDate(iso: string | null) {
