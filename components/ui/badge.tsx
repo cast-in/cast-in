@@ -39,7 +39,7 @@ const badgeVariants = cva(
         color: "secondary",
         variant: "fill",
         className:
-          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary-hover",
+          "bg-secondary-soft text-secondary-soft-foreground [a]:hover:bg-secondary-soft-hover",
       },
       {
         color: "success",
