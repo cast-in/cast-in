@@ -223,7 +223,7 @@ export default async function MessagesPage({
                               {chatRoom.other_name}
                             </p>
                             <p className="mt-1 truncate text-sm text-muted-foreground">
-                              {chatRoom.job_title ?? "공고 없이 시작한 대화"}
+                              {chatRoom.last_message_preview ?? "아직 대화가 없어요."}
                             </p>
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-2 text-right">
@@ -345,9 +345,11 @@ function filterRooms({
     if (filter === "unread" && room.unread_count === 0) return false;
     if (!normalizedQuery) return true;
 
-    return [room.other_name, room.job_title ?? ""].some((value) =>
-      value.toLowerCase().includes(normalizedQuery),
-    );
+    return [
+      room.other_name,
+      room.job_title ?? "",
+      room.last_message_preview ?? "",
+    ].some((value) => value.toLowerCase().includes(normalizedQuery));
   });
 }
 
