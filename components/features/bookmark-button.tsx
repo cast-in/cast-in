@@ -12,7 +12,6 @@ export function BookmarkButton({
   targetType,
   targetId,
   bookmarked,
-  redirectTo,
   compact = false,
   icon = "bookmark",
   className,
@@ -20,7 +19,6 @@ export function BookmarkButton({
   targetType: BookmarkTargetType;
   targetId: string;
   bookmarked: boolean;
-  redirectTo: string;
   compact?: boolean;
   icon?: "bookmark" | "heart";
   className?: string;
@@ -35,13 +33,15 @@ export function BookmarkButton({
     const formData = new FormData();
     formData.set("target_type", targetType);
     formData.set("target_id", targetId);
-    formData.set("redirect_to", redirectTo);
+    formData.set("bookmarked", String(next));
     startTransition(async () => {
       const result = await toggleBookmarkAction(formData);
       if (!result.ok) {
         setOptimistic(!next);
         toast.error(result.error);
+        return;
       }
+      setOptimistic(result.bookmarked);
     });
   }
 
@@ -50,13 +50,13 @@ export function BookmarkButton({
       type="button"
       onClick={handleClick}
       disabled={pending}
-      isLoading={pending}
       aria-pressed={optimistic}
       aria-label={optimistic ? "저장 취소" : "저장하기"}
       color={compact ? "neutral" : optimistic ? "secondary" : "neutral"}
       variant={compact ? "ghost" : optimistic ? "fill" : "outline"}
       size={compact ? "icon-lg" : "sm"}
       className={cn(
+        "disabled:cursor-pointer disabled:opacity-100",
         compact && "rounded-full text-muted-foreground hover:text-foreground",
         compact && optimistic && "bg-primary/10 text-primary hover:bg-primary/15",
         className,

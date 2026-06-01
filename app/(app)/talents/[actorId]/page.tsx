@@ -125,7 +125,6 @@ function ActorProfileActions({
         targetType="actor"
         targetId={actorId}
         bookmarked={bookmarked}
-        redirectTo={`/talents/${actorId}`}
         compact
         icon="heart"
         className={iconButtonClassName}

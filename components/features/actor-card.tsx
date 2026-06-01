@@ -8,11 +8,9 @@ import type { CastingActorPreview } from "@/lib/queries/jobs";
 export function ActorCard({
   actor,
   bookmarked,
-  redirectTo,
 }: {
   actor: CastingActorPreview;
   bookmarked: boolean;
-  redirectTo: string;
 }) {
   const actorHref = `/talents/${actor.id}`;
   const tags = getActorTags(actor);
@@ -42,7 +40,6 @@ export function ActorCard({
           targetType="actor"
           targetId={actor.id}
           bookmarked={bookmarked}
-          redirectTo={redirectTo}
           compact
           icon="heart"
           className="absolute right-3 top-3 z-10 bg-background/85 backdrop-blur hover:bg-background"

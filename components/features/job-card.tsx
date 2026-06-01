@@ -16,13 +16,11 @@ import { cn } from "@/lib/utils";
 export function JobCard({
   job,
   bookmarked,
-  redirectTo,
   compact = false,
   detailHref,
 }: {
   job: OpenJobPreview;
   bookmarked: boolean;
-  redirectTo: string;
   compact?: boolean;
   detailHref?: string;
 }) {
@@ -76,7 +74,6 @@ export function JobCard({
           targetType="job"
           targetId={job.id}
           bookmarked={bookmarked}
-          redirectTo={redirectTo}
           compact
           icon="heart"
           className={cn(

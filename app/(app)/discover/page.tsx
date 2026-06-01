@@ -84,18 +84,6 @@ export default async function DiscoverPage({
     "job",
     items.map((job) => job.id),
   );
-  const redirectTo = buildDiscoverPath({
-    q,
-    region,
-    genre,
-    role: roleType,
-    target_gender: targetGender,
-    age_group: targetAgeGroup,
-    platform,
-    sort,
-    status: jobState,
-    page,
-  });
   const hasFilters = Boolean(
     q ||
       region.length ||
@@ -170,7 +158,6 @@ export default async function DiscoverPage({
                     key={`featured-${job.id}`}
                     job={job}
                     bookmarked={bookmarkedIds.has(job.id)}
-                    redirectTo={redirectTo}
                     detailHref={`/jobs/${job.id}?from=discover`}
                     compact
                   />
@@ -192,7 +179,6 @@ export default async function DiscoverPage({
                   key={job.id}
                   job={job}
                   bookmarked={bookmarkedIds.has(job.id)}
-                  redirectTo={redirectTo}
                   detailHref={`/jobs/${job.id}?from=discover`}
                 />
               ))}
@@ -236,23 +222,4 @@ function CastingJobsHero() {
       </p>
     </section>
   );
-}
-
-type QueryValue = string | number | readonly string[] | undefined;
-
-function buildDiscoverPath(params: Record<string, QueryValue>) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      const normalized = String(item ?? "").trim();
-      if (!normalized) continue;
-      if (key === "page" && normalized === "1") continue;
-      if (key === "status" && normalized === "active") continue;
-      if (key === "sort" && normalized === "latest") continue;
-      query.append(key, normalized);
-    }
-  }
-  const qs = query.toString();
-  return qs ? `/discover?${qs}` : "/discover";
 }

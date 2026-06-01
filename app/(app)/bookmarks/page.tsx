@@ -162,17 +162,6 @@ async function SavedJobsPage({
     page,
     pageSize: BOOKMARK_JOB_PAGE_SIZE,
   });
-  const redirectTo = buildBookmarksPath({
-    q,
-    region,
-    genre,
-    role: roleType,
-    target_gender: targetGender,
-    age_group: targetAgeGroup,
-    platform,
-    sort,
-    page,
-  });
   const hasFilters = Boolean(
     q ||
       region.length ||
@@ -249,7 +238,6 @@ async function SavedJobsPage({
                 key={job.id}
                 job={job}
                 bookmarked
-                redirectTo={redirectTo}
               />
             ))}
           </div>
@@ -311,18 +299,6 @@ async function SavedActorsPage({
     sort,
     page,
     pageSize: BOOKMARK_ACTOR_PAGE_SIZE,
-  });
-  const redirectTo = buildBookmarksPath({
-    age_group: ageGroup,
-    gender,
-    genre,
-    height: heightRange,
-    nationality,
-    page,
-    q,
-    region,
-    skill,
-    sort,
   });
   const hasFilters = Boolean(
     q ||
@@ -402,7 +378,6 @@ async function SavedActorsPage({
                 key={actor.id}
                 actor={actor}
                 bookmarked
-                redirectTo={redirectTo}
               />
             ))}
           </div>
@@ -468,22 +443,4 @@ function SavedActorsHero() {
       </p>
     </section>
   );
-}
-
-type QueryValue = string | number | readonly string[] | undefined;
-
-function buildBookmarksPath(params: Record<string, QueryValue>) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      const normalized = String(item ?? "").trim();
-      if (!normalized) continue;
-      if (key === "page" && normalized === "1") continue;
-      if (key === "sort" && normalized === "latest") continue;
-      query.append(key, normalized);
-    }
-  }
-  const qs = query.toString();
-  return qs ? `/bookmarks?${qs}` : "/bookmarks";
 }

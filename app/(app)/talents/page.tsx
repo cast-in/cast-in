@@ -195,19 +195,6 @@ async function CastingTalentsPage({
     ),
     countBookmarkedTargets("actor").catch(() => 0),
   ]);
-  const redirectTo = buildTalentsPath({
-    age_group: ageGroup,
-    q,
-    region,
-    genre,
-    gender,
-    height: heightRange,
-    nationality,
-    page,
-    skill,
-    sort,
-  });
-
   return (
     <PageContainer size="wide" className="space-y-8">
       <CastingActorsHero savedActorCount={savedActorCount} />
@@ -265,7 +252,6 @@ async function CastingTalentsPage({
                 key={actor.id}
                 actor={actor}
                 bookmarked={bookmarkedIds.has(actor.id)}
-                redirectTo={redirectTo}
               />
             ))}
           </div>
@@ -336,18 +322,6 @@ async function ActorTalentsPage({
     ),
     countBookmarkedTargets("job").catch(() => 0),
   ]);
-  const redirectTo = buildTalentsPath({
-    q,
-    region,
-    genre,
-    role: roleType,
-    target_gender: targetGender,
-    age_group: targetAgeGroup,
-    platform,
-    sort,
-    status: jobState,
-    page,
-  });
   const hasFilters = Boolean(
     q ||
       region.length ||
@@ -426,7 +400,6 @@ async function ActorTalentsPage({
                     key={`featured-${job.id}`}
                     job={job}
                     bookmarked={bookmarkedIds.has(job.id)}
-                    redirectTo={redirectTo}
                     compact
                   />
                 ))}
@@ -447,7 +420,6 @@ async function ActorTalentsPage({
                   key={job.id}
                   job={job}
                   bookmarked={bookmarkedIds.has(job.id)}
-                  redirectTo={redirectTo}
                 />
               ))}
             </div>
@@ -555,23 +527,4 @@ function ActorJobsHero({ savedJobCount }: { savedJobCount: number }) {
       </div>
     </section>
   );
-}
-
-type QueryValue = string | number | readonly string[] | undefined;
-
-function buildTalentsPath(params: Record<string, QueryValue>) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    const values = Array.isArray(value) ? value : [value];
-    for (const item of values) {
-      const normalized = String(item ?? "").trim();
-      if (!normalized) continue;
-      if (key === "page" && normalized === "1") continue;
-      if (key === "status" && normalized === "active") continue;
-      if (key === "sort" && normalized === "recommended") continue;
-      query.append(key, normalized);
-    }
-  }
-  const qs = query.toString();
-  return qs ? `/talents?${qs}` : "/talents";
 }
