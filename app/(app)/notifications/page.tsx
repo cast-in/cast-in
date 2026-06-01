@@ -22,7 +22,7 @@ export default async function NotificationsPage() {
         unreadCount > 0 ? (
           <form action={markAllNotificationsReadAction}>
             <Button type="submit" color="secondary" size="sm">
-              모두 읽음
+              모두 읽기
             </Button>
           </form>
         ) : null
@@ -61,12 +61,6 @@ export default async function NotificationsPage() {
                 </time>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
-                <Link
-                  href={notification.href}
-                  className={buttonVariants({ size: "sm" })}
-                >
-                  확인하기
-                </Link>
                 {!notification.read_at ? (
                   <form action={markNotificationReadAction}>
                     <input
@@ -74,7 +68,36 @@ export default async function NotificationsPage() {
                       name="notification_id"
                       value={notification.id}
                     />
-                    <Button type="submit" color="neutral" variant="outline" size="sm">
+                    <input
+                      type="hidden"
+                      name="redirect_to"
+                      value={notification.href}
+                    />
+                    <Button type="submit" size="sm">
+                      확인하기
+                    </Button>
+                  </form>
+                ) : (
+                  <Link
+                    href={notification.href}
+                    className={buttonVariants({ size: "sm" })}
+                  >
+                    확인하기
+                  </Link>
+                )}
+                {!notification.read_at ? (
+                  <form action={markNotificationReadAction}>
+                    <input
+                      type="hidden"
+                      name="notification_id"
+                      value={notification.id}
+                    />
+                    <Button
+                      type="submit"
+                      color="neutral"
+                      variant="outline"
+                      size="sm"
+                    >
                       읽음
                     </Button>
                   </form>

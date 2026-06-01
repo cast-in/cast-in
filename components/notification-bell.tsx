@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { Bell, ChevronRight } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import {
+  markAllNotificationsReadAction,
+  markNotificationReadAction,
+} from "@/app/(app)/notifications/actions";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import type { NotificationItem } from "@/lib/queries/notifications";
 import { cn } from "@/lib/utils";
@@ -89,11 +92,14 @@ export function NotificationBell({
           <div className="flex items-center justify-between gap-3 px-2 py-2">
             <h2 id={menuTitleId} className="text-sm font-semibold">
               알림
+              {unreadCount > 0 ? ` ${unreadCount > 99 ? "99+" : unreadCount}` : ""}
             </h2>
             {unreadCount > 0 ? (
-              <Badge color="secondary" variant="soft">
-                새 알림 {unreadCount > 99 ? "99+" : unreadCount}
-              </Badge>
+              <form action={markAllNotificationsReadAction}>
+                <Button type="submit" color="neutral" variant="ghost" size="xs">
+                  모두 읽기
+                </Button>
+              </form>
             ) : null}
           </div>
 
@@ -105,39 +111,10 @@ export function NotificationBell({
             <ul className="mt-1 space-y-1">
               {notifications.map((notification) => (
                 <li key={notification.id}>
-                  <Link
-                    href={notification.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "block rounded-2xl px-3 py-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                      notification.read_at ? "" : "bg-primary/5",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          {!notification.read_at ? (
-                            <span
-                              aria-label="새 알림"
-                              className="size-1.5 shrink-0 rounded-full bg-primary"
-                            />
-                          ) : null}
-                          <p className="truncate text-sm font-medium">
-                            {notification.title}
-                          </p>
-                        </div>
-                        <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                          {notification.description}
-                        </p>
-                      </div>
-                      <time
-                        dateTime={notification.created_at}
-                        className="shrink-0 text-xs text-muted-foreground"
-                      >
-                        {formatDate(notification.created_at)}
-                      </time>
-                    </div>
-                  </Link>
+                  <NotificationListItem
+                    notification={notification}
+                    onNavigate={() => setOpen(false)}
+                  />
                 </li>
               ))}
             </ul>
@@ -156,6 +133,71 @@ export function NotificationBell({
           </Link>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function NotificationListItem({
+  notification,
+  onNavigate,
+}: {
+  notification: NotificationItem;
+  onNavigate: () => void;
+}) {
+  const content = <NotificationListItemContent notification={notification} />;
+  const className = cn(
+    "block w-full rounded-2xl px-3 py-3 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+    notification.read_at ? "" : "bg-primary/5",
+  );
+
+  if (notification.read_at) {
+    return (
+      <Link href={notification.href} onClick={onNavigate} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <form action={markNotificationReadAction}>
+      <input type="hidden" name="notification_id" value={notification.id} />
+      <input type="hidden" name="redirect_to" value={notification.href} />
+      <button type="submit" className={className}>
+        {content}
+      </button>
+    </form>
+  );
+}
+
+function NotificationListItemContent({
+  notification,
+}: {
+  notification: NotificationItem;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 space-y-1">
+        <div className="flex items-center gap-2">
+          {!notification.read_at ? (
+            <span
+              aria-label="새 알림"
+              className="size-1.5 shrink-0 rounded-full bg-primary"
+            />
+          ) : null}
+          <p className="truncate text-sm font-medium">
+            {notification.title}
+          </p>
+        </div>
+        <p className="line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {notification.description}
+        </p>
+      </div>
+      <time
+        dateTime={notification.created_at}
+        className="shrink-0 text-xs text-muted-foreground"
+      >
+        {formatDate(notification.created_at)}
+      </time>
     </div>
   );
 }
