@@ -43,3 +43,24 @@ export function formatDeadlineSignal(iso: string | null, now = new Date()) {
   if (daysLeft <= 7) return `D-${daysLeft}`;
   return formatDate(iso);
 }
+
+export function formatDeadlineDday(iso: string | null, now = new Date()) {
+  if (!iso) return "D-00";
+
+  const deadline = new Date(iso);
+  if (Number.isNaN(deadline.getTime())) return "D-00";
+
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfDeadline = new Date(deadline);
+  startOfDeadline.setHours(0, 0, 0, 0);
+
+  const daysLeft = Math.max(
+    0,
+    Math.ceil(
+      (startOfDeadline.getTime() - startOfToday.getTime()) / 86_400_000,
+    ),
+  );
+
+  return `D-${String(daysLeft).padStart(2, "0")}`;
+}

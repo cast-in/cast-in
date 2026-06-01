@@ -44,7 +44,7 @@ export default async function DiscoverPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { activeRole } = await getViewerProfile();
+  const { activeRole, profile } = await getViewerProfile();
   if (activeRole === "actor") redirect("/talents");
   if (activeRole !== "casting") redirect("/talents");
 
@@ -95,6 +95,7 @@ export default async function DiscoverPage({
       jobState !== "active",
   );
   const featuredJobs = items.slice(0, 5);
+  const featuredJobsDescription = formatPersonalizedJobsDescription(profile?.name);
 
   return (
     <PageContainer size="wide" className="space-y-8">
@@ -146,13 +147,13 @@ export default async function DiscoverPage({
             <section className="rounded-xl bg-primary-soft px-5 py-7 ring-1 ring-primary/10 md:px-8">
               <div className="mb-5">
                 <h2 className="text-2xl font-extrabold tracking-normal text-primary">
-                  먼저 볼 공고
+                  맞춤 공고
                 </h2>
                 <p className="mt-2 text-xs font-medium text-primary/80">
-                  검색 결과에서 먼저 확인할 공고예요.
+                  {featuredJobsDescription}
                 </p>
               </div>
-              <div className="-mx-5 flex gap-5 overflow-x-auto px-5 pb-2 md:-mx-8 md:px-8">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-5">
                 {featuredJobs.map((job) => (
                   <JobCard
                     key={`featured-${job.id}`}
@@ -206,6 +207,12 @@ export default async function DiscoverPage({
       />
     </PageContainer>
   );
+}
+
+function formatPersonalizedJobsDescription(name: string | null | undefined) {
+  const displayName = name?.trim();
+  if (!displayName) return "프로필을 바탕으로 추천드려요.";
+  return `${displayName}님의 프로필을 바탕으로 추천드려요.`;
 }
 
 function CastingJobsHero() {

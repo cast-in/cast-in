@@ -67,7 +67,7 @@ export default async function TalentsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { activeRole } = await getViewerProfile();
+  const { activeRole, profile } = await getViewerProfile();
   if (!activeRole) return null;
 
   const sp = await searchParams;
@@ -138,6 +138,7 @@ export default async function TalentsPage({
       sort={sort}
       jobState={jobState}
       page={page}
+      profileName={profile?.name}
     />
   );
 }
@@ -290,6 +291,7 @@ async function ActorTalentsPage({
   sort,
   jobState,
   page,
+  profileName,
 }: {
   q: string;
   region: string[];
@@ -301,6 +303,7 @@ async function ActorTalentsPage({
   sort: "recommended" | "deadline" | "latest";
   jobState: "active" | "closed" | "all";
   page: number;
+  profileName?: string | null;
 }) {
   const { items, total } = await searchOpenJobs({
     q,
@@ -333,6 +336,7 @@ async function ActorTalentsPage({
       jobState !== "active",
   );
   const featuredJobs = items.slice(0, 5);
+  const featuredJobsDescription = formatPersonalizedJobsDescription(profileName);
 
   return (
     <PageContainer size="wide" className="space-y-8">
@@ -386,15 +390,13 @@ async function ActorTalentsPage({
               <div className="mb-5">
                 <h2 className="flex items-center gap-2 text-2xl font-extrabold tracking-normal text-primary">
                   <SlidersHorizontal aria-hidden="true" className="size-6" />
-                  먼저 볼 공고
+                  맞춤 공고
                 </h2>
                 <p className="mt-2 text-xs font-medium text-primary/80">
-                  {sort === "recommended"
-                    ? "프로필과 가까운 공고를 먼저 보여줘요."
-                    : "검색 결과에서 먼저 확인할 공고예요."}
+                  {featuredJobsDescription}
                 </p>
               </div>
-              <div className="-mx-5 flex gap-5 overflow-x-auto px-5 pb-2 md:-mx-8 md:px-8">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-5">
                 {featuredJobs.map((job) => (
                   <JobCard
                     key={`featured-${job.id}`}
@@ -446,6 +448,12 @@ async function ActorTalentsPage({
       />
     </PageContainer>
   );
+}
+
+function formatPersonalizedJobsDescription(name: string | null | undefined) {
+  const displayName = name?.trim();
+  if (!displayName) return "프로필을 바탕으로 추천드려요.";
+  return `${displayName}님의 프로필을 바탕으로 추천드려요.`;
 }
 
 function CastingActorsHero({ savedActorCount }: { savedActorCount: number }) {

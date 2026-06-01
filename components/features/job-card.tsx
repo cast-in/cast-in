@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { BookmarkButton } from "@/components/features/bookmark-button";
-import { formatDeadline, formatDeadlineSignal } from "@/lib/format";
+import { formatDeadline, formatDeadlineDday } from "@/lib/format";
 import {
   formatJobAudienceLabel,
   formatJobRoleType,
@@ -25,19 +25,17 @@ export function JobCard({
   detailHref?: string;
 }) {
   const accepting = isJobAccepting(job);
-  const deadlineSignal = formatDeadlineSignal(job.deadline);
+  const deadlineSignal = formatDeadlineDday(job.deadline);
   const jobHref = detailHref ?? `/jobs/${job.id}`;
   const statusLabel = accepting ? "지원 가능" : "지원 마감";
   const posterSrc = getJobPosterSrc(job);
   const primaryPlatform = getPrimaryJobPlatform(job.platforms);
-  const matchScore = job.match_score ?? 0;
-  const matchReasons = job.match_reasons?.slice(0, compact ? 1 : 2) ?? [];
 
   return (
     <Card
       className={cn(
         "h-full gap-0 overflow-hidden py-0",
-        compact ? "w-[222px] shrink-0" : "min-w-0",
+        "min-w-0",
       )}
     >
       <div className="relative isolate">
@@ -58,16 +56,6 @@ export function JobCard({
             >
               {deadlineSignal}
             </Badge>
-            {matchScore > 0 ? (
-              <Badge
-                color="primary"
-                variant="soft-outline"
-                size="md"
-                className="bg-background/90 backdrop-blur"
-              >
-                매칭 {matchScore}
-              </Badge>
-            ) : null}
           </div>
         </Link>
         <BookmarkButton
@@ -77,8 +65,9 @@ export function JobCard({
           compact
           icon="heart"
           className={cn(
-            "absolute right-3 top-3 z-10 rounded-full border-primary bg-primary-soft text-primary backdrop-blur hover:bg-primary/15",
-            compact ? "size-8" : "size-11",
+            "absolute right-3 top-3 z-10 rounded-full border-white/60 bg-white/35 text-white/60 shadow-[0_10px_30px_rgba(15,23,42,0.18)] backdrop-blur-md hover:bg-white/45",
+            "aria-[pressed=true]:border-primary aria-[pressed=true]:bg-primary-soft aria-[pressed=true]:text-primary aria-[pressed=true]:shadow-none aria-[pressed=true]:hover:bg-primary/15",
+            "size-10",
           )}
         />
       </div>
@@ -129,20 +118,6 @@ export function JobCard({
             })}
           </Badge>
         </div>
-        {matchReasons.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {matchReasons.map((reason) => (
-              <Badge
-                key={reason}
-                color="primary"
-                variant="soft-outline"
-                size="sm"
-              >
-                {reason}
-              </Badge>
-            ))}
-          </div>
-        ) : null}
         <div
           className={cn(
             "mt-auto flex items-center justify-between text-muted-foreground",
@@ -150,17 +125,92 @@ export function JobCard({
           )}
         >
           <p>{formatDeadline(job.deadline)}</p>
-          <span
-            className={cn(
-              "font-black text-primary",
-              compact ? "text-sm" : "text-base",
-            )}
-          >
-            {primaryPlatform}
-          </span>
+          <PlatformMark platform={primaryPlatform} compact={compact} />
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+const PLATFORM_LOGOS: Record<
+  string,
+  {
+    alt: string;
+    className?: string;
+    compactClassName?: string;
+    height: number;
+    src: string;
+    width: number;
+  }
+> = {
+  "넷플릭스": {
+    alt: "넷플릭스",
+    height: 277,
+    src: "/platform-logos/netflix.svg",
+    width: 1024,
+  },
+  "디즈니+": {
+    alt: "디즈니+",
+    height: 565,
+    src: "/platform-logos/disney-plus.svg",
+    width: 1033,
+  },
+  티빙: {
+    alt: "티빙",
+    className: "h-[13px] w-[53px]",
+    compactClassName: "h-[11px] w-[43px]",
+    height: 36,
+    src: "/platform-logos/tving.svg",
+    width: 142,
+  },
+  웨이브: {
+    alt: "웨이브",
+    height: 24,
+    src: "/platform-logos/wavve.svg",
+    width: 108,
+  },
+};
+
+function PlatformMark({
+  platform,
+  compact,
+}: {
+  platform: string;
+  compact: boolean;
+}) {
+  const logo = PLATFORM_LOGOS[platform];
+
+  if (!logo) {
+    return (
+      <span
+        className={cn(
+          "shrink-0 whitespace-nowrap text-right font-black text-primary",
+          compact ? "text-sm" : "text-base",
+        )}
+      >
+        {platform}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-end",
+        compact ? "h-4 w-16" : "h-5 w-20",
+        compact ? logo.compactClassName : logo.className,
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logo.src}
+        alt={logo.alt}
+        width={logo.width}
+        height={logo.height}
+        className="block max-h-full max-w-full object-contain"
+        loading="lazy"
+      />
+    </span>
   );
 }
 
