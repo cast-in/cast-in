@@ -453,7 +453,7 @@ export function LandingShowcase({
             </div>
           </div>
 
-          <div className="absolute bottom-8 right-6 text-right text-2xl font-medium leading-tight tracking-[-0.03em] text-primary sm:right-8 md:bottom-10 md:right-10">
+          <div className="absolute bottom-8 right-6 text-right text-3xl font-medium leading-tight tracking-[-0.03em] text-primary sm:right-8 sm:text-4xl md:bottom-10 md:right-10 md:text-5xl">
             <p>Cast in</p>
             <h1>배우와 작품을 잇다.</h1>
           </div>

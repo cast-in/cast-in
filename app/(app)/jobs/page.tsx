@@ -913,7 +913,7 @@ function ApplicationCard({
   ];
 
   return (
-    <article className="grid min-h-[140px] gap-6 rounded-xl border border-border bg-card px-5 py-5 ring-1 ring-foreground/[0.03] md:grid-cols-[minmax(310px,1.15fr)_minmax(320px,1fr)] md:items-center lg:grid-cols-[minmax(360px,1.15fr)_minmax(330px,0.95fr)_minmax(210px,0.7fr)_auto] lg:px-8">
+    <article className="grid min-h-[140px] gap-6 rounded-xl border border-border bg-card px-5 py-5 ring-1 ring-foreground/[0.03] md:grid-cols-[minmax(0,1.1fr)_minmax(15rem,0.9fr)] md:items-center xl:grid-cols-[minmax(0,1.15fr)_minmax(13rem,0.85fr)_minmax(11rem,0.7fr)_minmax(0,max-content)] xl:px-8">
       <div className="flex min-w-0 items-center gap-4">
         <div className="size-24 shrink-0 overflow-hidden rounded-md bg-muted">
           {posterSrc ? (
@@ -992,7 +992,7 @@ function ApplicationCard({
         ) : null}
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
+      <div className="flex min-w-0 flex-wrap items-center justify-start gap-2 md:justify-end">
         <Link
           href={`/messages?job=${application.job_id}`}
           className={cn(
@@ -1054,7 +1054,7 @@ function ApplicationProgress({
   return (
     <ol
       aria-label={`${application.job_title} 지원 진행 단계`}
-      className="grid grid-cols-3 gap-0"
+      className="grid min-w-0 grid-cols-3 gap-0"
     >
       {steps.map((step, index) => {
         const nextStep = steps[index + 1];
