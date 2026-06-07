@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { parseSocialLinksFromForm, socialLinksToJson } from "@/lib/social-links";
 import type { Database } from "@/types/database";
@@ -10,7 +11,7 @@ type ActorProfileUpsert =
 type CastingProfileUpsert =
   Database["public"]["Tables"]["casting_profiles"]["Insert"];
 type ProfileUpsert = Database["public"]["Tables"]["profiles"]["Insert"];
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+type SupabaseWriteClient = ReturnType<typeof createAdminClient>;
 
 export type SaveProfileResult = { ok: true } | { ok: false; error: string };
 
@@ -40,6 +41,9 @@ export async function saveOnboardingProfile(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "먼저 로그인해주세요." };
 
+  const admin = getAdminClient();
+  if ("error" in admin) return admin;
+
   const role = formData.get("role") === "casting" ? "casting" : "actor";
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { ok: false, error: "이름을 입력해주세요." };
@@ -63,7 +67,7 @@ export async function saveOnboardingProfile(
   }
 
   const { error: pErr } = await upsertProfileWithConsentFallback(
-    supabase,
+    admin,
     profilePayload,
   );
   if (pErr) return { ok: false, error: pErr.message };
@@ -109,7 +113,7 @@ export async function saveOnboardingProfile(
     if (formData.has("visibility")) {
       payload.visibility = parseVisibility(String(formData.get("visibility") ?? ""));
     }
-    const { error } = await supabase.from("actor_profiles").upsert(payload);
+    const { error } = await admin.from("actor_profiles").upsert(payload);
     if (error) return { ok: false, error: error.message };
   } else {
     const companyName = String(formData.get("company_name") ?? "").trim();
@@ -122,11 +126,25 @@ export async function saveOnboardingProfile(
     if (formData.has("intro")) {
       payload.intro = String(formData.get("intro") ?? "").trim() || null;
     }
-    const { error } = await supabase.from("casting_profiles").upsert(payload);
+    const { error } = await admin.from("casting_profiles").upsert(payload);
     if (error) return { ok: false, error: error.message };
   }
 
   redirect(redirectTo);
+}
+
+function getAdminClient(): SupabaseWriteClient | { ok: false; error: string } {
+  try {
+    return createAdminClient();
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Supabase 관리자 키가 설정되지 않았어요.",
+    };
+  }
 }
 
 function getConsentMetadata(metadata: {
@@ -153,7 +171,7 @@ function getMetadataString(value: unknown) {
 }
 
 async function upsertProfileWithConsentFallback(
-  supabase: SupabaseServerClient,
+  supabase: SupabaseWriteClient,
   profilePayload: ProfileUpsert,
 ) {
   const result = await supabase.from("profiles").upsert(profilePayload);
