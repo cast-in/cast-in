@@ -489,8 +489,22 @@ export async function listMyBookmarkedActors(
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize;
+  const pagedActors = filtered.slice(from, to);
+  const signedAvatarUrlByUrl = await signPublicStorageUrls(
+    supabase,
+    pagedActors
+      .map((actor) => actor.avatar_url)
+      .filter((url): url is string => Boolean(url)),
+    "avatars",
+  );
+
   return {
-    items: filtered.slice(from, to),
+    items: pagedActors.map((actor) => ({
+      ...actor,
+      avatar_url: actor.avatar_url
+        ? (signedAvatarUrlByUrl.get(actor.avatar_url) ?? actor.avatar_url)
+        : null,
+    })),
     total: filtered.length,
     page,
     pageSize,

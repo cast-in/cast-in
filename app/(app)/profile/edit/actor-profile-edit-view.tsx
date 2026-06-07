@@ -7,7 +7,7 @@ import {
   Ruler,
   UserRound,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -26,6 +26,7 @@ import { saveActorProfileEditAction } from "./actions";
 import { EditablePortfolioSection } from "./editable-portfolio-section";
 import { HeroAvatarUploader } from "./hero-avatar-uploader";
 import { KeywordSelector } from "./keyword-selector";
+import { ProfileSaveButton } from "./profile-save-button";
 import { AwardRows, CreditRows } from "./repeatable-profile-lists";
 
 type ActorProfileRecord = {
@@ -93,9 +94,7 @@ export function ActorProfileEditView({
             >
               취소
             </Link>
-            <Button type="submit" size="sm" className="px-5">
-              전체 저장
-            </Button>
+            <ProfileSaveButton />
           </div>
         </div>
 

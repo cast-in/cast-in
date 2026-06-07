@@ -13,7 +13,6 @@ import {
   JOB_ROLE_TYPE_OPTIONS,
   JOB_TARGET_GENDER_OPTIONS,
 } from "@/lib/job-filter-options";
-import { listBookmarkedTargetIds } from "@/lib/queries/bookmarks";
 import { searchOpenJobs } from "@/lib/queries/jobs";
 import { getViewerProfile } from "@/lib/queries/viewer";
 
@@ -44,7 +43,7 @@ export default async function DiscoverPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { activeRole, profile } = await getViewerProfile();
+  const { activeRole } = await getViewerProfile();
   if (activeRole === "actor") redirect("/talents");
   if (activeRole !== "casting") redirect("/talents");
 
@@ -80,10 +79,6 @@ export default async function DiscoverPage({
     page,
     pageSize: JOB_PAGE_SIZE,
   });
-  const bookmarkedIds = await listBookmarkedTargetIds(
-    "job",
-    items.map((job) => job.id),
-  );
   const hasFilters = Boolean(
     q ||
       region.length ||
@@ -94,9 +89,6 @@ export default async function DiscoverPage({
       platform.length ||
       jobState !== "active",
   );
-  const featuredJobs = items.slice(0, 5);
-  const featuredJobsDescription = formatPersonalizedJobsDescription(profile?.name);
-
   return (
     <PageContainer size="wide" className="space-y-8">
       <CastingJobsHero />
@@ -142,50 +134,24 @@ export default async function DiscoverPage({
           }
         />
       ) : (
-        <>
-          {featuredJobs.length > 0 ? (
-            <section className="rounded-xl bg-primary-soft px-5 py-7 ring-1 ring-primary/10 md:px-8">
-              <div className="mb-5">
-                <h2 className="text-2xl font-extrabold tracking-normal text-primary">
-                  맞춤 공고
-                </h2>
-                <p className="mt-2 text-xs font-medium text-primary/80">
-                  {featuredJobsDescription}
-                </p>
-              </div>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-5">
-                {featuredJobs.map((job) => (
-                  <JobCard
-                    key={`featured-${job.id}`}
-                    job={job}
-                    bookmarked={bookmarkedIds.has(job.id)}
-                    detailHref={`/jobs/${job.id}?from=discover`}
-                    compact
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <section>
-            <div className="mb-5 flex items-end gap-3">
-              <h2 className="text-2xl font-extrabold tracking-normal">전체 공고</h2>
-              <span className="text-2xl font-extrabold text-primary">
-                {total.toLocaleString("ko-KR")}
-              </span>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {items.map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  bookmarked={bookmarkedIds.has(job.id)}
-                  detailHref={`/jobs/${job.id}?from=discover`}
-                />
-              ))}
-            </div>
-          </section>
-        </>
+        <section>
+          <div className="mb-5 flex items-end gap-3">
+            <h2 className="text-2xl font-extrabold tracking-normal">전체 공고</h2>
+            <span className="text-2xl font-extrabold text-primary">
+              {total.toLocaleString("ko-KR")}
+            </span>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {items.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                detailHref={`/jobs/${job.id}?from=discover`}
+                showBookmark={false}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <Pagination
@@ -207,12 +173,6 @@ export default async function DiscoverPage({
       />
     </PageContainer>
   );
-}
-
-function formatPersonalizedJobsDescription(name: string | null | undefined) {
-  const displayName = name?.trim();
-  if (!displayName) return "프로필을 바탕으로 추천드려요.";
-  return `${displayName}님의 프로필을 바탕으로 추천드려요.`;
 }
 
 function CastingJobsHero() {

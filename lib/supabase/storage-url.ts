@@ -4,6 +4,18 @@ import type { Database } from "@/types/database";
 const SIGNED_STORAGE_URL_TTL_SECONDS = 60 * 60;
 
 export function getPublicStoragePath(url: string, bucket: string) {
+  return getStorageObjectPath(url, bucket, "public");
+}
+
+function getSignedStoragePath(url: string, bucket: string) {
+  return getStorageObjectPath(url, bucket, "sign");
+}
+
+function getStorageObjectPath(
+  url: string,
+  bucket: string,
+  visibility: "public" | "sign",
+) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) return null;
 
@@ -13,7 +25,7 @@ export function getPublicStoragePath(url: string, bucket: string) {
 
     if (parsedUrl.origin !== parsedSupabaseUrl.origin) return null;
 
-    const prefix = `/storage/v1/object/public/${bucket}/`;
+    const prefix = `/storage/v1/object/${visibility}/${bucket}/`;
     if (!parsedUrl.pathname.startsWith(prefix)) return null;
 
     const path = decodeURIComponent(parsedUrl.pathname.slice(prefix.length));
@@ -49,7 +61,7 @@ export async function signPublicStorageUrl(
 ) {
   if (!url) return null;
 
-  const path = getPublicStoragePath(url, bucket);
+  const path = getPublicStoragePath(url, bucket) ?? getSignedStoragePath(url, bucket);
   if (!path) return url;
 
   const { data, error } = await supabase.storage

@@ -22,7 +22,10 @@ export function AppNav({
   const tabs = APP_TABS[role];
 
   return (
-    <nav aria-label="주요 메뉴" className="flex flex-wrap justify-center gap-1">
+    <nav
+      aria-label="주요 메뉴"
+      className="flex flex-wrap justify-center gap-2 lg:gap-4"
+    >
       {tabs.map((tab) => {
         const active = isAppTabActive({
           href: tab.href,
@@ -40,7 +43,7 @@ export function AppNav({
             href={tab.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors after:pointer-events-none after:absolute after:-bottom-[12px] after:left-3 after:right-3 after:z-20 after:h-px after:rounded-full after:content-['']",
+              "relative inline-flex h-11 items-center gap-1.5 rounded-md px-3 text-[0.9375rem] font-bold transition-colors after:pointer-events-none after:absolute after:-bottom-[10px] after:left-3 after:right-3 after:z-20 after:h-px after:rounded-full after:content-[''] lg:px-4 lg:after:left-4 lg:after:right-4",
               active
                 ? "text-primary after:bg-primary"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",

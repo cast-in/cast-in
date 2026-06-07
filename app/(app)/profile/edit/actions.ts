@@ -122,23 +122,6 @@ export async function saveActorProfileEditAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("이름을 입력해주세요.");
 
-  const { data: currentActorProfile, error: currentActorProfileError } =
-    await supabase
-      .from("actor_profiles")
-      .select("visibility")
-      .eq("user_id", user.id)
-      .maybeSingle();
-  if (currentActorProfileError) throw new Error(currentActorProfileError.message);
-
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      name,
-      email: String(formData.get("email") ?? "").trim() || user.email || null,
-    })
-    .eq("id", user.id);
-  if (profileError) throw new Error(profileError.message);
-
   const actorPayload: ActorProfileUpsert = {
     user_id: user.id,
     birth_date: parseBirthDateFromAge(formData.get("age")),
@@ -153,12 +136,21 @@ export async function saveActorProfileEditAction(formData: FormData) {
     image_tags: parseCsv(formData.get("image_tags")),
     social_links: socialLinksToJson(buildSocialLinks(formData)),
     bio: String(formData.get("bio") ?? "").trim() || null,
-    visibility: currentActorProfile?.visibility ?? "public",
   };
 
-  const { error: actorProfileError } = await supabase
-    .from("actor_profiles")
-    .upsert(actorPayload);
+  const [{ error: profileError }, { error: actorProfileError }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .update({
+          name,
+          email: String(formData.get("email") ?? "").trim() || user.email || null,
+        })
+        .eq("id", user.id),
+      supabase.from("actor_profiles").upsert(actorPayload),
+    ]);
+
+  if (profileError) throw new Error(profileError.message);
   if (actorProfileError) throw new Error(actorProfileError.message);
 
   const credits = collectCredits(formData, user.id);
@@ -170,6 +162,5 @@ export async function saveActorProfileEditAction(formData: FormData) {
   if (showcaseError) throw new Error(showcaseError.message);
 
   revalidatePath("/profile");
-  revalidatePath("/profile/edit");
   redirect("/profile");
 }

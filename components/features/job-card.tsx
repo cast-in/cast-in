@@ -15,14 +15,16 @@ import { cn } from "@/lib/utils";
 
 export function JobCard({
   job,
-  bookmarked,
+  bookmarked = false,
   compact = false,
   detailHref,
+  showBookmark = true,
 }: {
   job: OpenJobPreview;
-  bookmarked: boolean;
+  bookmarked?: boolean;
   compact?: boolean;
   detailHref?: string;
+  showBookmark?: boolean;
 }) {
   const accepting = isJobAccepting(job);
   const deadlineSignal = formatDeadlineDday(job.deadline);
@@ -58,18 +60,20 @@ export function JobCard({
             </Badge>
           </div>
         </Link>
-        <BookmarkButton
-          targetType="job"
-          targetId={job.id}
-          bookmarked={bookmarked}
-          compact
-          icon="heart"
-          className={cn(
-            "absolute right-3 top-3 z-10 rounded-full border-white/60 bg-white/35 text-white/60 shadow-[0_10px_30px_rgba(15,23,42,0.18)] backdrop-blur-md hover:bg-white/45",
-            "aria-[pressed=true]:border-primary aria-[pressed=true]:bg-primary-soft aria-[pressed=true]:text-primary aria-[pressed=true]:shadow-none aria-[pressed=true]:hover:bg-primary/15",
-            "size-10",
-          )}
-        />
+        {showBookmark ? (
+          <BookmarkButton
+            targetType="job"
+            targetId={job.id}
+            bookmarked={bookmarked}
+            compact
+            icon="heart"
+            className={cn(
+              "absolute right-3 top-3 z-10 rounded-full border-white/60 bg-white/35 text-white/60 shadow-[0_10px_30px_rgba(15,23,42,0.18)] backdrop-blur-md hover:bg-white/45",
+              "aria-[pressed=true]:border-primary aria-[pressed=true]:bg-primary-soft aria-[pressed=true]:text-primary aria-[pressed=true]:shadow-none aria-[pressed=true]:hover:bg-primary/15",
+              "size-10",
+            )}
+          />
+        ) : null}
       </div>
       <CardContent
         className={cn(
