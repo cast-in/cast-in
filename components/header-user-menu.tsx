@@ -20,6 +20,12 @@ type HeaderUserMenuProps = {
   userEmail?: string | null;
 };
 
+const ROLE_SWITCH_MENU_ROLES: readonly UserRole[] = [
+  // 발표용 임시 숨김: 배우 모드 전환은 데모 후 다시 노출.
+  // "actor",
+  "casting",
+];
+
 export function HeaderUserMenu({
   activeRole,
   availableRoles,
@@ -29,6 +35,7 @@ export function HeaderUserMenu({
 }: HeaderUserMenuProps) {
   const otherRole: UserRole = activeRole === "actor" ? "casting" : "actor";
   const otherRoleEnabled = availableRoles.includes(otherRole);
+  const showRoleEntry = ROLE_SWITCH_MENU_ROLES.includes(otherRole);
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const menuTitleId = `${menuId}-title`;
@@ -125,34 +132,36 @@ export function HeaderUserMenu({
           </div>
 
           <div className="mt-3 space-y-2">
-            {otherRoleEnabled ? (
-              <form action={switchActiveRoleAction} onSubmit={() => setOpen(false)}>
-                <input type="hidden" name="role" value={otherRole} />
-                {/* Keep this as a native submit button so keyboard users get the expected form behavior. */}
-                <button
-                  type="submit"
+            {showRoleEntry ? (
+              otherRoleEnabled ? (
+                <form action={switchActiveRoleAction} onSubmit={() => setOpen(false)}>
+                  <input type="hidden" name="role" value={otherRole} />
+                  {/* Keep this as a native submit button so keyboard users get the expected form behavior. */}
+                  <button
+                    type="submit"
+                    className={cn(
+                      buttonVariants({ color: "neutral", variant: "ghost" }),
+                      "w-full justify-between",
+                    )}
+                  >
+                    <span>{getRoleModeLabel(otherRole)}로 전환</span>
+                    <Repeat2 aria-hidden="true" className="size-4" />
+                  </button>
+                </form>
+              ) : (
+                <Link
+                  href={`/onboarding/profile?role=${otherRole}&intent=add`}
                   className={cn(
                     buttonVariants({ color: "neutral", variant: "ghost" }),
                     "w-full justify-between",
                   )}
+                  onClick={() => setOpen(false)}
                 >
-                  <span>{getRoleModeLabel(otherRole)}로 전환</span>
+                  <span>{getRoleModeLabel(otherRole)} 추가</span>
                   <Repeat2 aria-hidden="true" className="size-4" />
-                </button>
-              </form>
-            ) : (
-              <Link
-                href={`/onboarding/profile?role=${otherRole}&intent=add`}
-                className={cn(
-                  buttonVariants({ color: "neutral", variant: "ghost" }),
-                  "w-full justify-between",
-                )}
-                onClick={() => setOpen(false)}
-              >
-                <span>{getRoleModeLabel(otherRole)} 추가</span>
-                <Repeat2 aria-hidden="true" className="size-4" />
-              </Link>
-            )}
+                </Link>
+              )
+            ) : null}
 
             <Link
               href="/profile"

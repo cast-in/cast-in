@@ -17,7 +17,11 @@ import { getRoleModeLabel } from "@/lib/app-ia";
 import type { UserRole } from "@/types/enums";
 import { switchActiveRoleAction } from "./actions";
 
-const ROLES = ["actor", "casting"] as const;
+const ROLES: readonly UserRole[] = [
+  // 발표용 임시 숨김: 배우 모드 전환은 데모 후 다시 노출.
+  // "actor",
+  "casting",
+];
 
 export function ModeSwitcher({
   activeRole,
